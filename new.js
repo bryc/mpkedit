@@ -1,6 +1,7 @@
 window.addEventListener("load", function()
 {
 var n64code = {
+   178: "",
     0:  "", // null character
     3:  "",  // found in incorrect emulated files
     15: " ",
@@ -164,132 +165,128 @@ var n64code = {
         {
             var notes = [];
             var usedNotes = 0;
-           
+            var d = ref.data;
             for(var i = 0x300, u = 0; i < 0x500; i+=32, u++)
             {
-                var inode = ref.data[i+7];
-                var b1 = ref.data[i + 0x0A];
-                var b2 = ref.data[i + 0x0B];
-                var b3 = ref.data[i + 6];
-                var b4 = ref.data[i + 8] & 0x02;
-                 var data = [];
+                var inode = d[i+7];
+                var b1    = d[i + 10];
+                var b2    = d[i + 11];
+                var b3    = d[i + 6];
+                var b4    = d[i + 8] & 2;
+                var data = [];
                 
-                if(
-                (inode >= 5 && inode <= 127 && b1 === 0x00 &&
-                b2 === 0x00 && b3 === 0x00) && 
-                ref.inodes.files[inode] !== undefined
-                )
+                if(ref.inodes.files[inode] !== undefined)
                 {
                     usedNotes++;
-                    var name   = "";
+                    var name    = "";
+                    var game_id = String.fromCharCode(d[i],d[i+1],d[i+2],d[i+3]);
+                    var publisher_id = String.fromCharCode(d[i + 4], d[i + 5]);
                     
-                    var game_id = String.fromCharCode(ref.data[i + 0], ref.data[i + 1], ref.data[i + 2]);
-                    var region  = String.fromCharCode(ref.data[i + 3]);
-                    var vendor  = String.fromCharCode(ref.data[i + 4], ref.data[i + 5]);
-                    
-                    var k;
                     for(var inode2 in ref.inodes.files[inode])
                     {
                         var dataOffset = 256 * ref.inodes.files[inode][inode2];
-                        for(k = 0; k < 256; k++)
+                        for(var k = 0; k < 256; k++)
                         {
-                            data.push(ref.data[dataOffset + k]);
+                            data.push(d[dataOffset + k]);
                         }
                     }
                     
-                    for(k = 0; k < 16; k++)
+                    for(var k = 0; k < 16; k++)
                     {
-                        name += n64code[ ref.data[i + 16 + k] ];
+                        name += n64code[d[i + 16 + k]];
                     }
-                    if(ref.data[i + 12] !== 0)
+                    if(d[i + 12] !== 0)
                     {
-                        name += "." + n64code[ref.data[i + 12]];
+                        name += "." + n64code[d[i + 12]];
+                        name += n64code[d[i + 13]];
+                        name += n64code[d[i + 14]];
+                        name += n64code[d[i + 15]];
                     }
-                    console.log(name, game_id, region, vendor, data.length, e);
                     notes.push({
-                        name : name,
-                        offset: i,
-                        game_id : game_id,
-                        region : region,
-                        vendor : vendor,
-                        data : data,
-                        size : data.length,
-                        inodes : ref.inodes.files
+                        name         : name,
+                        offset       : i,
+                        game_id      : game_id,
+                        publisher_id : publisher_id,
+                        data         : data,
+                        size         : data.length
                     });
-                    
                 }
-                 ref.notes = notes;
+                 
             }
             ref.inodes.validNotes = (usedNotes === ref.inodes.notes);
+            return notes;
         }
         
         function readInodes(o)
         {
-            var usedPages = 0, inodes = {}, keyNodes = {}, errors = 0,
-                dupeData = 0, cksm1 = 0, cksm2 = 0;
-            
+            var usedPages = 0,
+                inodes    = {},
+                keyNodes  = {},
+                errors    = 0,
+                dupeData  = 0,
+                cksm      = 0;
+                
             for(var i = o; i < o + 0x100; i++)
             {
-                if(o == 0x100 && ref.data[i] === ref.data[i + 0x100]) {
+                if(o == 0x100 && ref.data[i] == ref.data[i + 0x100]) {
                     dupeData++;
-                } else if(o == 0x200 && ref.data[i] === ref.data[i - 0x100]) {
+                }
+                else if(o == 0x200 && ref.data[i] == ref.data[i - 0x100]) {
                     dupeData++;
                 }
                 if(i >= o + 0xA) {
-                    cksm1 += ref.data[i];
-                    cksm2 += ref.data[i + o];
+                    cksm += ref.data[i];
                 }
-                if(i >= o + 0xA && i % 2 == 0)
+                if(i >= o + 0xA && i % 2 === 0)
                 {
-                    var a = (i-o)/2, p = ref.data[i+1];
-                    if (((p>=0x05&&p<=0x7F) || p==0x01 || p==0x03) == false) {
-                        errors++; // Invalid INODE value
-                    } else if(((p>=0x05&&p<=0x7F) || p==0x01) && p !== 3)
+                    var a = (i - o) / 2, p = ref.data[i + 1], p2 = ref.data[i];
+                    if(p2!=0 || p!=1 && p!=3 && p<5 || p>127)
                     {
+                        //console.log("ERROR: ", ref.filename, p2!=0);
+                        errors++;
+                    }
+                    else if(p!=3 && p>=5 && p<=127 || p==1)
+                    { //console.log(p!=1);
                         inodes[a]   = p;
                         keyNodes[a] = p;
                         usedPages++;
                     }
                 }
             }
-            
-            for(key in inodes) {
+            for (var key in inodes) {
                 delete keyNodes[inodes[key]];
             }
-            
-            var foundFiles = {};
-            var pgCnt = 0;
-            for(key in keyNodes)
+            var foundFiles = {}, pgCnt = 0;
+            for (key in keyNodes)
             {
-                var ptr = keyNodes[key], y = 0, z = [+key],
-                    foundEnd = false;
-                
-                while(((ptr>=0x05&&ptr<=0x7F)||ptr==0x01) && y <= usedPages) {
-                    if(z.indexOf(ptr) !== -1) { //Infinite loop
+                var ptr = keyNodes[key], y = 0, z = [+key], foundEnd = false;
+                while (((ptr>=5 && ptr<=127) || ptr==1) && y<=usedPages)
+                {
+                    if (z.indexOf(ptr) !== -1) {
                         errors++; break;
                     }
-                    if(ptr == 1) {foundEnd = true; break;}
+                    if (ptr == 1) {
+                        foundEnd = true; break;
+                    }
                     z.push(ptr);
                     ptr = inodes[ptr];
                     y++;
                 }
-                
-                if(foundEnd == true) {
+                if (foundEnd === true) {
                     foundFiles[key] = z;
                     pgCnt += foundFiles[key].length;
                 }
                 else {
-                   errors++; //Terminator not found
+                    errors++;
                 }
             }
-            
-            this.inodes = {
-                validPgs : usedPages === pgCnt && errors === 0,
+            return {
                 used     : usedPages,
-                same     : (dupeData == 256),
-                validChk : (ref.data[o + 1] == (cksm1 & 0xFF) && cksm1 >= 335),
                 files    : foundFiles,
-                notes    : Object.keys(foundFiles).length
+                same     : (dupeData == 256),
+                notes    : Object.keys(foundFiles).length,
+                validPgs : usedPages === pgCnt && errors === 0,
+                validChk : (ref.data[o + 1] == (cksm & 0xFF) && cksm >= 335)
             };
         }
         
@@ -347,10 +344,14 @@ var n64code = {
                     
                     if(mpk.validID(0x20))
                     {
-                        mpk.readInodes(0x100);
-                        mpk.readNotes(e.target.fname);
+                        mpk.filename = e.target.fname;
+                        mpk.inodes = mpk.readInodes(0x100);
+                        mpk.notes = mpk.readNotes();
+                        
+                        console.log(mpk);
+                        
                     } else {
-                        console.log("INVALID FILE");
+                        console.log("INVALID FILE", e.target.fname);
                     }
                 }
                 f.readAsArrayBuffer(file.slice(0, 36928));
