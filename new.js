@@ -63,7 +63,6 @@ var checksumValid = function(o, data)
     {
         sumA += (data[o + i] << 8) + data[o + i + 1];
         sumA &= 0xFFFF;
-        
     }
     
     sumB -= sumA;
