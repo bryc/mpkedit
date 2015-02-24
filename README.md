@@ -6,7 +6,7 @@ battery-backed SRAM. The entire file is split into 128 equal segments
 (here known as *pages*), each covering 256 bytes for a total of 32,768 bytes.
 Games have up to 123 pages of data and 16 header entries (here known as *notes*)
 at their disposal. The first 5 pages are reserved for system purposes and
-are the only pages with special meaning.
+are the only pages with any special meaning.
 
 ####**Page 0: Label / serial area (`0x0000 – 0x00FF`)**
 
