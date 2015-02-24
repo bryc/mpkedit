@@ -31,13 +31,9 @@ var readData = function(evt)
     var data = new Uint8Array(evt.target.result);
     
     // Detect and remove DexDrive headers
-    for(str = "", i = 0; i < 11; i++)
+    if(String.fromCharCode.apply(null, data.subarray(0,11)) === "123-456-STD")
     {
-        str += String.fromCharCode(data[i]);
-        if(str === "123-456-STD")
-        {
-            data = data.subarray(0x1040);
-        }
+        data = data.subarray(0x1040);
     }
     
     // Don't do anything unless checksum is valid
