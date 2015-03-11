@@ -1,37 +1,70 @@
-var cancelEventAction = function(evt)
+/*
+MAR.11.15 - I guess I lost some recent changes to
+the code.
+
+readMemPak
+ * Restore valid backup Inodes
+ * Repair Inode checksums
+ * Replace indexTable with indexTable2.
+ * Recheck everything before continuing.
+
+ That should be the LAST validation task.
+
+ From then on, we can work on the "file loaded"
+ state. We need to implement note export/import!
+
+ Also would be nice to generate empty MPK
+ from scratch.
+
+-----
+
+Once file is loaded and valid, we should copy
+valid header checksum to other slots.
+
+-----
+
+Look into functions: 
+parseNoteTable, parseIndexTable
+
+--------
+
+It will be important that the program can recreate INODE and NOTE tables, from
+the parsed data. Being able to wipe it, or initialize it may also be important.
+
+-------
+
+When performing a modification or saving
+    1. Update indexTable checksum
+    2. Update backup
+    3. Resize file to 32768
+*/
+
+function cancelEventAction(evt)
 {
     evt.preventDefault();
 };
 
-var dropEventHandler = function(evt)
+function dropHandler(evt)
 {
-    // If length is zero, there are no files and this loop won't occur
+    // If length is zero, there are no files and this loop WON'T occur
     // If only reading one file, checking length is necessary
     for(var i = 0; i < evt.dataTransfer.files.length; i++)
     {
-        loadData(evt.dataTransfer.files[i]);
+        var reader    = new FileReader();
+        reader.name   = evt.dataTransfer.files[i].name;
+        reader.onload = readData;
+        // For DexDrive we have to read more than 32768 bytes
+        reader.readAsArrayBuffer(evt.dataTransfer.files[i].slice(0, 36928));
     }
     evt.preventDefault();
 };
 
-window.addEventListener("dragover", cancelEventAction);
-window.addEventListener("drop", dropEventHandler);
-
-var loadData = function(file)
-{
-    var reader    = new FileReader();
-    reader.name   = file.name;
-    reader.onload = readData;
-    // For DexDrive we have to read more than 32768 bytes
-    reader.readAsArrayBuffer(file.slice(0, 36928));
-};
-
-var readData = function(evt)
+function readData(evt)
 {
     var data = new Uint8Array(evt.target.result);
     
     // Detect and remove DexDrive headers
-    if(String.fromCharCode.apply(null, data.subarray(0,11)) === "123-456-STD")
+    if("123-456-STD" === String.fromCharCode.apply(null, data.subarray(0, 11)))
     {
         data = data.subarray(0x1040);
     }
@@ -40,39 +73,22 @@ var readData = function(evt)
     if(checksumValid(0x20, data))
     {
         var MemPak = readMemPak(data, evt.target.name);
+        if(MemPak){console.log(MemPak)}
     }
 };
 
-var readMemPak = function(data, f)
+function readMemPak(data, filename)
 {
-    /*
-    When loading a file
-        1. If primary is invalid, check and restore from backup
-    
-    When performing a modification or saving
-        1. Update indexTable checksum
-        2. Update backup
-        3. Resize file to 32768
-    */
-    
     var noteTable   = parseNoteTable(data);
-    var indexTable  = readIndexTable(data, false);
-    var indexTable2 = readIndexTable(data, true);
-    
-    if(indexTable.error.count > 0 && indexTable2.error.count === 0)
-    {
-        /*
-            indexTable_1 is invalid, but indexTable_2 is valid.
-            TODO: Restore the backup data, and proceed.
-        */
-    }
+    var indexTable  = parseIndexTable(data, false);
+    var indexTable2 = parseIndexTable(data, true); // TODO: Check Backup...
     
     var ErrorReport = {
         "types" : noteTable.error.types.concat(indexTable.error.types),
         "count" : noteTable.error.count + indexTable.error.count
     };
     
-    if(indexTable.noteCount !== noteTable.noteCount)
+    if(indexTable.noteCount !== noteTable.noteTable.noteCount)
     {
         addError("NoteCountMismatch", ErrorReport);
     }
@@ -84,102 +100,18 @@ var readMemPak = function(data, f)
     
     if(ErrorReport.count > 0)
     {
-        console.log("Error: ", f, ErrorReport.types);
+        console.error(filename, ErrorReport.types);
+        return false;
     }
-    
-    console.log("Success - what should be returned?");
+
     return {
-        "Notes": noteTable,
-        "Pages": indexTable
+        filename: filename,
+        Notes: noteTable.noteTable,
+        Pages: indexTable.Inodes
     };
 };
 
-var addError = function(errorName, errorReport)
-{
-    if(errorReport.types.indexOf(errorName) === -1)
-    {
-        errorReport.types.push(errorName);
-    }
-    errorReport.count++;
-};
-
-var checksumValid = function(o, data)
-{
-    // X,Y = stored checksum -- A,B = calculated checksum
-    var sumX  = (data[o + 28] << 8) + data[o + 29],
-        sumY  = (data[o + 30] << 8) + data[o + 31],
-        sumA  = 0,
-        sumB  = 0xFFF2;
-        
-    for(var i = 0; i < 28; i += 2)
-    {
-        sumA += (data[o + i] << 8) + data[o + i + 1];
-        sumA &= 0xFFFF;
-    }
-    
-    sumB -= sumA;
-    
-    // Repair corrupt DexDrive checksums
-    if(sumX === sumA && sumY !== sumB)
-    {
-        sumY ^= 0xC;
-        data[o + 31] ^= 0xC;
-    }
-    
-    return (sumX === sumA && sumY === sumB);
-};
-
-var allNotesExist = function(fileIndexes, pageIndexes)
-{
-    // Check if Note indexes exist in indexTable
-    for(var i = 0, testPassed = false; i < 16; i++)
-    {
-        if(fileIndexes.sort().toString() === pageIndexes.sort().toString())
-        {
-            testPassed = true;
-        }
-    }
-    
-    return testPassed;
-};
-
-var parseNoteTable = function(data)
-{
-    var Parser = {
-        "noteCount": 0,
-        "error": {
-            "types":[],
-            "count": 0
-            },
-        "indexes": [],
-        "noteTable": {}
-        };
-        
-    // Loop over NoteTable
-    for(var i = 0x300; i < 0x500; i += 32)
-    {
-        var p = data[i + 0x07], a = data[i + 0x06],
-            b = data[i + 0x0A], c = data[i + 0x0B];
-            
-        if(p >= 5 && p <= 127 && a === 0 && b === 0 && c === 0)
-        {
-            if (Parser.indexes.indexOf(p) !== -1)
-            {
-                addError("DuplicateFileFound", Parser.error);
-            }
-            
-            Parser.indexes.push(p);
-            Parser.noteCount++;
-            
-            Parser.noteTable[(i - 0x300) / 32] = {
-                "initialIndex": p
-            };
-        }
-    }
-    return Parser;
-};
-
-var readIndexTable = function(data, readBackup)
+function parseIndexTable(data, readBackup)
 {
     var o = readBackup ? 0x200 : 0x100,
         a = [],
@@ -266,3 +198,92 @@ var readIndexTable = function(data, readBackup)
     
     return Parser;
 };
+
+function parseNoteTable(data)
+{
+    var Parser = {
+        "error": {
+            "types":[],
+            "count": 0
+            },
+        "indexes": [],
+        "noteTable": {"noteCount": 0}
+        };
+        
+    // Loop over NoteTable
+    for(var i = 0x300; i < 0x500; i += 32)
+    {
+        var p = data[i + 0x07], a = data[i + 0x06],
+            b = data[i + 0x0A], c = data[i + 0x0B];
+            
+        if(p >= 5 && p <= 127 && a === 0 && b === 0 && c === 0)
+        {
+            if (Parser.indexes.indexOf(p) !== -1)
+            {
+                addError("DuplicateFileFound", Parser.error);
+            }
+            
+            Parser.indexes.push(p);
+            Parser.noteTable.noteCount++;
+            
+            Parser.noteTable[(i - 0x300) / 32] = {
+                "initialIndex": p
+            };
+        }
+    }
+
+    return Parser;
+};
+
+function checksumValid(o, data)
+{
+    // X,Y = stored checksum -- A,B = calculated checksum
+    var sumX  = (data[o + 28] << 8) + data[o + 29],
+        sumY  = (data[o + 30] << 8) + data[o + 31],
+        sumA  = 0,
+        sumB  = 0xFFF2;
+        
+    for(var i = 0; i < 28; i += 2)
+    {
+        sumA += (data[o + i] << 8) + data[o + i + 1];
+        sumA &= 0xFFFF;
+    }
+    
+    sumB -= sumA;
+    
+    // Repair corrupt DexDrive checksums
+    if(sumX === sumA && sumY !== sumB)
+    {
+        sumY ^= 0xC;
+        data[o + 31] ^= 0xC;
+    }
+    
+    return (sumX === sumA && sumY === sumB);
+};
+
+function allNotesExist(fileIndexes, pageIndexes)
+{
+    // Check if Note indexes exist in indexTable
+    for(var i = 0, testPassed = false; i < 16; i++)
+    {
+        if(fileIndexes.sort().toString() === pageIndexes.sort().toString())
+        {
+            testPassed = true;
+        }
+    }
+    
+    return testPassed;
+};
+
+function addError(errorName, errorReport)
+{
+    if(errorReport.types.indexOf(errorName) === -1)
+    {
+        errorReport.types.push(errorName);
+    }
+
+    errorReport.count++;
+};
+
+window.addEventListener("dragover", cancelEventAction);
+window.addEventListener("drop",     dropHandler);
