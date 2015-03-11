@@ -49,14 +49,142 @@ function readData(evt)
         data = data.subarray(0x1040);
     }
     
-    if(checksumValid(0x20, data))
+    if(typeof MPK !== 'undefined' && data.subarray(32).length % 256 === 0 && 0xCAFE === (data[6]<<8) + data[7] && data[10] === 0 && data[11] === 0)
+    {
+        var note  = data.subarray(0, 32);
+        var gdata = data.subarray(32);
+        var pages = gdata.length / 256;
+        
+        if(MPK.Pages.pageCount + pages <= 123 && MPK.Notes.noteCount < 16){
+            
+            var slotsToUse = [];
+            
+            for(var i = 0xA; i < 0x100; i += 2)
+            {
+                if(slotsToUse.length == pages)
+                {
+                    break;
+                }
+                if(MPK.data[0x100 + i + 1] === 3)
+                {
+                    slotsToUse.push((i) / 2);
+                }
+            }
+            
+            note[6] = 0; note[7] = slotsToUse[0];
+            for(var i = 0; i < slotsToUse.length; i++)
+            {   
+                var dest1 = 0x100 + (slotsToUse[i] * 2) + 1;
+                var dest2 = 0x100 * slotsToUse[i];
+                var dest3 = 0x100 * i;
+                
+                if(i === slotsToUse.length-1)
+                {
+                    MPK.data[dest1] = 0x01;
+                    
+                } else {
+                    MPK.data[dest1] = slotsToUse[i+1];
+                }
+                
+                for(var j = 0; j < 0x100; j++)
+                {
+                    MPK.data[dest2+j] = gdata[dest3+j];
+                }
+                
+            }
+            
+            for(var i = 0; i < 16; i++)
+            {
+                if(MPK.Notes[i] === undefined)
+                {
+                    var dest = 0x300 + i*32;
+                    for(var j = 0; j < 32; j++)
+                    {
+                        MPK.data[dest+j] = note[j];
+                    }
+                    break;
+                }
+            }
+            
+            for(var i = 0x10A, sum = 0; i < 0x200; i++)
+            {
+                sum += MPK.data[i];
+            }
+            MPK.data[0x101] = sum & 0xFF;
+            
+            var MemPak = readMemPak(MPK.data, MPK.filename);
+            if(MemPak) {
+                window.MPK = MemPak;
+                doit(MemPak);
+                console.log(MemPak);
+            }
+        } else { console.log("Not enough space!");}
+    }
+    else if(checksumValid(0x20, data))
     {
         var MemPak = readMemPak(data, evt.target.name);
         if(MemPak) {
+            window.MPK = MemPak;
+            doit(MemPak);
             console.log(MemPak);
         }
     }
 };
+
+function doit(MemPak)
+{
+    var str = "<b style='border-bottom:1px solid'>"+MemPak.filename+"</b>";
+    for(var i = 0; i < 16; i++)
+    {
+           str += "<div></div>";
+        if(MemPak.Notes[i] !== undefined)
+        {
+            str += "<div>"+i+" DATA</div>";
+        } else
+        {
+            str += "<div>"+i+"</div>";
+        }
+    }
+    document.body.innerHTML = str+"<hr><br>";
+}
+
+function exportNote(id, MemPak, data)
+{
+        if(MemPak.Notes[id] == undefined)
+        {
+            return false;
+        }
+        var file = [], x = MemPak.Pages[MemPak.Notes[id].initialIndex];
+        
+        for(var i = 0; i < 32; i++)
+        {
+            file.push(data[0x300 + (id * 32) + i]);
+        }
+        
+        for(i = 0; i < x.length; i++)
+        {
+            var addr = x[i] * 0x100;
+            for(var j = 0; j < 0x100; j++)
+            {
+                file.push(data[addr + j]);
+            }
+        }
+        file[6] = 0xCA; file[7] = 0xFE;
+    var A = document.createElement('a');
+        A.download = "_out.bin";
+        A.href = "data:application/octet-stream;base64," +
+                btoa(String.fromCharCode.apply(null, file));
+        A.dispatchEvent(new MouseEvent('click'));
+}
+
+function exportPak(MemPak)
+{
+    var A = document.createElement('a');
+        A.download = "out.mpk";
+        A.href = "data:application/octet-stream;base64," +
+                btoa(String.fromCharCode.apply(null, MemPak.data));
+        A.dispatchEvent(new MouseEvent('click'));
+}
 
 function readMemPak(data, filename)
 {
@@ -97,6 +225,7 @@ function readMemPak(data, filename)
 
     return {
         filename: filename,
+        data: data,
         Notes: noteTable.noteTable,
         Pages: indexTable.Inodes
     };
