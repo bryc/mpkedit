@@ -83,6 +83,15 @@ function readMemPak(data, filename)
     var indexTable  = parseIndexTable(data, false);
     var indexTable2 = parseIndexTable(data, true); // TODO: Check Backup...
     
+    if(indexTable.error.count > 0 && indexTable2.error.count === 0)
+    {
+        for(var i = 0; i < 0x100; i++)
+        {
+            data[0x100 + i] = data[0x200 + i];
+        }
+        indexTable = parseIndexTable(data, false);
+    }
+    
     var ErrorReport = {
         "types" : noteTable.error.types.concat(indexTable.error.types),
         "count" : noteTable.error.count + indexTable.error.count
