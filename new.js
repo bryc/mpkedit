@@ -139,7 +139,8 @@ function doit(MemPak)
            str += "<div></div>";
         if(MemPak.Notes[i] !== undefined)
         {
-            str += "<div>"+i+" DATA</div>";
+            str += "<div>"+i+" "+MemPak.Notes[i].gameCode+"</div>";
+            
         } else
         {
             str += "<div>"+i+"</div>";
@@ -148,7 +149,7 @@ function doit(MemPak)
     document.body.innerHTML = str+"<hr><br>";
 }
 
-function exportNote(id, MemPak, data)
+function exportNote(id, MemPak)
 {
         if(MemPak.Notes[id] == undefined)
         {
@@ -158,7 +159,7 @@ function exportNote(id, MemPak, data)
         
         for(var i = 0; i < 32; i++)
         {
-            file.push(data[0x300 + (id * 32) + i]);
+            file.push(MemPak.data[0x300 + (id * 32) + i]);
         }
         
         for(i = 0; i < x.length; i++)
@@ -166,12 +167,12 @@ function exportNote(id, MemPak, data)
             var addr = x[i] * 0x100;
             for(var j = 0; j < 0x100; j++)
             {
-                file.push(data[addr + j]);
+                file.push(MemPak.data[addr + j]);
             }
         }
         file[6] = 0xCA; file[7] = 0xFE;
     var A = document.createElement('a');
-        A.download = "_out.bin";
+        A.download = MemPak.Notes[id].gameCode+"_out.bin";
         A.href = "data:application/octet-stream;base64," +
                 btoa(String.fromCharCode.apply(null, file));
         A.dispatchEvent(new MouseEvent('click'));
@@ -348,7 +349,8 @@ function parseNoteTable(data)
             Parser.noteTable.noteCount++;
             
             Parser.noteTable[(i - 0x300) / 32] = {
-                "initialIndex": p
+                "initialIndex": p,
+                "gameCode": String.fromCharCode(data[i],data[i+1],data[i+2],data[i+3])
             };
         }
     }
