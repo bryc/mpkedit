@@ -1,40 +1,20 @@
 /*
-MAR.11.15 - I guess I lost some recent changes to
-the code.
-
-readMemPak
- * Restore valid backup Inodes
- * Repair Inode checksums
- * Replace indexTable with indexTable2.
- * Recheck everything before continuing.
-
- That should be the LAST validation task.
-
- From then on, we can work on the "file loaded"
- state. We need to implement note export/import!
+ We need to implement note export/import!
 
  Also would be nice to generate empty MPK
  from scratch.
-
 -----
-
 Once file is loaded and valid, we should copy
 valid header checksum to other slots.
-
 -----
-
 Look into functions: 
 parseNoteTable, parseIndexTable
-
 --------
-
 It will be important that the program can recreate INODE and NOTE tables, from
 the parsed data. Being able to wipe it, or initialize it may also be important.
-
 -------
-
 When performing a modification or saving
-    1. Update indexTable checksum
+    1. Update inodeTable checksum
     2. Update backup
     3. Resize file to 32768
 */
@@ -53,7 +33,7 @@ function dropHandler(evt)
         var reader    = new FileReader();
         reader.name   = evt.dataTransfer.files[i].name;
         reader.onload = readData;
-        // For DexDrive we have to read more than 32768 bytes
+        // For DexDrive support we must read 36928 instead of 32768
         reader.readAsArrayBuffer(evt.dataTransfer.files[i].slice(0, 36928));
     }
     evt.preventDefault();
@@ -69,11 +49,12 @@ function readData(evt)
         data = data.subarray(0x1040);
     }
     
-    // Don't do anything unless checksum is valid
     if(checksumValid(0x20, data))
     {
         var MemPak = readMemPak(data, evt.target.name);
-        if(MemPak){console.log(MemPak)}
+        if(MemPak) {
+            console.log(MemPak);
+        }
     }
 };
 
@@ -81,8 +62,9 @@ function readMemPak(data, filename)
 {
     var noteTable   = parseNoteTable(data);
     var indexTable  = parseIndexTable(data, false);
-    var indexTable2 = parseIndexTable(data, true); // TODO: Check Backup...
+    var indexTable2 = parseIndexTable(data, true);
     
+    // If main indexTable corrupt but backup is valid, restore it.
     if(indexTable.error.count > 0 && indexTable2.error.count === 0)
     {
         for(var i = 0; i < 0x100; i++)
@@ -122,21 +104,22 @@ function readMemPak(data, filename)
 
 function parseIndexTable(data, readBackup)
 {
-    var o = readBackup ? 0x200 : 0x100,
-        a = [],
-        b = [],
-        usedPages = 0,
-        Parser = {
-            "noteCount": 0,
+    var Parser = {
             "error": {
                 "types":[],
                 "count": 0
-                },
+            },
             "indexes": [],
+            "noteCount": 0,
             "Inodes": {"pageCount" : 0}
-        };
-        
-    // Check the IndexTable
+    };
+    
+    var o = readBackup ? 0x200 : 0x100,
+        a = [],
+        b = [],
+        usedPages = 0;
+    
+    // Loop over the IndexTable
     for(var i = o + 0xA; i < o + 0x100; i += 2)
     {
         var p  = data[i + 1],
@@ -170,9 +153,9 @@ function parseIndexTable(data, readBackup)
             c        = 0,
             p        = keyPages[i];
             
-        while (p === 1 || p >= 5 && p <= 127 && c <= usedPages)
+        while(p === 1 || p >= 5 && p <= 127 && c <= usedPages)
         {
-            if (indexes.indexOf(p) !== -1)
+            if(indexes.indexOf(p) !== -1)
             {
                 addError("InfiniteLoopInSequence", Parser.error);
                 break;
@@ -211,13 +194,13 @@ function parseIndexTable(data, readBackup)
 function parseNoteTable(data)
 {
     var Parser = {
-        "error": {
-            "types":[],
-            "count": 0
+            "error": {
+                "types":[],
+                "count": 0
             },
-        "indexes": [],
-        "noteTable": {"noteCount": 0}
-        };
+            "indexes": [],
+            "noteTable": {"noteCount": 0}
+    };
         
     // Loop over NoteTable
     for(var i = 0x300; i < 0x500; i += 32)
@@ -227,7 +210,7 @@ function parseNoteTable(data)
             
         if(p >= 5 && p <= 127 && a === 0 && b === 0 && c === 0)
         {
-            if (Parser.indexes.indexOf(p) !== -1)
+            if(Parser.indexes.indexOf(p) !== -1)
             {
                 addError("DuplicateFileFound", Parser.error);
             }
@@ -272,7 +255,7 @@ function checksumValid(o, data)
 
 function allNotesExist(fileIndexes, pageIndexes)
 {
-    // Check if Note indexes exist in indexTable
+    // Check if fileIndexes and pageIndexes are equal
     for(var i = 0, testPassed = false; i < 16; i++)
     {
         if(fileIndexes.sort().toString() === pageIndexes.sort().toString())
