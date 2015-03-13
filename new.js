@@ -213,6 +213,7 @@ function doit(MemPak)
         elem(["h2",MemPak.filename]),
         elem(["span",MemPak.pageCount + " / 123"]),
         elem(["button",{innerHTML:"Save MPK", onclick: exportPak}]),
+        elem(["input",{type:"file", multiple:true, onchange: dropHandler}]),
         table));
 }
 
@@ -483,14 +484,15 @@ function dropHandler(evt)
 {
     // If length is zero, there are no files and this loop WON'T occur
     // If only reading one file, checking length is necessary
-
-    for(var i = 0; i < evt.dataTransfer.files.length; i++)
+    var files = this.files || evt.dataTransfer.files;
+    
+    for(var i = 0; i < files.length; i++)
     {
         var reader    = new FileReader();
-        reader.name   = evt.dataTransfer.files[i].name;
+        reader.name   = files[i].name;
         reader.onload = readData;
         // For DexDrive support we must read 36928 instead of 32768
-        reader.readAsArrayBuffer(evt.dataTransfer.files[i].slice(0, 36928));
+        reader.readAsArrayBuffer(files[i].slice(0, 36928));
     }
     evt.preventDefault();
 };
