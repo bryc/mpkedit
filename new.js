@@ -38,6 +38,12 @@ function readMemPak(data, filename)
         indexTable = parseIndexTable(data, false);
     }
     
+    for(var i = 0x10A, sum = 0; i < 0x200; i++)
+    {
+        sum += data[i];
+    }
+    data[0x101] = sum & 0xFF;
+        
     var ErrorReport = {
         "types" : noteTable.error.types.concat(indexTable.error.types),
         "count" : noteTable.error.count + indexTable.error.count
@@ -125,12 +131,6 @@ function importNotes(data, MemPak)
                 break;
             }
         }
-        
-        for(var i = 0x10A, sum = 0; i < 0x200; i++)
-        {
-            sum += MemPak.data[i];
-        }
-        MemPak.data[0x101] = sum & 0xFF;
         
         var pak = readMemPak(MemPak.data, MemPak.filename);
         updateMPK(pak);
