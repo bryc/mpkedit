@@ -20,7 +20,7 @@ function readData(evt)
     {
         importNotes(data, MPK);
     }
-};
+}
 
 function readMemPak(data, filename)
 {
@@ -67,7 +67,7 @@ function readMemPak(data, filename)
         noteCount: noteTable.noteCount,
         pageCount: indexTable.pageCount
     };
-};
+}
 
 function importNotes(data, MemPak)
 {
@@ -205,8 +205,7 @@ function doit(MemPak)
             tr.childNodes[1].colSpan = 3;
             tr.style.opacity = 0.5;
         }
-        tr.app
-
+        
         table.appendChild(tr);
     }
     document.body =(elem(["body"], 
@@ -280,7 +279,7 @@ function parseIndexTable(data, readBackup)
     });
     
     // Parse Index Sequences
-    Parser.noteCount = keyPages.length, 
+    Parser.noteCount = keyPages.length; 
     Parser.indexes   = keyPages;
     
     for(var i = 0; i < keyPages.length; i++)
@@ -326,7 +325,7 @@ function parseIndexTable(data, readBackup)
     }
     
     return Parser;
-};
+}
 
 function parseNoteTable(data,f)
 {
@@ -378,7 +377,7 @@ function parseNoteTable(data,f)
     }
 
     return Parser;
-};
+}
 
 function checksumValid(o, data)
 {
@@ -404,14 +403,14 @@ function checksumValid(o, data)
     }
     
     return (sumX === sumA && sumY === sumB);
-};
+}
 
 function exportNote(id, MemPak)
 {
         id = this.id || id;
         MemPak = MPK || MemPak;
 
-        if(MemPak.Notes[id] == undefined)
+        if(MemPak.Notes[id] === undefined)
         {
             return false;
         }
@@ -463,7 +462,7 @@ function allNotesExist(fileIndexes, pageIndexes)
     }
     
     return testPassed;
-};
+}
 
 function addError(errorName, errorReport)
 {
@@ -473,12 +472,12 @@ function addError(errorName, errorReport)
     }
 
     errorReport.count++;
-};
+}
 
 function cancelEventAction(evt)
 {
     evt.preventDefault();
-};
+}
 
 function dropHandler(evt)
 {
@@ -495,7 +494,7 @@ function dropHandler(evt)
         reader.readAsArrayBuffer(files[i].slice(0, 36928));
     }
     evt.preventDefault();
-};
+}
 
 function isNote(data)
 {
