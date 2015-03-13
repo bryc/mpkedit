@@ -191,7 +191,7 @@ function doit(MemPak)
         {
             var iu = MemPak.Notes[i].gameCode;
             tr.appendChild(elem(["td"]));
-            tr.childNodes[1].textContent = codes[iu] || iu;
+            tr.childNodes[1].innerHTML = MemPak.Notes[i].noteName+"<br><i>" + (codes[iu] || iu) + "</i>";
             tr.childNodes[2].textContent = MemPak.Pages[MemPak.Notes[i].initialIndex].length;
 
             tr.appendChild(elem(["td"],
@@ -366,11 +366,24 @@ function parseNoteTable(data,f)
                 addError("DuplicateFileFound", Parser.error);
             }
             
+            for(var k = 0,name=""; k < 16; k++)
+            {
+                name += n64code[data[i + 16 + k]];
+            }
+            if(data[i + 12] !== 0)
+            {
+                name += "." + n64code[data[i + 12]];
+                name += n64code[data[i + 13]];
+                name += n64code[data[i + 14]];
+                name += n64code[data[i + 15]];
+            }
+            
             Parser.indexes.push(p);
             Parser.noteCount++;
             
             Parser.noteTable[(i - 0x300) / 32] = {
                 "initialIndex": p,
+                "noteName": name,
                 "gameCode": String.fromCharCode(data[i],data[i+1],data[i+2],data[i+3])
             };
         }
