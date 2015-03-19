@@ -10,6 +10,13 @@ function readData(evt)
     
     if(checksumValid(0x20, data))
     {
+        var data2 = new Uint8Array(32768);
+        for(var i = 0; i < data.length; i++)
+        {
+            data2[i] = data[i];
+        }
+        data = data2;
+        
         var MemPak = readMemPak(data, evt.target.name);
         updateMPK(MemPak);
     }
