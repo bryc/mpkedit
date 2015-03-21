@@ -355,11 +355,6 @@ function exportNote()
     var id     = this.id;
     var MemPak = $MPK;
 
-    if(MemPak.Notes[id] === undefined)
-    {   alert("TEST - TEST - TEST");
-        return false;
-    }
-
     var file = [], x = MemPak.Pages[MemPak.Notes[id].initialIndex];
     
     // Get Note Header
