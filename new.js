@@ -493,7 +493,7 @@ function exportPak()
 {
     var MemPak = $MPK;
     var A = document.createElement("a");
-    A.download = MemPak.filename + ".mpk";
+    A.download = MemPak.filename.replace(".n64",".mpk");
     A.href = "data:application/octet-stream;base64," +
             btoa(String.fromCharCode.apply(null, MemPak.data));
     A.dispatchEvent(new MouseEvent("click"));
