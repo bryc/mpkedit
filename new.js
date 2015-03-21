@@ -584,14 +584,11 @@ function elem()
     return elmnt;
 };
 
-function cancelEventAction(evt)
-{
-    evt.preventDefault();
-}
-
 window.addEventListener("load",function()
 {
-    window.addEventListener("dragover", cancelEventAction);
+    window.addEventListener("dragover", function(evt){
+        evt.preventDefault();
+    });
     window.addEventListener("drop",     dropHandler);
     
     // Very lazy MPK initializer
