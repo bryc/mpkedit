@@ -8,7 +8,7 @@ function readData(evt)
         data = data.subarray(0x1040);
     }
     
-    if(checksumValid(0x20, data))
+    if(check(0x20, data))
     {
         var data2 = new Uint8Array(32768);
         for(var i = 0; i < data.length; i++)
@@ -415,13 +415,12 @@ function updateMPK(MemPak)
     }
 }
 
-function checksumValid(o, data)
+function check(o, data)
 {
     // X,Y = stored checksum -- A,B = calculated checksum
     var sumX  = (data[o + 28] << 8) + data[o + 29],
         sumY  = (data[o + 30] << 8) + data[o + 31],
-        sumA  = 0,
-        sumB  = 0xFFF2;
+        sumA  = 0, sumB  = 0xFFF2;
         
     for(var i = 0; i < 28; i += 2)
     {
@@ -432,7 +431,7 @@ function checksumValid(o, data)
     sumB -= sumA;
     
     // Repair corrupt DexDrive checksums
-    if(sumX === sumA && sumY !== sumB)
+    if(sumX === sumA && (sumY ^ 0x0C) === sumB)
     {
         sumY ^= 0xC;
         data[o + 31] ^= 0xC;
