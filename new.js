@@ -28,6 +28,9 @@ function readData(evt)
 
 function readMemPak(data, filename)
 {
+    var headrChk = headerCheck(data);
+    if(!headrChk) { return false; }
+    
     var noteTable   = parseNoteTable(data, filename);
     var indexTable  = parseIndexTable(data, false);
     var indexTable2 = parseIndexTable(data, true);
@@ -282,7 +285,7 @@ function parseIndexTable(data, readBackup)
     return Parser;
 }
 
-function parseNoteTable(data)
+function parseNoteTable(data, filename)
 {
     var Parser = {
             "error": {
@@ -310,13 +313,12 @@ function parseNoteTable(data)
  
         if(zerosOK && rangeOK && codesOK)
         {
-            if(_pq === 0)
+            if( (data[i + 0x08] & 0x02) === 0)
             {
-                console.log("Fixing companyCode");
-                data[i + 0x05] = 0x01;
+                console.log("INFO: Fixing 0x08:0x02 bit in (%s) %s", (i - 0x300) / 32, filename);
+                data[i + 0x08] |= 0x02;
             }
-            data[i + 0x08] |= 0x02;
-
+            
             if(Parser.indexes.indexOf(p) !== -1)
             {
                 addError("DuplicateFileFound", Parser.error);
@@ -438,6 +440,31 @@ function check(o, data)
     }
     
     return (sumX === sumA && sumY === sumB);
+}
+
+function headerCheck(data)
+{
+    var loc = [0x20, 0x60, 0x80, 0xC0];
+    
+    for(var i = 0; i < loc.length; i++)
+    {
+        var key = loc[i], chk = check(key, data);
+        
+        // Detect and replace invalid locations
+        if(i>0 && loc[0] === true && chk === false)
+        {
+            //console.log("INFO: Replacing header_checksum at %s", key);
+            for(var j = 0; j < 32; j++)
+            {
+                data[key + j] = data[0x20 + j];
+            }
+            chk = check(key, data)
+        }
+        
+        loc[i] = chk;
+    }
+    
+    return loc[0] && loc[1] && loc[2] && loc[3];
 }
 
 function delNote()
