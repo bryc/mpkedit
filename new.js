@@ -340,9 +340,10 @@ function parseNoteTable(data, filename)
             Parser.noteCount++;
             
             Parser.noteTable[(i - 0x300) / 32] = {
-                "initialIndex": p,
-                "noteName": name,
-                "gameCode": String.fromCharCode(data[i],data[i+1],data[i+2],data[i+3])
+                "initialIndex":  p,
+                "noteName":      name,
+                "gameCode":      String.fromCharCode(data[i],data[i+1],data[i+2],data[i+3]),
+                "publisherCode": String.fromCharCode(data[i+4],data[i+5])
             };
         }
     }
