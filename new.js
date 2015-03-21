@@ -165,10 +165,19 @@ function createUI(MemPak)
 
         if(MemPak.Notes[i] !== undefined)
         {
-            var iu = MemPak.Notes[i].gameCode;
+            var iu = MemPak.Notes[i].gameCode, name;
+            
+            if(typeof codeDB !== "undefined")
+            {
+                name = codeDB[iu] ? codeDB[iu] : iu;
+            }
+            else
+            {
+                name = MemPak.Notes[i].gameCode;
+            }
 
             tr.appendChild(elem(["td"]));
-            tr.childNodes[1].innerHTML = MemPak.Notes[i].noteName + "<br><i>" + (codes[iu] || iu) + "</i>";
+            tr.childNodes[1].innerHTML = MemPak.Notes[i].noteName + "<br><i>" + name + "</i>";
             tr.childNodes[2].textContent = MemPak.Pages[MemPak.Notes[i].initialIndex].length;
 
             tr.appendChild(elem(["td"],
