@@ -5,6 +5,7 @@ Allows you to open N64 Controller Pak files, as well as import DexDrive saves, a
 * Parses the filesystem verbosely, catching errors without needing to rely on the Inode checksum
 * DexDrive (*.n64) support - saves as standard .mpk
 * Export, Import and Delete notes
+* Game code database - automatically identifies game save
 
 *<div align=right>(wip) bryc | https://github.com/bryc/mempak | 2015</div>*
 #**N64 Controller Pak Binary Format**
