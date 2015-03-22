@@ -400,7 +400,7 @@ function exportNote()
     }
 
     var iu   = MemPak.Notes[id].gameCode;
-    var name = codes[iu] ? codes[iu] : iu;
+    var name = typeof codeDB !== "undefined" && codeDB[iu] ? codeDB[iu] : iu;
 
     var A = document.createElement("a");
     A.download = name + "_" + crc32(file) + "_note.bin";
