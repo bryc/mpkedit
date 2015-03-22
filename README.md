@@ -43,9 +43,11 @@ It is used to define which pages are free and which pages are used by any notes 
 
 Code    |  Purpose
 --------|------------
-`0x0001`  | "Last page in sequence"
+`0x0001`  | "Used, Last page in sequence"
 `0x0003`  | "Free page"
-`0x0005` to `0x007F`  | "Next page in sequence"
+`0x0005` to `0x007F`  | "Used, Next page in sequence"
+
+If the value is `0x01` or `0x05-0x7F`, then that page is in use. `0x01` means that it is the last page of a sequence, and any digit from `0x05-0x7F` specify the next page in the sequence. The first page of a sequence is defined in the Note Table.
 
 ###**Page 2: Inode table, backup (`0x0200 – 0x02FF`)**
 
@@ -61,7 +63,7 @@ Offset        | Description
 `0x00`:`0x03` | Game ID (ASCII, e.g. "NSME")
 `0x04`:`0x05` | Publisher code, (ASCII, e.g. "01")
 `0x06`        | Part of Inode start address? Must be `0x00`
-`0x07`        | Inode start address
+`0x07`        | Inode start address (First page in sequence)
 `0x08`        | Unknown, typically needs to be set to `0x02` to be read by a game
 `0x09`        | Unknown, might be game-specific? `0x03` is common
 `0x0A`        | Typically set to `0x00`
@@ -74,6 +76,6 @@ Offset        | Description
 
 ###**Page 5: First game data page (`0x0500 – 0x05FF`)**
 
-Pages 5 to 127 are reserved for game save data. It is all variable. The data is
+Pages 5 to 127 are reserved for game save data. It has no context, it is just raw streams of bytes. The data is
 accessed through the Inode table, which determines which blocks of data are “free”
 or “used” by a game.
