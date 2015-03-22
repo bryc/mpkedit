@@ -8,6 +8,11 @@ Allows you to open N64 Controller Pak files, as well as import DexDrive saves, a
 * Export, Import and Delete notes
 * Game code database - automatically identifies game save
 
+[Try it](https://cdn.rawgit.com/bryc/mempak/master/index.html)
+
+
+
+
 *<div align=right>(wip) bryc | https://github.com/bryc/mempak | 2015</div>*
 #**N64 Controller Pak Binary Format**
 
