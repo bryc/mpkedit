@@ -8,7 +8,7 @@ function readData(evt)
         data = data.subarray(0x1040);
     }
     
-    if(check(0x20, data))
+    if(headerCheck(data))
     {
         var data2 = new Uint8Array(32768);
         for(var i = 0; i < data.length; i++)
@@ -465,18 +465,24 @@ function check(o, data)
 function headerCheck(data)
 {
     var loc = [0x20, 0x60, 0x80, 0xC0];
+    var loc2 = -1;
+    for(var i = 0; i < loc.length; i++)
+    {
+        var chk = check(loc[i], data);
+        if(chk) { loc2 = loc[i]; }
+    }
     
     for(var i = 0; i < loc.length; i++)
     {
         var key = loc[i], chk = check(key, data);
         
         // Detect and replace invalid locations
-        if(i>0 && loc[0] === true && chk === false)
+        if(loc2 > -1 && chk === false)
         {
             //console.log("INFO: Replacing header_checksum at %s", key);
             for(var j = 0; j < 32; j++)
             {
-                data[key + j] = data[0x20 + j];
+                data[key + j] = data[loc2 + j];
             }
             chk = check(key, data)
         }
