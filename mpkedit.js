@@ -50,6 +50,7 @@ function readMemPak(data, filename)
     {
         sum += data[i];
     }
+
     data[0x101] = sum & 0xFF;
         
     var ErrorReport = {
@@ -99,6 +100,7 @@ function importNotes(data, MemPak)
             {
                 break;
             }
+
             if(MemPak.data[0x100 + i + 1] === 3)
             {
                 slotsToUse.push((i) / 2);
@@ -142,7 +144,6 @@ function importNotes(data, MemPak)
         
         var newPak = readMemPak(MemPak.data, MemPak.filename);
         updateMPK(newPak);
-
     } else {
         alert("Requires " + pages + " Pages. There's only " + (123 - MemPak.pageCount) + " left.");
     }
@@ -170,24 +171,20 @@ function createUI(MemPak)
             if(typeof codeDB !== "undefined")
             {
                 name = codeDB[iu] ? codeDB[iu] : iu;
-            }
-            else
-            {
+            } else {
                 name = MemPak.Notes[i].gameCode;
             }
 
             tr.appendChild(elem(["td"]));
-            tr.childNodes[1].innerHTML = MemPak.Notes[i].noteName + "<br><i>" + name + "</i>";
+            tr.childNodes[1].innerHTML   = MemPak.Notes[i].noteName + "<br><i>" + name + "</i>";
             tr.childNodes[2].textContent = MemPak.Pages[MemPak.Notes[i].initialIndex].length;
 
             tr.appendChild(elem(["td"],
-                elem(["button",{id:i, innerHTML:"Delete", onclick: delNote}]),
-                elem(["button",{id:i, innerHTML:"Export", onclick: exportNote}])
+                elem(["button", {id: i, textContent: "Delete", onclick: delNote}]),
+                elem(["button", {id: i, textContent: "Export", onclick: exportNote}])
             ));
             
-        }
-        else
-        {
+        } else {
             tr.childNodes[1].textContent = "~";
             tr.childNodes[1].colSpan = 3;
             tr.style.opacity = 0.5;
@@ -197,32 +194,26 @@ function createUI(MemPak)
     }
 
     document.body = (elem(["body"], 
-        elem(["h2",MemPak.filename]),
-        elem(["span",MemPak.pageCount + " / 123"]),
-        elem(["button",{innerHTML:"Save MPK", onclick: exportPak}]),
-        elem(["input",{type:"file", multiple:true, onchange: dropHandler}]),
+        elem(["h2", MemPak.filename]),
+        elem(["span", MemPak.pageCount + " / 123"]),
+        elem(["button", {textContent: "Save MPK", onclick: exportPak}]),
+        elem(["input", {type: "file", multiple: true, onchange: dropHandler}]),
         table));
 }
 
 function parseIndexTable(data, readBackup)
 {
-    var Parser = {
-            "error": {
-                "types":[],
-                "count": 0
-            },
-            "indexes": [],
-            "noteCount": 0,
-            "pageCount" : 0,
-            "Inodes": {}
-    };
-    
-    var o = readBackup ? 0x200 : 0x100,
-        a = [],
-        b = [],
-        usedPages = 0;
-    
+    var Parser = {};
+        Parser.error     = {types: [], count: 0};
+        Parser.indexes   = [];
+        Parser.noteCount = 0;
+        Parser.pageCount = 0;
+        Parser.Inodes    = {};
+
     // Loop over the IndexTable
+    var a = [], b = [], usedPages = 0,
+        o = readBackup ? 0x200 : 0x100;
+
     for(var i = o + 0xA; i < o + 0x100; i += 2)
     {
         var p  = data[i + 1],
@@ -232,6 +223,7 @@ function parseIndexTable(data, readBackup)
         {
             addError("IndexTableCorrupt", Parser.error);
         }
+
         if(p === 1 || p !== 3 && p >= 5 && p <= 127)
         {
             a.push( (i - o) / 2 );
@@ -245,16 +237,16 @@ function parseIndexTable(data, readBackup)
         return b.indexOf(n) === -1;
     });
     
-    // Parse Index Sequences
     Parser.noteCount = keyPages.length; 
     Parser.indexes   = keyPages;
-    
+
+    // Parse Index Sequences
     for(var i = 0; i < keyPages.length; i++)
     {
         var indexes  = [],
             foundEnd = false,
-            c        = 0,
-            p        = keyPages[i];
+            p        = keyPages[i],
+            c        = 0;
             
         while(p === 1 || p >= 5 && p <= 127 && c <= usedPages)
         {
@@ -263,14 +255,16 @@ function parseIndexTable(data, readBackup)
                 addError("InfiniteLoopInSequence", Parser.error);
                 break;
             }
+
             if(p === 1)
             {
                 foundEnd = true;
                 break;
             }
+
             indexes.push(p);
             
-            p = data[ (p * 2) + o + 1 ];
+            p = data[(p * 2) + o + 1];
             c++;
         }
         
@@ -278,9 +272,7 @@ function parseIndexTable(data, readBackup)
         {
             Parser.Inodes[keyPages[i]] = indexes;
             Parser.pageCount += indexes.length;
-        }
-        else
-        {
+        } else {
             addError("NoEndInSequence", Parser.error);
             break;
         }
@@ -296,15 +288,11 @@ function parseIndexTable(data, readBackup)
 
 function parseNoteTable(data, filename)
 {
-    var Parser = {
-            "error": {
-                "types":[],
-                "count": 0
-            },
-            "indexes": [],
-            "noteCount": 0,
-            "noteTable": {}
-    };
+    var Parser = {};
+        Parser.error     = {types: [], count: 0};
+        Parser.indexes   = [];
+        Parser.noteCount = 0;
+        Parser.noteTable = {};
 
     var n64code = {0:"",3:"",15:"",16:"0",17:"1",18:"2",19:"3",20:"4",21:"5",22:"6",
     23:"7",24:"8",25:"9",26:"A",27:"B",28:"C",29:"D",30:"E",31:"F",32:"G",33:"H",
@@ -325,33 +313,29 @@ function parseNoteTable(data, filename)
     for(var i = 0x300; i < 0x500; i += 32)
     {
         var p = data[i + 0x07], a = data[i + 0x06],
-            b = data[i + 0x0A], c = data[i + 0x0B];
+            b = data[i + 0x0A], c = data[i + 0x0B],
 
-        var _pp = data[i + 0] + data[i + 1] + data[i + 2] + data[i + 3];
-        var _pq = data[i + 4] + data[i + 5];
-
-        var rangeOK = (p >= 5 && p <= 127);
-        var zerosOK = (a === 0 && b === 0 && c === 0);
-        var codesOK = true;
-
+            rangeOK = (p >= 5 && p <= 127),
+            zerosOK = (a === 0 && b === 0 && c === 0);
  
-        if(zerosOK && rangeOK && codesOK)
+        if(zerosOK && rangeOK)
         {
-            if( (data[i + 0x08] & 0x02) === 0)
+            if((data[i + 0x08] & 0x02) === 0)
             {
-                console.log("INFO: Fixing 0x08:0x02 bit in (%s) %s", (i - 0x300) / 32, filename);
+                console.log("INFO: Fixing bit 0x08:2(%s) in %s", (i - 0x300) / 32, filename);
                 data[i + 0x08] |= 0x02;
             }
             
             if(Parser.indexes.indexOf(p) !== -1)
             {
-                addError("DuplicateFileFound", Parser.error);
+                addError("DuplicateNoteFound", Parser.error);
             }
             
-            for(var k = 0,name=""; k < 16; k++)
+            for(var k = 0, name = ""; k < 16; k++)
             {
                 name += n64code[data[i + 16 + k]];
             }
+
             if(data[i + 12] !== 0)
             {
                 name += "." + n64code[data[i + 12]];
@@ -387,6 +371,7 @@ function exportNote()
     {
         file.push(MemPak.data[0x300 + (id * 32) + i]);
     }
+
     file[6] = 0xCA; file[7] = 0xFE;
 
     // Get Page Data
@@ -415,7 +400,6 @@ function dropHandler(evt)
 
     // If length is zero, there are no files and this loop WON'T occur
     // If only reading one file, checking length is necessary
-    
     for(var i = 0; i < files.length; i++)
     {
         var reader    = new FileReader();
@@ -466,6 +450,7 @@ function headerCheck(data)
 {
     var loc = [0x20, 0x60, 0x80, 0xC0];
     var loc2 = -1;
+
     for(var i = 0; i < loc.length; i++)
     {
         var chk = check(loc[i], data);
@@ -497,20 +482,21 @@ function delNote()
 {
     var id = parseInt(this.id, 10);
 
-    var YY = $MPK.Notes[id].initialIndex;
-    var YB = $MPK.Pages[YY];
-
+    // Mark Inodes as "Free"
+    var YY = $MPK.Notes[id].initialIndex, YB = $MPK.Pages[YY];
     for(var i = 0; i < YB.length; i++)
     {
         var dest1 = 0x100 + (YB[i] * 2) + 1;
         $MPK.data[dest1] = 0x03;
     }
 
+    // Delete Note Entry
     var dest = 0x300 + id * 32;
     for(var j = 0; j < 32; j++)
     {
         $MPK.data[dest+j] = 0x00;
     }
+
     var pak = readMemPak($MPK.data, $MPK.filename);
     updateMPK(pak);
 }
@@ -519,7 +505,7 @@ function exportPak()
 {
     var MemPak = $MPK;
     var A = document.createElement("a");
-    A.download = MemPak.filename.replace(".n64",".mpk");
+    A.download = MemPak.filename.replace(".n64", ".mpk");
     A.href = "data:application/octet-stream;base64," +
             btoa(String.fromCharCode.apply(null, MemPak.data));
     A.dispatchEvent(new MouseEvent("click"));
@@ -528,12 +514,12 @@ function exportPak()
 function allNotesExist(fileIndexes, pageIndexes)
 {
     // Check if noteTable and inodeTable report the same key nodes
-    for(var i = 0, testPassed = false; i < 16; i++)
-    {
-        if(fileIndexes.sort().toString() === pageIndexes.sort().toString())
-        {
-            testPassed = true;
-        }
+    // TODO: more efficient method?
+    var testPassed = false;
+
+    if(fileIndexes.sort().toString() === pageIndexes.sort().toString())
+    {   
+        testPassed = true;
     }
     
     return testPassed;
@@ -563,8 +549,7 @@ function crc32(data)
 {
     var table = new Uint32Array(256);var crc= -1;
     for (var i = 256; i--;) {
-        var tmp = i;
-        for (var k = 8; k--;) {
+        for (var k = 8, tmp = i; k--;) {
             tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
         }
         table[i] = tmp;
@@ -587,9 +572,7 @@ function elem()
     if(typeof tagName === "string")
     {
         elmnt = document.createElement(tagName);
-    }
-    else
-    {
+    } else {
         // use a doc fragment if no tag specified
         elmnt = document.createDocumentFragment();
     }
@@ -613,9 +596,7 @@ function elem()
         {
             // run a method with array of arguments
             method.apply(elmnt, prop[key]);
-        }
-        else
-        {
+        } else {
             elmnt[key] = prop[key]; 
         } 
     }
@@ -636,20 +617,16 @@ function elem()
     return elmnt;
 };
 
-window.addEventListener("load",function()
+window.addEventListener("load", function()
 {
     window.addEventListener("dragover", function(evt){
         evt.preventDefault();
     });
-    window.addEventListener("drop",     dropHandler);
+    window.addEventListener("drop", dropHandler);
     
     // Very lazy MPK initializer
     
-    $MPK = {
-        data: new Uint8Array(32768)
-    };
-    
-    var empty = [
+    var EMPTY_DATA = [
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -695,9 +672,11 @@ window.addEventListener("load",function()
         0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03
     ];
     
-    for(var i = 0; i < empty.length; i++)
+    $MPK = {data: new Uint8Array(32768)};
+
+    for(var i = 0; i < EMPTY_DATA.length; i++)
     {
-        $MPK.data[i] = empty[i];
+        $MPK.data[i] = EMPTY_DATA[i];
     }
     
     var newPak = readMemPak($MPK.data, "MemPak.mpk");
