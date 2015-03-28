@@ -2,25 +2,22 @@ function readData(evt)
 {
     var data = new Uint8Array(evt.target.result);
     
-    // Detect and remove DexDrive headers
-    if("123-456-STD" === String.fromCharCode.apply(null, data.subarray(0, 11)))
+    // Detect and remove DexDrive header
+    if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD")
     {
         data = data.subarray(0x1040);
     }
     
-    if(headerCheck(data))
+    if(headerCheck(data) === true)
     {
-        var data2 = new Uint8Array(32768);
-        for(var i = 0; i < data.length; i++)
-        {
-            data2[i] = data[i];
-        }
-        data = data2;
+        var _dat = new Uint8Array(32768);
+        for(var i = 0; i < data.length; i++) {_dat[i] = data[i];}
+        data = _dat;
         
         var MemPak = readMemPak(data, evt.target.name);
         updateMPK(MemPak);
     }
-    else if($MPK !== false && isNoteFile(data))
+    else if(typeof $MPK !== "undefined" && isNoteFile(data) == true)
     {
         importNotes(data, $MPK);
     }
