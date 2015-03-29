@@ -4,7 +4,7 @@ window.addEventListener("load", function()
     window.addEventListener("dragover", function(evt) {
         evt.preventDefault();
     });
-    window.addEventListener("drop", dropHandler);
+    window.addEventListener("drop", fileHandler);
     
     // Very lazy MPK initializer
     
@@ -65,7 +65,7 @@ window.addEventListener("load", function()
     updateMPK(newPak);
 });
 
-function dropHandler(evt)
+function fileHandler(evt)
 {
     var files = this.files || evt.dataTransfer.files;
 
@@ -279,7 +279,7 @@ function createUI(MemPak)
         elem(["h2", MemPak.filename]),
         elem(["span", MemPak.usedPages + " / 123"]),
         elem(["button", {textContent: "Save MPK", onclick: exportPak}]),
-        elem(["input", {type: "file", multiple: true, onchange: dropHandler}]),
+        elem(["input", {type: "file", multiple: true, onchange: fileHandler}]),
         table));
 }
 
