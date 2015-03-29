@@ -87,7 +87,8 @@ function fileHandler(evt)
 function readData(evt)
 {
     var i, _dat, data = new Uint8Array(evt.target.result);
-
+    window.readFilename = evt.target.name;
+    
     // Detect and remove DexDrive header
     if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD")
     {
@@ -114,7 +115,7 @@ function parseMPK(data, filename)
     var i, sum, ErrorReport;
     var headrChk = checkHeader(data);
 
-    var noteTable   = parseNoteTable(data, filename);
+    var noteTable   = parseNoteTable(data);
     var indexTable  = parseIndexTable(data, false);
     var indexTable2 = parseIndexTable(data, true);
 
@@ -375,7 +376,7 @@ function parseIndexTable(data, readBackup)
     return Parser;
 }
 
-function parseNoteTable(data, filename)
+function parseNoteTable(data)
 {
     var i, j, noteName, a, b, c, p, rangeOK, zerosOK;
 
@@ -413,7 +414,7 @@ function parseNoteTable(data, filename)
         {
             if((data[i + 0x08] & 0x02) === 0)
             {
-                console.log("INFO: Fixing bit 0x08:2(%s) in %s", (i - 0x300) / 32, filename);
+                console.log("INFO: Fixing bit 0x08:2(%s) in %s", (i - 0x300) / 32, window.readFilename);
                 data[i + 0x08] |= 0x02;
             }
 
