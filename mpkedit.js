@@ -140,14 +140,9 @@ function parseMPK(data, filename)
         "count" : noteTable.error.count + indexTable.error.count
     };
     
-    if(indexTable.noteCount !== noteTable.noteCount)
+    if(checkKeyIndexes(noteTable.indexes, indexTable.indexes) === false)
     {
-        addError("NoteCountMismatch", ErrorReport);
-    }
-    
-    if(allNotesExist(noteTable.indexes, indexTable.indexes) === false)
-    {
-        addError("NoteDoesNotExist", ErrorReport);
+        addError("KeyIndexesDoNotMatch", ErrorReport);
     }
     
     if(ErrorReport.count > 0)
@@ -278,7 +273,7 @@ function updateUI(MemPak)
     document.body = (elem(["body"], 
         elem(["h2", MemPak.filename]),
         elem(["span", MemPak.usedPages + " / 123"]),
-        elem(["button", {textContent: "Save MPK", onclick: exportPak}]),
+        elem(["button", {textContent: "Save MPK", onclick: exportMPK}]),
         elem(["input", {type: "file", multiple: true, onchange: fileHandler}]),
         table));
 }
@@ -556,7 +551,7 @@ function deleteNote()
     updateMPK(pak);
 }
 
-function exportPak()
+function exportMPK()
 {
     var MemPak = $MPK;
     var A = document.createElement("a");
@@ -566,18 +561,23 @@ function exportPak()
     A.dispatchEvent(new MouseEvent("click"));
 }
 
-function allNotesExist(fileIndexes, pageIndexes)
+function checkKeyIndexes(noteTableKeys, indexTableKeys)
 {
     // Check if noteTable and indexTable report the same key indexes
-    // TODO: more efficient method?
-    var testPassed = false;
-
-    if(fileIndexes.sort().toString() === pageIndexes.sort().toString())
+    if(noteTableKeys.length !== indexTableKeys.length) { return false; }
+    
+    var i, count;
+    
+    for(i = 0, count = 0; i < noteTableKeys.length; i++)
     {
-        testPassed = true;
+        if(noteTableKeys.indexOf(indexTableKeys[i]) > -1)
+        {
+             count++; 
+        }
+        else { return false; }
     }
     
-    return testPassed;
+    return true;
 }
 
 function isNoteFile(data)
