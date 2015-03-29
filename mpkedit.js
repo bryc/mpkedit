@@ -170,15 +170,15 @@ function importNotes(data, MemPak)
 {
     var note  = data.subarray(0, 32);
     var gdata = data.subarray(32);
-    var pages = gdata.length / 256;
+    var pageCount = gdata.length / 256;
 
-    if(MemPak.pageCount + pages <= 123 && MemPak.noteCount < 16){
+    if(MemPak.pageCount + pageCount <= 123 && MemPak.noteCount < 16){
         
         var slotsToUse = [];
         
         for(var i = 0xA; i < 0x100; i += 2)
         {
-            if(slotsToUse.length == pages)
+            if(slotsToUse.length == pageCount)
             {
                 break;
             }
@@ -227,7 +227,7 @@ function importNotes(data, MemPak)
         var newPak = readMemPak(MemPak.data, MemPak.filename);
         updateMPK(newPak);
     } else {
-        alert("Requires " + pages + " Pages. There's only " + (123 - MemPak.pageCount) + " left.");
+        alert("Requires " + pageCount + " Pages. There's only " + (123 - MemPak.pageCount) + " left.");
     }
 }
 
