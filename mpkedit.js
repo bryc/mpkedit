@@ -1,3 +1,4 @@
+/* jshint bitwise: false */
 window.addEventListener("load", function()
 {
     window.addEventListener("dragover", function(evt) {
@@ -101,7 +102,7 @@ function readData(evt)
         var MemPak = readMemPak(data, evt.target.name);
         updateMPK(MemPak);
     }
-    else if(typeof $MPK !== "undefined" && isNoteFile(data) == true)
+    else if(typeof $MPK !== "undefined" && isNoteFile(data) === true)
     {
         importNotes(data, $MPK);
     }
@@ -523,7 +524,7 @@ function headerCheck(data)
             {
                 data[key + j] = data[loc2 + j];
             }
-            chk = check(key, data)
+            chk = check(key, data);
         }
         
         loc[i] = chk;
@@ -678,4 +679,4 @@ function elem()
     }
 
     return elmnt;
-};
+}
