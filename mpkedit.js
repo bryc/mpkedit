@@ -1,14 +1,14 @@
-/* jshint bitwise: false */
 window.addEventListener("load", function()
 {
+    var i, EMPTY_DATA, newMPK, initMemPak;
+
     window.addEventListener("dragover", function(evt) {
         evt.preventDefault();
     });
     window.addEventListener("drop", fileHandler);
-    
+
     // Very lazy MPK initializer
-    
-    var EMPTY_DATA = [
+    EMPTY_DATA = [
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -53,27 +53,28 @@ window.addEventListener("load", function()
         0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03,
         0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03
     ];
-    
-    $MPK = {data: new Uint8Array(32768)};
 
-    for(var i = 0; i < EMPTY_DATA.length; i++)
+    initMemPak = {data: new Uint8Array(32768)};
+
+    for(i = 0; i < EMPTY_DATA.length; i++)
     {
-        $MPK.data[i] = EMPTY_DATA[i];
+        initMemPak.data[i] = EMPTY_DATA[i];
     }
-    
-    var newPak = parseMPK($MPK.data, "MemPak.mpk");
-    updateMPK(newPak);
+
+    newMPK = parseMPK(initMemPak.data, "MemPak.mpk");
+    updateMPK(newMPK);
 });
 
 function fileHandler(evt)
 {
+    var i, reader;
     var files = this.files || evt.dataTransfer.files;
 
     // If length is zero, there are no files and this loop WON'T occur
     // If only reading one file, checking length is necessary
-    for(var i = 0; i < files.length; i++)
+    for(i = 0; i < files.length; i++)
     {
-        var reader    = new FileReader();
+        reader        = new FileReader();
         reader.name   = files[i].name;
         reader.onload = readData;
 
@@ -85,66 +86,68 @@ function fileHandler(evt)
 
 function readData(evt)
 {
-    var data = new Uint8Array(evt.target.result);
-    
+    var i, _dat, data = new Uint8Array(evt.target.result);
+
     // Detect and remove DexDrive header
     if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD")
     {
         data = data.subarray(0x1040);
     }
-    
+
     if(checkHeader(data) === true)
     {
-        var _dat = new Uint8Array(32768);
-        for(var i = 0; i < data.length; i++) {_dat[i] = data[i];}
+        _dat = new Uint8Array(32768);
+        for(i = 0; i < data.length; i++) { _dat[i] = data[i]; }
         data = _dat;
-        
-        var MemPak = parseMPK(data, evt.target.name);
-        updateMPK(MemPak);
+
+        var newMPK = parseMPK(data, evt.target.name);
+        updateMPK(newMPK);
     }
-    else if(typeof $MPK !== "undefined" && isNoteFile(data) === true)
+    else if(typeof window.$MPK !== "undefined" && isNoteFile(data) === true)
     {
-        importNote(data, $MPK);
+        importNote(data, window.$MPK);
     }
 }
 
 function parseMPK(data, filename)
 {
+    var i, sum, ErrorReport;
     var headrChk = checkHeader(data);
-    if(!headrChk) { return false; }
-    
+
     var noteTable   = parseNoteTable(data, filename);
     var indexTable  = parseIndexTable(data, false);
     var indexTable2 = parseIndexTable(data, true);
-    
+
+    if(!headrChk) { return false; }
+
     // If main indexTable corrupt but backup is valid, restore it.
     if(indexTable.error.count > 0 && indexTable2.error.count === 0)
     {
-        for(var i = 0; i < 0x100; i++)
+        console.log("INFO: Restoring from backup in %s", filename);
+        for(i = 0; i < 0x100; i++)
         {
             data[0x100 + i] = data[0x200 + i];
         }
         indexTable = parseIndexTable(data, false);
     }
-    
-    // Update the checksum
-    for(var i = 0x10A, sum = 0; i < 0x200; i++)
-    {
-        sum += data[i];
-    }
 
-    data[0x101] = sum & 0xFF;
-        
-    var ErrorReport = {
+    ErrorReport = {
         "types" : noteTable.error.types.concat(indexTable.error.types),
         "count" : noteTable.error.count + indexTable.error.count
     };
-    
+
+    // Update the checksum
+    for(i = 0x10A, sum = 0; i < 0x200; i++)
+    {
+        sum += data[i];
+    }
+    data[0x101] = sum & 0xFF;
+
     if(checkKeyIndexes(noteTable.indexes, indexTable.indexes) === false)
     {
         addError("KeyIndexesDoNotMatch", ErrorReport);
     }
-    
+
     if(ErrorReport.count > 0)
     {
         console.error(filename, ErrorReport.types);
@@ -163,71 +166,77 @@ function parseMPK(data, filename)
 
 function importNote(data, MemPak)
 {
-    var note  = data.subarray(0, 32);
-    var gdata = data.subarray(32);
+    var i, j, slotsToUse, newMPK;
+
+    var dest, dest1, dest2, dest3;
+
+    var note      = data.subarray(0, 32);
+    var gdata     = data.subarray(32);
     var pageCount = gdata.length / 256;
 
-    if(MemPak.usedPages + pageCount <= 123 && MemPak.usedNotes < 16){
-        
-        var slotsToUse = [];
-        
-        for(var i = 0xA; i < 0x100; i += 2)
+    if(MemPak.usedPages + pageCount <= 123 && MemPak.usedNotes < 16)
+    {
+        slotsToUse = [];
+        for(i = 0xA; i < 0x100; i += 2)
         {
-            if(slotsToUse.length == pageCount)
+            if(slotsToUse.length === pageCount)
             {
                 break;
             }
 
             if(MemPak.data[0x100 + i + 1] === 3)
             {
-                slotsToUse.push((i) / 2);
+                slotsToUse.push(i / 2);
             }
         }
-        
-        note[6] = 0; note[7] = slotsToUse[0];
-        for(var i = 0; i < slotsToUse.length; i++)
-        {   
-            var dest1 = 0x100 + (slotsToUse[i] * 2) + 1;
-            var dest2 = 0x100 * slotsToUse[i];
-            var dest3 = 0x100 * i;
-            
-            if(i === slotsToUse.length-1)
+
+        note[0x06] = 0;
+        note[0x07] = slotsToUse[0];
+
+        for(i = 0; i < slotsToUse.length; i++)
+        {
+            dest1 = 0x100 + (slotsToUse[i] * 2) + 1;
+            dest2 = 0x100 * slotsToUse[i];
+            dest3 = 0x100 * i;
+
+            if(i === slotsToUse.length - 1)
             {
                 MemPak.data[dest1] = 0x01;
-                
             } else {
                 MemPak.data[dest1] = slotsToUse[i+1];
             }
-            
-            for(var j = 0; j < 0x100; j++)
+
+            for(j = 0; j < 0x100; j++)
             {
                 MemPak.data[dest2+j] = gdata[dest3+j];
             }
-            
         }
-        
-        for(var i = 0; i < 16; i++)
+
+        for(i = 0; i < 16; i++)
         {
             if(MemPak.Notes[i] === undefined)
             {
-                var dest = 0x300 + i*32;
-                for(var j = 0; j < 32; j++)
+                dest = 0x300 + i * 32;
+                for(j = 0; j < 32; j++)
                 {
                     MemPak.data[dest+j] = note[j];
                 }
                 break;
             }
         }
-        
-        var newPak = parseMPK(MemPak.data, MemPak.filename);
-        updateMPK(newPak);
+
+        newMPK = parseMPK(MemPak.data, MemPak.filename);
+        updateMPK(newMPK);
     } else {
-        alert("Requires " + pageCount + " Pages. There's only " + (123 - MemPak.usedPages) + " left.");
+        alert("Pages: " + MemPak.usedPages +  " / 123, Notes: " + MemPak.usedNotes + " / 16\n" +
+              "Requires 1 Note and " + pageCount + " Page(s).");
     }
 }
 
 function updateUI(MemPak)
 {
+    var i, tr, name, gameCode;
+
     var table = elem(["table"],
             elem(["tr"],
                 elem(["th", "#"]),
@@ -237,19 +246,19 @@ function updateUI(MemPak)
             )
         );
 
-    for(var i = 0; i < 16; i++)
+    for(i = 0; i < 16; i++)
     {
-        var tr = elem(["tr"], elem(["td", i]), elem(["td"]));
+        tr = elem(["tr"], elem(["td", i]), elem(["td"]));
 
         if(MemPak.Notes[i] !== undefined)
         {
-            var iu = MemPak.Notes[i].gameCode, name;
-            
-            if(typeof codeDB !== "undefined")
+            gameCode = MemPak.Notes[i].gameCode;
+
+            if(typeof codeDB !== "undefined" && codeDB[gameCode])
             {
-                name = codeDB[iu] ? codeDB[iu] : iu;
+                name = codeDB[gameCode];
             } else {
-                name = MemPak.Notes[i].gameCode;
+                name = gameCode;
             }
 
             tr.appendChild(elem(["td"]));
@@ -260,17 +269,17 @@ function updateUI(MemPak)
                 elem(["button", {id: i, textContent: "Delete", onclick: deleteNote}]),
                 elem(["button", {id: i, textContent: "Export", onclick: exportNote}])
             ));
-            
+
         } else {
             tr.childNodes[1].textContent = "~";
             tr.childNodes[1].colSpan = 3;
             tr.style.opacity = 0.5;
         }
-        
+
         table.appendChild(tr);
     }
 
-    document.body = (elem(["body"], 
+    document.body = (elem(["body"],
         elem(["h2", MemPak.filename]),
         elem(["span", MemPak.usedPages + " / 123"]),
         elem(["button", {textContent: "Save MPK", onclick: exportMPK}]),
@@ -280,22 +289,25 @@ function updateUI(MemPak)
 
 function parseIndexTable(data, readBackup)
 {
+    var i, c, p, p2, keyIndexes, indexes, foundEnd;
+
+    var a = [], b = [];
+    var usedPages = 0;
+    var o = readBackup ? 0x200 : 0x100;
+
     var Parser = {};
         Parser.error     = {types: [], count: 0};
         Parser.indexes   = [];
         Parser.noteCount = 0;
         Parser.pageCount = 0;
-        Parser.Indexes    = {};
+        Parser.Indexes   = {};
 
-    // Loop over the IndexTable
-    var a = [], b = [], usedPages = 0,
-        o = readBackup ? 0x200 : 0x100;
-
-    for(var i = o + 0xA; i < o + 0x100; i += 2)
+    // Check IndexTable and find keyIndexes
+    for(i = o + 0xA; i < o + 0x100; i += 2)
     {
-        var p  = data[i + 1],
-            p2 = data[i];
-            
+        p  = data[i + 1];
+        p2 = data[i];
+
         if(p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127)
         {
             addError("IndexTableCorrupt", Parser.error);
@@ -308,23 +320,23 @@ function parseIndexTable(data, readBackup)
             usedPages++;
         }
     }
-    
-    var keyIndexes = a.filter(function(n)
+
+    keyIndexes = a.filter(function(n)
     {
         return b.indexOf(n) === -1;
     });
-    
-    Parser.noteCount = keyIndexes.length; 
+
+    Parser.noteCount = keyIndexes.length;
     Parser.indexes   = keyIndexes;
 
     // Parse Index Sequences
-    for(var i = 0; i < keyIndexes.length; i++)
+    for(i = 0, c = 0; i < keyIndexes.length; i++)
     {
-        var indexes  = [],
-            foundEnd = false,
-            p        = keyIndexes[i],
-            c        = 0;
-            
+        p = keyIndexes[i];
+        indexes  = [];
+        foundEnd = false;
+
+        // Follow Index Sequence
         while(p === 1 || p >= 5 && p <= 127 && c <= usedPages)
         {
             if(indexes.indexOf(p) !== -1)
@@ -340,11 +352,11 @@ function parseIndexTable(data, readBackup)
             }
 
             indexes.push(p);
-            
+
             p = data[(p * 2) + o + 1];
             c++;
         }
-        
+
         if(foundEnd === true)
         {
             Parser.Indexes[keyIndexes[i]] = indexes;
@@ -354,17 +366,19 @@ function parseIndexTable(data, readBackup)
             break;
         }
     }
-    
+
     if(usedPages !== Parser.pageCount)
     {
         addError("PageMismatchInSequence", Parser.error);
     }
-    
+
     return Parser;
 }
 
 function parseNoteTable(data, filename)
 {
+    var i, j, noteName, a, b, c, p, rangeOK, zerosOK;
+
     var Parser = {};
         Parser.error     = {types: [], count: 0};
         Parser.indexes   = [];
@@ -387,14 +401,14 @@ function parseNoteTable(data, filename)
     145:"ピ",146:"プ",147:"ペ",148:"ポ"};
 
     // Loop over NoteTable
-    for(var i = 0x300; i < 0x500; i += 32)
+    for(i = 0x300; i < 0x500; i += 32)
     {
-        var p = data[i + 0x07], a = data[i + 0x06],
-            b = data[i + 0x0A], c = data[i + 0x0B],
+        p = data[i + 0x07]; a = data[i + 0x06];
+        b = data[i + 0x0A]; c = data[i + 0x0B];
 
-            rangeOK = (p >= 5 && p <= 127),
-            zerosOK = (a === 0 && b === 0 && c === 0);
- 
+        rangeOK = (p >= 5 && p <= 127);
+        zerosOK = (a === 0 && b === 0 && c === 0);
+
         if(zerosOK && rangeOK)
         {
             if((data[i + 0x08] & 0x02) === 0)
@@ -402,31 +416,31 @@ function parseNoteTable(data, filename)
                 console.log("INFO: Fixing bit 0x08:2(%s) in %s", (i - 0x300) / 32, filename);
                 data[i + 0x08] |= 0x02;
             }
-            
+
             if(Parser.indexes.indexOf(p) !== -1)
             {
                 addError("DuplicateNoteFound", Parser.error);
             }
-            
-            for(var k = 0, name = ""; k < 16; k++)
+
+            for(j = 0, noteName = ""; j < 16; j++)
             {
-                name += n64code[data[i + 16 + k]];
+                noteName += n64code[data[i + 16 + j]];
             }
 
             if(data[i + 12] !== 0)
             {
-                name += "." + n64code[data[i + 12]];
-                name += n64code[data[i + 13]];
-                name += n64code[data[i + 14]];
-                name += n64code[data[i + 15]];
+                noteName += "." + n64code[data[i + 12]];
+                noteName += n64code[data[i + 13]];
+                noteName += n64code[data[i + 14]];
+                noteName += n64code[data[i + 15]];
             }
-            
+
             Parser.indexes.push(p);
             Parser.noteCount++;
-            
+
             Parser.noteTable[(i - 0x300) / 32] = {
                 "initialIndex":  p,
-                "noteName":      name,
+                "noteName":      noteName,
                 "gameCode":      String.fromCharCode(data[i],data[i+1],data[i+2],data[i+3]),
                 "publisherCode": String.fromCharCode(data[i+4],data[i+5])
             };
@@ -438,153 +452,172 @@ function parseNoteTable(data, filename)
 
 function exportNote()
 {
-    var id     = this.id;
-    var MemPak = $MPK;
+    var i, j, pageAddress, name, fn;
+    var MemPak   = window.$MPK;
+    var noteID   = this.id;
+    var gameCode = MemPak.Notes[noteID].gameCode;
+    var indexes  = MemPak.Indexes[MemPak.Notes[noteID].initialIndex];
+    var fileOut  = [];
+    var el       = document.createElement("a");
 
-    var file = [], x = MemPak.Indexes[MemPak.Notes[id].initialIndex];
-    
     // Get Note Header
-    for(var i = 0; i < 32; i++)
+    for(i = 0; i < 32; i++)
     {
-        file.push(MemPak.data[0x300 + (id * 32) + i]);
+        fileOut.push(MemPak.data[0x300 + (noteID * 32) + i]);
     }
 
-    file[6] = 0xCA; file[7] = 0xFE;
+    fileOut[6] = 0xCA;
+    fileOut[7] = 0xFE;
 
     // Get Page Data
-    for(i = 0; i < x.length; i++)
+    for(i = 0; i < indexes.length; i++)
     {
-        var addr = x[i] * 0x100;
-        for(var j = 0; j < 0x100; j++)
+        pageAddress = indexes[i] * 0x100;
+        for(j = 0; j < 0x100; j++)
         {
-            file.push(MemPak.data[addr + j]);
+            fileOut.push(MemPak.data[pageAddress + j]);
         }
     }
 
-    var iu   = MemPak.Notes[id].gameCode;
-    var name = typeof codeDB !== "undefined" && codeDB[iu] ? codeDB[iu] : iu;
+    if(typeof codeDB !== "undefined" && codeDB[gameCode])
+    {
+        name = codeDB[gameCode];
+    } else {
+        name = gameCode;
+    }
 
-    var A = document.createElement("a");
-    A.download = name + "_" + crc32(file) + "_note.bin";
-    A.href = "data:application/octet-stream;base64," +
-            btoa(String.fromCharCode.apply(null, file));
-    A.dispatchEvent(new MouseEvent("click"));
+    fn = name + "," + crc32(fileOut) + ".note.bin";
+
+    el.href = "data:application/octet-stream;base64," +
+        btoa(String.fromCharCode.apply(null, fileOut));
+    el.download = fn;
+    el.dispatchEvent(new MouseEvent("click"));
 }
 
 function calculateChecksum(o, data)
 {
-    // X,Y = stored checksum -- A,B = calculated checksum
-    var sumX  = (data[o + 28] << 8) + data[o + 29],
-        sumY  = (data[o + 30] << 8) + data[o + 31],
-        sumA  = 0, sumB  = 0xFFF2;
-        
-    for(var i = 0; i < 28; i += 2)
+    // X,Y = stored checksum | A,B = calculated checksum
+    var i, sumA  = 0, sumB  = 0xFFF2;
+    var sumX  = (data[o + 28] << 8) + data[o + 29];
+    var sumY  = (data[o + 30] << 8) + data[o + 31];
+
+    for(i = 0; i < 28; i += 2)
     {
         sumA += (data[o + i] << 8) + data[o + i + 1];
         sumA &= 0xFFFF;
     }
-    
+
     sumB -= sumA;
-    
+
     // Repair corrupt DexDrive checksums
     if(sumX === sumA && (sumY ^ 0x0C) === sumB)
     {
         sumY ^= 0xC;
         data[o + 31] ^= 0xC;
     }
-    
+
     return (sumX === sumA && sumY === sumB);
 }
 
 function checkHeader(data)
 {
-    var loc = [0x20, 0x60, 0x80, 0xC0];
-    var loc2 = -1;
+    var i, j, chk, currentLoc;
 
-    for(var i = 0; i < loc.length; i++)
+    var loc  = [0x20, 0x60, 0x80, 0xC0];
+    var lastValidLoc = -1;
+
+    // Quickly check all locations, saving the last valid one.
+    for(i = 0; i < loc.length; i++)
     {
-        var chk = calculateChecksum(loc[i], data);
-        if(chk) { loc2 = loc[i]; }
+        chk = calculateChecksum(loc[i], data);
+        if(chk) { lastValidLoc = loc[i]; }
     }
-    
-    for(var i = 0; i < loc.length; i++)
+
+    // Check all locations storing each result.
+    for(i = 0; i < loc.length; i++)
     {
-        var key = loc[i], chk = calculateChecksum(key, data);
-        
+        currentLoc = loc[i];
+        chk = calculateChecksum(currentLoc, data);
+
         // Detect and replace invalid locations
-        if(loc2 > -1 && chk === false)
+        if(lastValidLoc > -1 && chk === false)
         {
-            //console.log("INFO: Replacing header_checksum at %s", key);
-            for(var j = 0; j < 32; j++)
+            //console.log("INFO: Replacing header_checksum at %s", currentLoc);
+            for(j = 0; j < 32; j++)
             {
-                data[key + j] = data[loc2 + j];
+                data[currentLoc + j] = data[lastValidLoc + j];
             }
-            chk = calculateChecksum(key, data);
+            chk = calculateChecksum(currentLoc, data);
         }
-        
+
         loc[i] = chk;
     }
-    
+
     return loc[0] && loc[1] && loc[2] && loc[3];
 }
 
 function deleteNote()
 {
-    var id = parseInt(this.id, 10);
+    var i, targetIndex, newMPK;
+    var MemPak       = window.$MPK;
+    var noteID       = parseInt(this.id, 10);
+    var noteKeyIndex = MemPak.Notes[noteID].initialIndex;
+    var indexes      = MemPak.Indexes[noteKeyIndex];
 
-    // Mark indexes as "Free"
-    var YY = $MPK.Notes[id].initialIndex, YB = $MPK.Indexes[YY];
-    for(var i = 0; i < YB.length; i++)
+    // Mark Indexes as Free
+    for(i = 0; i < indexes.length; i++)
     {
-        var dest1 = 0x100 + (YB[i] * 2) + 1;
-        $MPK.data[dest1] = 0x03;
+        targetIndex = 0x100 + (indexes[i] * 2) + 1;
+        MemPak.data[targetIndex] = 0x03;
     }
 
     // Delete Note Entry
-    var dest = 0x300 + id * 32;
-    for(var j = 0; j < 32; j++)
+    for(i = 0; i < 32; i++)
     {
-        $MPK.data[dest+j] = 0x00;
+        targetIndex = 0x300 + (noteID * 32) + i;
+        MemPak.data[targetIndex] = 0x00;
     }
 
-    var pak = parseMPK($MPK.data, $MPK.filename);
-    updateMPK(pak);
+    newMPK = parseMPK(MemPak.data, MemPak.filename);
+    updateMPK(newMPK);
 }
 
 function exportMPK()
 {
-    var MemPak = $MPK;
-    var A = document.createElement("a");
-    A.download = MemPak.filename.replace(".n64", ".mpk");
-    A.href = "data:application/octet-stream;base64," +
-            btoa(String.fromCharCode.apply(null, MemPak.data));
-    A.dispatchEvent(new MouseEvent("click"));
+    var MemPak = window.$MPK;
+    var el = document.createElement("a");
+    var fn = (MemPak.filename).replace(".n64", ".mpk");
+
+    el.href = "data:application/octet-stream;base64," +
+        btoa(String.fromCharCode.apply(null, MemPak.data));
+    el.download = fn;
+    el.dispatchEvent(new MouseEvent("click"));
 }
 
 function checkKeyIndexes(noteTableKeys, indexTableKeys)
 {
-    // Check if noteTable and indexTable report the same key indexes
-    if(noteTableKeys.length !== indexTableKeys.length) { return false; }
-    
     var i, count;
-    
+
+    if(noteTableKeys.length !== indexTableKeys.length) { return false; }
+
     for(i = 0, count = 0; i < noteTableKeys.length; i++)
     {
+        // Check if noteTable and indexTable report the same key indexes
         if(noteTableKeys.indexOf(indexTableKeys[i]) > -1)
         {
-             count++; 
+             count++;
         }
         else { return false; }
     }
-    
+
     return true;
 }
 
 function isNoteFile(data)
 {
-    var a = 0 === data[10],
-        b = 0 === data[11],
-        c = 0xCAFE === data[7] + (data[6] << 8),
+    var a = 0 === data[0x0A],
+        b = 0 === data[0x0B],
+        c = 0xCAFE === data[0x07] + (data[0x06] << 8),
         d = 0 === data.subarray(32).length % 256;
 
     return a && b && c && d;
@@ -604,28 +637,31 @@ function updateMPK(MemPak)
 {
     if(MemPak)
     {
-        $MPK = MemPak;
+        window.$MPK = MemPak;
         updateUI(MemPak);
     }
 }
 
 function crc32(data)
 {
-    var i, l = data.length, crc = -1,
-        table = new Uint32Array(256);
+    var i, j, tmp, l, crc, table;
+
+    l = data.length;
+    crc = -1;
+    table = new Uint32Array(256);
 
     for (i = 256; i--;) {
-        for (var j = 8, tmp = i; j--;) {
+        for (j = 8, tmp = i; j--;) {
             tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
         }
         table[i] = tmp;
     }
-  
+
     for (i = 0; i < l; i++) {
         crc = crc >>> 8 ^ table[crc & 255 ^ data[i]];
     }
-  
-    return ("00000000"+((crc^-1)>>>0).toString(16).toUpperCase()).slice(-8);
+
+    return ("00000000"+((crc^-1)>>>0).toString(16)).slice(-8).toUpperCase();
 }
 
 function elem()
@@ -635,7 +671,7 @@ function elem()
     var elmnt   = null;
     var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
     var prop    = arguments[0][1]; // Argument 0 -> Index 1 (Object)
- 
+
     if(typeof tagName === "string")
     {
         elmnt = document.createElement(tagName);
@@ -652,20 +688,20 @@ function elem()
     {
         elmnt.textContent = prop;
     }
- 
+
     for(i = 0; i < keys.length; i++)
     {
         var key    = keys[i];
         var method = elmnt[key.slice(2)];
- 
+
         // specify methods with $_
         if(key.indexOf("$_") > -1)
         {
             // run a method with array of arguments
             method.apply(elmnt, prop[key]);
         } else {
-            elmnt[key] = prop[key]; 
-        } 
+            elmnt[key] = prop[key];
+        }
     }
 
     // look for other elements to append
