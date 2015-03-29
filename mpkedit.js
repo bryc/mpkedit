@@ -93,7 +93,7 @@ function readData(evt)
         data = data.subarray(0x1040);
     }
     
-    if(headerCheck(data) === true)
+    if(checkHeader(data) === true)
     {
         var _dat = new Uint8Array(32768);
         for(var i = 0; i < data.length; i++) {_dat[i] = data[i];}
@@ -110,7 +110,7 @@ function readData(evt)
 
 function parseMPK(data, filename)
 {
-    var headrChk = headerCheck(data);
+    var headrChk = checkHeader(data);
     if(!headrChk) { return false; }
     
     var noteTable   = parseNoteTable(data, filename);
@@ -262,7 +262,7 @@ function updateUI(MemPak)
             tr.childNodes[2].textContent = MemPak.Indexes[MemPak.Notes[i].initialIndex].length;
 
             tr.appendChild(elem(["td"],
-                elem(["button", {id: i, textContent: "Delete", onclick: delNote}]),
+                elem(["button", {id: i, textContent: "Delete", onclick: deleteNote}]),
                 elem(["button", {id: i, textContent: "Export", onclick: exportNote}])
             ));
             
@@ -476,7 +476,7 @@ function exportNote()
     A.dispatchEvent(new MouseEvent("click"));
 }
 
-function check(o, data)
+function calculateChecksum(o, data)
 {
     // X,Y = stored checksum -- A,B = calculated checksum
     var sumX  = (data[o + 28] << 8) + data[o + 29],
@@ -501,20 +501,20 @@ function check(o, data)
     return (sumX === sumA && sumY === sumB);
 }
 
-function headerCheck(data)
+function checkHeader(data)
 {
     var loc = [0x20, 0x60, 0x80, 0xC0];
     var loc2 = -1;
 
     for(var i = 0; i < loc.length; i++)
     {
-        var chk = check(loc[i], data);
+        var chk = calculateChecksum(loc[i], data);
         if(chk) { loc2 = loc[i]; }
     }
     
     for(var i = 0; i < loc.length; i++)
     {
-        var key = loc[i], chk = check(key, data);
+        var key = loc[i], chk = calculateChecksum(key, data);
         
         // Detect and replace invalid locations
         if(loc2 > -1 && chk === false)
@@ -524,7 +524,7 @@ function headerCheck(data)
             {
                 data[key + j] = data[loc2 + j];
             }
-            chk = check(key, data);
+            chk = calculateChecksum(key, data);
         }
         
         loc[i] = chk;
@@ -533,7 +533,7 @@ function headerCheck(data)
     return loc[0] && loc[1] && loc[2] && loc[3];
 }
 
-function delNote()
+function deleteNote()
 {
     var id = parseInt(this.id, 10);
 
