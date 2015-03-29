@@ -61,7 +61,7 @@ window.addEventListener("load", function()
         $MPK.data[i] = EMPTY_DATA[i];
     }
     
-    var newPak = readMemPak($MPK.data, "MemPak.mpk");
+    var newPak = parseMPK($MPK.data, "MemPak.mpk");
     updateMPK(newPak);
 });
 
@@ -99,16 +99,16 @@ function readData(evt)
         for(var i = 0; i < data.length; i++) {_dat[i] = data[i];}
         data = _dat;
         
-        var MemPak = readMemPak(data, evt.target.name);
+        var MemPak = parseMPK(data, evt.target.name);
         updateMPK(MemPak);
     }
     else if(typeof $MPK !== "undefined" && isNoteFile(data) === true)
     {
-        importNotes(data, $MPK);
+        importNote(data, $MPK);
     }
 }
 
-function readMemPak(data, filename)
+function parseMPK(data, filename)
 {
     var headrChk = headerCheck(data);
     if(!headrChk) { return false; }
@@ -166,7 +166,7 @@ function readMemPak(data, filename)
     };
 }
 
-function importNotes(data, MemPak)
+function importNote(data, MemPak)
 {
     var note  = data.subarray(0, 32);
     var gdata = data.subarray(32);
@@ -224,14 +224,14 @@ function importNotes(data, MemPak)
             }
         }
         
-        var newPak = readMemPak(MemPak.data, MemPak.filename);
+        var newPak = parseMPK(MemPak.data, MemPak.filename);
         updateMPK(newPak);
     } else {
         alert("Requires " + pageCount + " Pages. There's only " + (123 - MemPak.usedPages) + " left.");
     }
 }
 
-function createUI(MemPak)
+function updateUI(MemPak)
 {
     var table = elem(["table"],
             elem(["tr"],
@@ -552,7 +552,7 @@ function delNote()
         $MPK.data[dest+j] = 0x00;
     }
 
-    var pak = readMemPak($MPK.data, $MPK.filename);
+    var pak = parseMPK($MPK.data, $MPK.filename);
     updateMPK(pak);
 }
 
@@ -605,7 +605,7 @@ function updateMPK(MemPak)
     if(MemPak)
     {
         $MPK = MemPak;
-        createUI(MemPak);
+        updateUI(MemPak);
     }
 }
 
