@@ -573,7 +573,7 @@ function allNotesExist(fileIndexes, pageIndexes)
     var testPassed = false;
 
     if(fileIndexes.sort().toString() === pageIndexes.sort().toString())
-    {   
+    {
         testPassed = true;
     }
     
@@ -611,15 +611,17 @@ function updateMPK(MemPak)
 
 function crc32(data)
 {
-    var table = new Uint32Array(256);var crc= -1;
-    for (var i = 256; i--;) {
-        for (var k = 8, tmp = i; k--;) {
+    var i, l = data.length, crc = -1,
+        table = new Uint32Array(256);
+
+    for (i = 256; i--;) {
+        for (var j = 8, tmp = i; j--;) {
             tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
         }
         table[i] = tmp;
     }
   
-    for (var i = 0, l = data.length; i < l; i++) {
+    for (i = 0; i < l; i++) {
         crc = crc >>> 8 ^ table[crc & 255 ^ data[i]];
     }
   
@@ -628,6 +630,7 @@ function crc32(data)
 
 function elem()
 {
+    var i;
     var keys    = {};
     var elmnt   = null;
     var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
@@ -650,7 +653,7 @@ function elem()
         elmnt.textContent = prop;
     }
  
-    for(var i = 0; i < keys.length; i++)
+    for(i = 0; i < keys.length; i++)
     {
         var key    = keys[i];
         var method = elmnt[key.slice(2)];
@@ -668,7 +671,7 @@ function elem()
     // look for other elements to append
     if(arguments.length > 1)
     {
-        for(var i = 1; i < arguments.length; i++)
+        for(i = 1; i < arguments.length; i++)
         {
             // check if the argument is an element
             if(arguments[i].nodeType > 0)
