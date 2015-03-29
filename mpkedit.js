@@ -160,9 +160,9 @@ function readMemPak(data, filename)
         data: data,
         filename: filename,
         Notes: noteTable.noteTable,
-        Pages: indexTable.Indexes,
-        noteCount: noteTable.noteCount,
-        pageCount: indexTable.pageCount
+        Indexes: indexTable.Indexes,
+        usedNotes: noteTable.noteCount,
+        usedPages: indexTable.pageCount
     };
 }
 
@@ -172,7 +172,7 @@ function importNotes(data, MemPak)
     var gdata = data.subarray(32);
     var pageCount = gdata.length / 256;
 
-    if(MemPak.pageCount + pageCount <= 123 && MemPak.noteCount < 16){
+    if(MemPak.usedPages + pageCount <= 123 && MemPak.usedNotes < 16){
         
         var slotsToUse = [];
         
@@ -227,7 +227,7 @@ function importNotes(data, MemPak)
         var newPak = readMemPak(MemPak.data, MemPak.filename);
         updateMPK(newPak);
     } else {
-        alert("Requires " + pageCount + " Pages. There's only " + (123 - MemPak.pageCount) + " left.");
+        alert("Requires " + pageCount + " Pages. There's only " + (123 - MemPak.usedPages) + " left.");
     }
 }
 
@@ -259,7 +259,7 @@ function createUI(MemPak)
 
             tr.appendChild(elem(["td"]));
             tr.childNodes[1].innerHTML   = MemPak.Notes[i].noteName + "<br><i>" + name + "</i>";
-            tr.childNodes[2].textContent = MemPak.Pages[MemPak.Notes[i].initialIndex].length;
+            tr.childNodes[2].textContent = MemPak.Indexes[MemPak.Notes[i].initialIndex].length;
 
             tr.appendChild(elem(["td"],
                 elem(["button", {id: i, textContent: "Delete", onclick: delNote}]),
@@ -277,7 +277,7 @@ function createUI(MemPak)
 
     document.body = (elem(["body"], 
         elem(["h2", MemPak.filename]),
-        elem(["span", MemPak.pageCount + " / 123"]),
+        elem(["span", MemPak.usedPages + " / 123"]),
         elem(["button", {textContent: "Save MPK", onclick: exportPak}]),
         elem(["input", {type: "file", multiple: true, onchange: dropHandler}]),
         table));
@@ -314,20 +314,20 @@ function parseIndexTable(data, readBackup)
         }
     }
     
-    var keyPages = a.filter(function(n)
+    var keyIndexes = a.filter(function(n)
     {
         return b.indexOf(n) === -1;
     });
     
-    Parser.noteCount = keyPages.length; 
-    Parser.indexes   = keyPages;
+    Parser.noteCount = keyIndexes.length; 
+    Parser.indexes   = keyIndexes;
 
     // Parse Index Sequences
-    for(var i = 0; i < keyPages.length; i++)
+    for(var i = 0; i < keyIndexes.length; i++)
     {
         var indexes  = [],
             foundEnd = false,
-            p        = keyPages[i],
+            p        = keyIndexes[i],
             c        = 0;
             
         while(p === 1 || p >= 5 && p <= 127 && c <= usedPages)
@@ -352,7 +352,7 @@ function parseIndexTable(data, readBackup)
         
         if(foundEnd === true)
         {
-            Parser.Indexes[keyPages[i]] = indexes;
+            Parser.Indexes[keyIndexes[i]] = indexes;
             Parser.pageCount += indexes.length;
         } else {
             addError("NoEndInSequence", Parser.error);
@@ -446,7 +446,7 @@ function exportNote()
     var id     = this.id;
     var MemPak = $MPK;
 
-    var file = [], x = MemPak.Pages[MemPak.Notes[id].initialIndex];
+    var file = [], x = MemPak.Indexes[MemPak.Notes[id].initialIndex];
     
     // Get Note Header
     for(var i = 0; i < 32; i++)
@@ -538,7 +538,7 @@ function delNote()
     var id = parseInt(this.id, 10);
 
     // Mark indexes as "Free"
-    var YY = $MPK.Notes[id].initialIndex, YB = $MPK.Pages[YY];
+    var YY = $MPK.Notes[id].initialIndex, YB = $MPK.Indexes[YY];
     for(var i = 0; i < YB.length; i++)
     {
         var dest1 = 0x100 + (YB[i] * 2) + 1;
