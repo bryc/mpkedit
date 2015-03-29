@@ -160,7 +160,7 @@ function readMemPak(data, filename)
         data: data,
         filename: filename,
         Notes: noteTable.noteTable,
-        Pages: indexTable.Inodes,
+        Pages: indexTable.Indexes,
         noteCount: noteTable.noteCount,
         pageCount: indexTable.pageCount
     };
@@ -290,7 +290,7 @@ function parseIndexTable(data, readBackup)
         Parser.indexes   = [];
         Parser.noteCount = 0;
         Parser.pageCount = 0;
-        Parser.Inodes    = {};
+        Parser.Indexes    = {};
 
     // Loop over the IndexTable
     var a = [], b = [], usedPages = 0,
@@ -352,7 +352,7 @@ function parseIndexTable(data, readBackup)
         
         if(foundEnd === true)
         {
-            Parser.Inodes[keyPages[i]] = indexes;
+            Parser.Indexes[keyPages[i]] = indexes;
             Parser.pageCount += indexes.length;
         } else {
             addError("NoEndInSequence", Parser.error);
@@ -537,7 +537,7 @@ function delNote()
 {
     var id = parseInt(this.id, 10);
 
-    // Mark Inodes as "Free"
+    // Mark indexes as "Free"
     var YY = $MPK.Notes[id].initialIndex, YB = $MPK.Pages[YY];
     for(var i = 0; i < YB.length; i++)
     {
@@ -568,7 +568,7 @@ function exportPak()
 
 function allNotesExist(fileIndexes, pageIndexes)
 {
-    // Check if noteTable and inodeTable report the same key nodes
+    // Check if noteTable and indexTable report the same key indexes
     // TODO: more efficient method?
     var testPassed = false;
 
