@@ -732,14 +732,14 @@ function init()
     {
         initMemPak.data[i] = EMPTY_DATA[i];
     }
-    readFilename = "New.mpk"
+    readFilename = "New.mpk";
     newMPK = parseMPK(initMemPak.data);
     updateMPK(newMPK);
 }
 
 window.$_MPKEditor = {
     init: init
-}
+};
 
 })();
 
