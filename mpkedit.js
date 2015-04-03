@@ -3,29 +3,28 @@
 "use strict";
 var readFilename, $MPK;
 
-function fileHandler(evt)
+function fileHandler(event)
 {
-    var i, reader;
-    var files = this.files || evt.dataTransfer.files;
+    var i, files, reader;
+    files = this.files || event.dataTransfer.files;
 
-    // If length is zero, there are no files and this loop WON'T occur
-    // If only reading one file, checking length is necessary
+    // When files.length is 0 (no files), this loop won't occur (0 < 0 === false)
     for(i = 0; i < files.length; i++)
     {
         reader        = new FileReader();
         reader.name   = files[i].name;
-        reader.onload = readData;
+        reader.onload = readData; // call readData when data is fully loaded
 
-        // For DexDrive support we must read 36928 instead of 32768
+        // DexDrive support: We read 36928 instead of 32768 bytes
         reader.readAsArrayBuffer(files[i].slice(0, 36928));
     }
-    evt.preventDefault();
+    event.preventDefault();
 }
 
-function readData(evt)
+function readData(event)
 {
-    var i, _dat, data = new Uint8Array(evt.target.result);
-    readFilename = evt.target.name;
+    var i, data, data2, newMPK;
+    data = new Uint8Array(event.target.result);
     
     // Detect and remove DexDrive header
     if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD")
@@ -35,11 +34,15 @@ function readData(evt)
 
     if(checkHeader(data) === true)
     {
-        _dat = new Uint8Array(32768);
-        for(i = 0; i < data.length; i++) { _dat[i] = data[i]; }
-        data = _dat;
+        readFilename = event.target.name;
+        
+        data2 = new Uint8Array(32768);
+        for(i = 0; i < data.length; i++) {
+            data2[i] = data[i];
+        }
+        data = data2;
 
-        var newMPK = parseMPK(data, evt.target.name);
+        newMPK = parseMPK(data, event.target.name);
         updateMPK(newMPK);
     }
     else if(typeof $MPK !== "undefined" && isNoteFile(data) === true)
@@ -50,13 +53,13 @@ function readData(evt)
 
 function parseMPK(data)
 {
-    var i, sum, ErrorReport;
+    var headrChk, noteTable, indexTable, ErrorReport;
 
-    var headrChk    = checkHeader(data);
-    if(!headrChk) { return false; }
+    headrChk    = checkHeader(data);
+    if(!headrChk) {return false;}
 
-    var noteTable   = parseNoteTable(data);
-    var indexTable  = parseIndexTable(data, false, noteTable.indexes);
+    noteTable   = parseNoteTable(data);
+    indexTable  = parseIndexTable(data, false, noteTable.indexes);
 
     ErrorReport = {
         "types" : noteTable.error.types.concat(indexTable.error.types),
@@ -81,13 +84,11 @@ function parseMPK(data)
 
 function importNote(data, MemPak)
 {
-    var i, j, slotsToUse, newMPK;
+    var i, j, slotsToUse, newMPK, dest, dest1, dest2, dest3, note, gdata, pageCount;
 
-    var dest, dest1, dest2, dest3;
-
-    var note      = data.subarray(0, 32);
-    var gdata     = data.subarray(32);
-    var pageCount = gdata.length / 256;
+    note      = data.subarray(0, 32);
+    gdata     = data.subarray(32);
+    pageCount = gdata.length / 256;
 
     if(MemPak.usedPages + pageCount <= 123 && MemPak.usedNotes < 16)
     {
@@ -150,16 +151,16 @@ function importNote(data, MemPak)
 
 function updateUI(MemPak)
 {
-    var i, tr, name, gameCode;
+    var i, tr, name, gameCode, table;
 
-    var table = elem(["table"],
-            elem(["tr"],
-                elem(["th", "#"]),
-                elem(["th", "Note"]),
-                elem(["th", "Pages"]),
-                elem(["th", ""])
-            )
-        );
+    table = elem(["table"],
+        elem(["tr"],
+            elem(["th", "#"]),
+            elem(["th", "Note"]),
+            elem(["th", "Pages"]),
+            elem(["th", ""])
+        )
+    );
 
     for(i = 0; i < 16; i++)
     {
@@ -204,18 +205,14 @@ function updateUI(MemPak)
 
 function parseIndexTable(data, readBackup, noteTableKeys)
 {
-    var i, c, p, p2, keyIndexes, indexes, foundEnd, sum;
+    var i, c, p, p2, keyIndexes, indexes, foundEnd, sum,
+        a = [], b = [], usedPages = 0, o = 0x100, Parser = {};
 
-    var a = [], b = [];
-    var usedPages = 0;
-    var o = 0x100;
-
-    var Parser = {};
-        Parser.error     = {types: [], count: 0};
-        Parser.indexes   = [];
-        Parser.noteCount = 0;
-        Parser.pageCount = 0;
-        Parser.Indexes   = {};
+    Parser.error     = {types: [], count: 0};
+    Parser.indexes   = [];
+    Parser.noteCount = 0;
+    Parser.pageCount = 0;
+    Parser.Indexes   = {};
 
     // Check IndexTable and find keyIndexes
     for(i = o + 0xA; i < o + 0x100; i += 2)
@@ -329,15 +326,14 @@ function parseIndexTable(data, readBackup, noteTableKeys)
 
 function parseNoteTable(data)
 {
-    var i, j, noteName, a, b, c, p, rangeOK, zerosOK;
+    var i, j, noteName, a, b, c, p, rangeOK, zerosOK, Parser = {}, n64code;
 
-    var Parser = {};
-        Parser.error     = {types: [], count: 0};
-        Parser.indexes   = [];
-        Parser.noteCount = 0;
-        Parser.noteTable = {};
+    Parser.error     = {types: [], count: 0};
+    Parser.indexes   = [];
+    Parser.noteCount = 0;
+    Parser.noteTable = {};
 
-    var n64code = {0:"",3:"",15:"",16:"0",17:"1",18:"2",19:"3",20:"4",21:"5",22:"6",
+    n64code = {0:"",3:"",15:"",16:"0",17:"1",18:"2",19:"3",20:"4",21:"5",22:"6",
     23:"7",24:"8",25:"9",26:"A",27:"B",28:"C",29:"D",30:"E",31:"F",32:"G",33:"H",
     34:"I",35:"J",36:"K",37:"L",38:"M",39:"N",40:"O",41:"P",42:"Q",43:"R",44:"S",
     45:"T",46:"U",47:"V",48:"W",49:"X",50:"Y",51:"Z",52:"!",53:'"',54:"#",55:"'",
@@ -404,13 +400,15 @@ function parseNoteTable(data)
 
 function exportNote()
 {
-    var i, j, pageAddress, name, fn;
-    var MemPak   = $MPK;
-    var noteID   = this.id;
-    var gameCode = MemPak.Notes[noteID].gameCode;
-    var indexes  = MemPak.Indexes[MemPak.Notes[noteID].initialIndex];
-    var fileOut  = [];
-    var el       = document.createElement("a");
+    var i, j, pageAddress, name, fn, MemPak, noteID, gameCode,
+        indexes, fileOut, el;
+
+    MemPak   = $MPK;
+    noteID   = this.id;
+    gameCode = MemPak.Notes[noteID].gameCode;
+    indexes  = MemPak.Indexes[MemPak.Notes[noteID].initialIndex];
+    fileOut  = [];
+    el       = document.createElement("a");
 
     // Get Note Header
     for(i = 0; i < 32; i++)
@@ -446,37 +444,38 @@ function exportNote()
     el.dispatchEvent(new MouseEvent("click"));
 }
 
-function calculateChecksum(o, data)
-{
-    // X,Y = stored checksum | A,B = calculated checksum
-    var i, sumA  = 0, sumB  = 0xFFF2;
-    var sumX  = (data[o + 28] << 8) + data[o + 29];
-    var sumY  = (data[o + 30] << 8) + data[o + 31];
 
-    for(i = 0; i < 28; i += 2)
-    {
-        sumA += (data[o + i] << 8) + data[o + i + 1];
-        sumA &= 0xFFFF;
-    }
-
-    sumB -= sumA;
-
-    // Repair corrupt DexDrive checksums
-    if(sumX === sumA && (sumY ^ 0x0C) === sumB)
-    {
-        sumY ^= 0xC;
-        data[o + 31] ^= 0xC;
-    }
-
-    return (sumX === sumA && sumY === sumB);
-}
 
 function checkHeader(data)
 {
-    var i, j, chk, currentLoc;
-
-    var loc  = [0x20, 0x60, 0x80, 0xC0];
-    var lastValidLoc = -1;
+    function calculateChecksum(o, data)
+    {
+        // X,Y = stored checksum | A,B = calculated checksum
+        var i, sumX, sumY, sumA = 0, sumB = 0xFFF2;
+        sumX  = (data[o + 28] << 8) + data[o + 29];
+        sumY  = (data[o + 30] << 8) + data[o + 31];
+    
+        for(i = 0; i < 28; i += 2)
+        {
+            sumA += (data[o + i] << 8) + data[o + i + 1];
+            sumA &= 0xFFFF;
+        }
+    
+        sumB -= sumA;
+    
+        // Repair corrupt DexDrive checksums
+        if(sumX === sumA && (sumY ^ 0x0C) === sumB)
+        {
+            sumY ^= 0xC;
+            data[o + 31] ^= 0xC;
+        }
+    
+        return (sumX === sumA && sumY === sumB);
+    }
+    
+    var i, j, chk, currentLoc, loc, lastValidLoc;
+    lastValidLoc = -1;
+    loc  = [0x20, 0x60, 0x80, 0xC0];
 
     // Quickly check all locations, saving the last valid one.
     for(i = 0; i < loc.length; i++)
@@ -510,11 +509,11 @@ function checkHeader(data)
 
 function deleteNote()
 {
-    var i, targetIndex, newMPK;
-    var MemPak       = $MPK;
-    var noteID       = parseInt(this.id, 10);
-    var noteKeyIndex = MemPak.Notes[noteID].initialIndex;
-    var indexes      = MemPak.Indexes[noteKeyIndex];
+    var i, MemPak, targetIndex, noteID, noteKeyIndex, indexes, newMPK;
+    MemPak       = $MPK;
+    noteID       = parseInt(this.id, 10);
+    noteKeyIndex = MemPak.Notes[noteID].initialIndex;
+    indexes      = MemPak.Indexes[noteKeyIndex];
 
     // Mark Indexes as Free
     for(i = 0; i < indexes.length; i++)
@@ -536,20 +535,21 @@ function deleteNote()
 
 function exportMPK()
 {
-    var MemPak = $MPK;
-    var el = document.createElement("a");
-    var fn = (MemPak.filename).replace(".n64", ".mpk");
+    var MemPak = $MPK,
+        fn = (MemPak.filename).replace(".n64", ".mpk"),
+        el = document.createElement("a");
 
+    el.download = fn;
     el.href = "data:application/octet-stream;base64," +
         btoa(String.fromCharCode.apply(null, MemPak.data));
-    el.download = fn;
     el.dispatchEvent(new MouseEvent("click"));
 }
 
 function checkKeyIndexes(noteTableKeys, indexTableKeys)
 {
     var i, count;
-    if(noteTableKeys.length !== indexTableKeys.length) { return false; }
+    
+    if(noteTableKeys.length !== indexTableKeys.length) {return false;}
 
     for(i = 0, count = 0; i < noteTableKeys.length; i++)
     {
@@ -558,7 +558,7 @@ function checkKeyIndexes(noteTableKeys, indexTableKeys)
         {
              count++;
         }
-        else { return false; }
+        else {return false;}
     }
 
     return true;
@@ -673,8 +673,8 @@ function elem()
 
 function init()
 {
-    window.addEventListener("dragover", function(evt) {
-        evt.preventDefault();
+    window.addEventListener("dragover", function(event) {
+        event.preventDefault();
     });
     window.addEventListener("drop", fileHandler);
 
