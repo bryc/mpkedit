@@ -14,8 +14,8 @@ MemPak.prototype.init = function()
     this.data = data;
 }
 
-var MORON = new MemPak();
+var MPK = new MemPak();
 
     
-MORON.init();
-console.log(MORON);
+MPK.init();
+console.log(MPK);
