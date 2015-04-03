@@ -1,12 +1,12 @@
 # HTML5 MemPak reader/editor
 Allows you to open N64 Controller Pak files, as well as import DexDrive saves, and export/import notes, delete notes, and save the modified MPK file. Written in plain Javascript and works in Chrome and Firefox.
 
-* Drag and Drop file input or Browse for files (Multiple files)
+* **Drag and Drop** file input or **Browse** for files (Multiple files)
 * Checks and repairs header (page 0)
-* Parses the filesystem verbosely, catching errors without needing to rely on the Inode checksum
-* DexDrive (*.n64) support - saves as standard .mpk
-* Export, Import and Delete notes
-* Game code database - automatically identifies game save
+* Parses the filesystem verbosely, catching errors without needing to rely on the IndexTable checksum
+* DexDrive (.n64) support - saves as standard .mpk
+* **Export**, **Import** and **Delete** notes
+* **Game code database** - automatically identifies game name
 
 [Try it](https://cdn.rawgit.com/bryc/mempak/master/index.html)
 
