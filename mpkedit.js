@@ -679,7 +679,7 @@ function MPKEditor()
 
         // Generate empty data
         A(57);A(121);A(153);A(217);
-        for(i=4;i<128;++i) {d[256+i*2+1]=3;d[512+i*2+1]=3;}
+        for(i=5;i<128;++i) {d[256+i*2+1]=3;d[512+i*2+1]=3;}
         d[257]=113;d[513]=113;
         
         initMemPak = {data: d};
