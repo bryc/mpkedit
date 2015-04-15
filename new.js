@@ -12,116 +12,86 @@ function MemPak()
         ref.data = data;
         ref.filename = "MemPak.mpk";
     }
-    function parse(data, filename)
+function parse(data)
+{
+    var i,p,p2,a,b,c,output,noteKeys=[];
+
+    function checkIndexes(o)
     {
-        function addError(errorName)
+        var seq,ends=0,Output={},found={keys:[],values:[],parsed:[]};
+        for(i = o + 0xA; i < o + 0x100; i += 2)
         {
-            if(errorReport[errorName] === undefined)
+            p  = data[i + 1]; p2 = data[i];
+
+            if(p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127)   
             {
-                errorReport[errorName] = 1;
-            } else { errorReport[errorName]++; }
+                return false;
+            }
+            else if(p2 === 0 && p === 1 || p !== 3 && p >= 5 && p <= 127)
+            {
+                if(p === 1) {ends += 1;}
+
+                if(p !== 1 && found.values.indexOf(p) > -1) {
+                    return false;
+                }
+                found.values.push(p);
+                found.keys.push((i - o) / 2);
+            }
         }
-        var i, p, p2, a, b, c, indexes = [], seq, out, errorReport = {};
-        function checkIndexes(o)
+        found.indexes = found.keys.filter(function(n)
         {
-            var Output = {}, found = {keys: [], values: []}, ends = 0, usedPages = 0, count = 0;
-            errorReport = {};
-            for(i = o + 0xA; i < o + 0x100; i += 2)
+            return found.values.indexOf(n) === -1;
+        });
+
+        if (noteKeys.length !== ends || noteKeys.length !== found.indexes.length) {
+            return false;
+        }
+        for (i = 0; i < noteKeys.length; i++) {
+            if (noteKeys.indexOf(found.indexes[i]) === -1) {
+                return false;
+            }
+        }
+
+        for(i = 0; i < found.indexes.length; i++)
+        {
+            seq = []; p = found.indexes[i];
+            while(p === 1 || p >= 5 && p <= 127)
             {
-                p  = data[i + 1]; p2 = data[i];
-                if(p2 === 0 && p === 1 || p !== 3 && p >= 5 && p <= 127)
+                if(p === 1)
                 {
-                    if(p===1){ends += 1;}
-                    usedPages+=1;
-                    found.keys.push((i - o) / 2);
-                    if (p !== 1 && found.values.indexOf(p) !== -1) {
-                        // If index used more than once, return false
-                        addError("DuplicateIndex");
-                        //return false;
-                    }
-                    found.values.push(p);
-                } else if(p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127)
-                { 
-                    // If index value is unexpected, return false
-                    addError("InvalidIndex");
-                    //return false;
-                } 
-            }
-            if (indexes.length !== ends) {
-                // The amount of 0x01 values doesn't match noteTable
-                addError("Mismatch_SequenceTerminator");
-                //return false;
-            }
-            found.indexes = found.keys.filter(function(n)
-            {
-                return found.values.indexOf(n) === -1;
-            });
-            if (indexes.length !== found.indexes.length) {
-                // If different number of key indexes are compared, false
-                addError("Mismatch_KeyIndexCount");
-                //return false;
-            }
-            for (i = 0; i < indexes.length; i++) {
-                if (indexes.indexOf(found.indexes[i]) === -1) {
-                    // If key index does not exist in other list, false
-                    addError("Mismatch_KeyIndex");
-                    //return false;
+                    Output[found.indexes[i]] = seq;
+                    break;
                 }
+                seq.push(p);
+                found.parsed.push(p);
+                p = data[(p * 2) + o + 1];
             }
-
-            for(i = 0; i < found.indexes.length; i++)
-            {
-                seq = []; p = found.indexes[i];
-                while(p === 1 || p >= 5 && p <= 127)
-                {    
-                    if(seq.indexOf(p) !== -1)
-                    {
-                        // If parser encounters an index already used
-                        addError("InfiniteLoopInSequence");
-                        break;
-                    }
-
-                    if(p === 1){Output[found.indexes[i]] = seq;break;}
-                    count+=1;
-                    seq.push(p);
-                    p = data[(p * 2) + o + 1];
-                    
-                }
-            }
-
-            if(count !== usedPages) {
-                // Ensure that all non-free indexes are used
-                addError("Mismatch_FoundIndexes");
-                //return false;
-            }
-            
-            if(Object.keys(errorReport).length === 0) {
-                //ref.filename = filename;
-                return Output;
-            } else { console.log(filename, errorReport, Output); return false; }
         }
+        if (found.parsed.length !== found.keys.length) {
+            return false;
+        }
+        for (i = 0; i < found.parsed.length; i++) {
+            if (found.parsed.indexOf(found.keys[i]) === -1) {
+                return false;
+            }
+        }
+        return Output;
+    }
 
+    for(i = 0x300; i < 0x500; i += 32)
+    {
+        p = data[i + 0x07]; a = data[i + 0x06];
+        b = data[i + 0x0A]; c = data[i + 0x0B];
 
-
-        // 1. NoteTable keys
-        for(i = 0x300; i < 0x500; i += 32)
+        if(p>=5 && p<=127 && a===0 && b===0 && c===0)
         {
-            p = data[i + 0x07]; a = data[i + 0x06];
-            b = data[i + 0x0A]; c = data[i + 0x0B];
-    
-            if(p>=5 && p<=127 && a===0 && b===0 && c===0)
-            {
-                indexes.push(p);
-            }
-        }
-         
-        out = checkIndexes(0x100) || checkIndexes(0x200);
-        if(out !== false) { ref.MemPak = {
-           Indexes: out 
-        };} else {
-            console.error("ERROR: Corrupt file - %s", filename);
+            noteKeys.push(p);  
         }
     }
+
+    output = checkIndexes(0x100) || checkIndexes(0x200);
+    return output;
+}
 
 
     var ref   = this;
@@ -130,7 +100,7 @@ function MemPak()
 };
  
 var T = new MemPak();
-//T.init();
+//T.init(); 
 //T.parse();
 //console.log(T); 
 
@@ -149,7 +119,8 @@ window.addEventListener("drop", function(event)
             if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
                 data = data.subarray(0x1040);
             }
-            T.parse(data, event.target.name);
+            var parsedData = T.parse(data);
+            if(parsedData) { console.log(parsedData, event.target.name) } else { console.error("Invalid file: ", event.target.name); }
             //console.log(T.MemPak);
         };
         reader.readAsArrayBuffer(files[i].slice(0, 36928));
