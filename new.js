@@ -90,7 +90,9 @@ function MemPak()
             {
                 noteKeys.push(p);  
                 notes[(i - 0x300) / 32] = {
-                    indexes: p
+                    indexes: p,
+                    serial: String.fromCharCode(data[i],data[i+1],data[i+2],data[i+3]),
+                    publisher: String.fromCharCode(data[i+4],data[i+5])
                 };
             }
         }
