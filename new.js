@@ -13,62 +13,91 @@ function MemPak()
         ref.filename = "MemPak.mpk";
     }
 
-    function parse(data)
+function parse(data)
     {
-        var i,p,p2,a,b,c,d0,d1,output,noteKeys=[],notes={};
-    
-        function checkIndexes(o)
+        var i, j, IndexKeys, NoteKeys=[], Notes={}, noteName, n64code, p, p2, a, b, c;
+        
+        function calculateChecksum(o)
         {
-            var seq,ends=0,Output={},found={keys:[],values:[],parsed:[]};
-            for(i = o + 0xA; i < o + 0x100; i += 2)
+            // X,Y = stored checksum | A,B = calculated checksum
+            var i, sumX, sumY, sumA = 0, sumB = 0xFFF2;
+            sumX  = (data[o + 28] << 8) + data[o + 29];
+            sumY  = (data[o + 30] << 8) + data[o + 31];
+        
+            for(i = 0; i < 28; i += 2)
             {
-                p  = data[i + 1]; p2 = data[i];
-    
-                if(p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127)   
-                {
-                    return false;
-                }
-                else if(p2 === 0 && p === 1 || p !== 3 && p >= 5 && p <= 127)
-                {
-                    if(p === 1) {ends += 1;}
-    
-                    if(p !== 1 && found.values.indexOf(p) > -1) {
-                        return false;
-                    }
-                    found.values.push(p);
-                    found.keys.push((i - o) / 2);
-                }
+                sumA += (data[o + i] << 8) + data[o + i + 1];
+                sumA &= 0xFFFF;
             }
-            found.indexes = found.keys.filter(function(n)
+        
+            sumB -= sumA;
+        
+            // Repair corrupt DexDrive checksums
+            if(sumX === sumA && (sumY ^ 0x0C) === sumB)
             {
-                return found.values.indexOf(n) === -1;
-            });
-    
-            if (noteKeys.length !== ends || noteKeys.length !== found.indexes.length) {
+                sumY ^= 0xC;
+                data[o + 31] ^= 0xC;
+            }
+            // Detect unset bits.. if they're not set, game gets mad.
+            if((data[o + 25] & 1) === 0 || (data[o + 26] & 1) === 0)
+            {
                 return false;
             }
-            for (i = 0; i < noteKeys.length; i++) {
-                if (noteKeys.indexOf(found.indexes[i]) === -1) {
+            return (sumX === sumA && sumY === sumB);
+        }
+        
+        function checkIndexes(o) {
+            var Output={}, sum, seq, ends = 0, found = {parsed:[], keys:[], vals:[]};
+            
+            for(i = o + 0xA; i < o + 0x100; i += 2) {
+                p  = data[i + 1]; p2 = data[i];
+                // Capture all non-empty indexes
+                if (p2 === 0 && p === 1 || p >= 5 && p <= 127 && p !== 3) {
+                
+                    if(p === 1) {ends += 1;}
+                    // Return false if duplicate values found
+                    if(p !== 1 && found.vals.indexOf(p) > -1) {
+                        return false;
+                    }
+                    found.vals.push(p);
+                    found.keys.push((i - o) / 2);
+                    
+                } else if (p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127) {
                     return false;
                 }
             }
-    
-            for(i = 0; i < found.indexes.length; i++)
-            {
-                seq = []; p = found.indexes[i];
-                while(p === 1 || p >= 5 && p <= 127)
-                {
-                    if(p === 1)
-                    {
-                        Output[found.indexes[i]] = seq;
+            // Filter out the key indexes
+            IndexKeys = found.keys.filter(function(n) {
+                return found.vals.indexOf(n) === -1;
+            });
+            
+            // Check the length of NoteKeys, IndexKeys and ends
+            if (NoteKeys.length !== IndexKeys.length || NoteKeys.length !== ends) {
+                return false;
+            }
+            // Check that all NoteKeys exist in the list of IndexKeys
+            for (i = 0; i < NoteKeys.length; i++) {
+                if (NoteKeys.indexOf(IndexKeys[i]) === -1) {
+                    return false;
+                }
+            }
+            
+            for(i = 0; i < IndexKeys.length; i++) {
+                p = IndexKeys[i]; seq = [];
+                while(p === 1 || p >= 5 && p <= 127) {
+                    if(p === 1) {
+                        Output[IndexKeys[i]] = seq;
                         break;
                     }
                     seq.push(p);
                     found.parsed.push(p);
-                    p = data[(p * 2) + o + 1];
+                    p = data[p*2 + o + 1];
                 }
             }
-            if (found.parsed.length !== found.keys.length) {
+            
+            // Check parsed indexes against original list
+            if(found.parsed.length !== found.keys.length)
+            {
                 return false;
             }
             for (i = 0; i < found.parsed.length; i++) {
@@ -76,39 +105,131 @@ function MemPak()
                     return false;
                 }
             }
+            
+            // Check IndexTable checksum
+            for(i = o+0xA, sum = 0; i < o+0x100; i++)
+            {
+                sum += data[i];
+            }
+            sum &= 0xFF;
+            if (data[o+1] !== sum)
+            {
+                data[o+1] = sum;
+            }
+            // Backup or Restore the valid table
+            p = (o === 0x100) ? 0x200 : 0x100;
+            for(i = 0; i < 0x100; i++)
+            {
+                data[p + i] = data[o + i];
+            }
+            
             return Output;
         }
+        
+        // Check Header ------------------------------------
+        var chk, currentLoc, loc, lastValidLoc;
+        lastValidLoc = -1;
+        loc  = [0x20, 0x60, 0x80, 0xC0];
     
+        // Quickly check all locations, saving the last valid one.
+        for(i = 0; i < loc.length; i++)
+        {
+            chk = calculateChecksum(loc[i], data);
+            if(chk) { lastValidLoc = loc[i]; }
+        }
+        
+        // Check all locations storing each result.
+        for(i = 0; i < loc.length; i++)
+        {
+            currentLoc = loc[i];
+            chk = calculateChecksum(currentLoc, data);
+        
+            // Detect and replace invalid locations
+            if(lastValidLoc > -1 && chk === false)
+            {
+                for(j = 0; j < 32; j++)
+                {
+                    data[currentLoc + j] = data[lastValidLoc + j];
+                }
+                chk = calculateChecksum(currentLoc, data);
+            }
+        
+            loc[i] = chk;
+        }
+        
+        // Check if all checksums are correct
+        if(true !== (loc[0] && loc[1] && loc[2] && loc[3]))
+        {
+            return false;
+        }
+        n64code = {
+              0:  "",   3:  "",  15: " ", 16: "0",  17: "1",  18: "2",  19: "3",  20: "4",
+             21: "5",  22: "6",  23: "7", 24: "8",  25: "9",  26: "A",  27: "B",  28: "C",
+             29: "D",  30: "E",  31: "F", 32: "G",  33: "H",  34: "I",  35: "J",  36: "K",
+             37: "L",  38: "M",  39: "N", 40: "O",  41: "P",  42: "Q",  43: "R",  44: "S",
+             45: "T",  46: "U",  47: "V", 48: "W",  49: "X",  50: "Y",  51: "Z",  52: "!",
+             53: '"',  54: "#",  55: "'", 56: "*",  57: "+",  58: ",",  59: "-",  60: ".",
+             61: "/",  62: ":",  63: "=", 64: "?",  65: "@",  66: "。",  67: "゛",  68: "゜",
+             69: "ァ",  70: "ィ",  71: "ゥ",  72: "ェ",  73: "ォ",  74: "ッ",  75: "ャ",  76: "ュ",
+             77: "ョ",  78: "ヲ",  79: "ン",  80: "ア",  81: "イ",  82: "ウ",  83: "エ",  84: "オ",
+             85: "カ",  86: "キ",  87: "ク",  88: "ケ",  89: "コ",  90: "サ",  91: "シ",  92: "ス",
+             93: "セ",  94: "ソ",  95: "タ",  96: "チ",  97: "ツ",  98: "テ",  99: "ト", 100: "ナ",
+            101: "ニ", 102: "ヌ", 103: "ネ", 104: "ノ", 105: "ハ", 106: "ヒ", 107: "フ", 108: "ヘ",
+            109: "ホ", 110: "マ", 111: "ミ", 112: "ム", 113: "メ", 114: "モ", 115: "ヤ", 116: "ユ",
+            117: "ヨ", 118: "ラ", 119: "リ", 120: "ル", 121: "レ", 122: "ロ", 123: "ワ", 124: "ガ",
+            125: "ギ", 126: "グ", 127: "ゲ", 128: "ゴ", 129: "ザ", 130: "ジ", 131: "ズ", 132: "ゼ",
+            133: "ゾ", 134: "ダ", 135: "ヂ", 136: "ヅ", 137: "デ", 138: "ド", 139: "バ", 140: "ビ",
+            141: "ブ", 142: "ベ", 143: "ボ", 144: "パ", 145: "ピ", 146: "プ", 147: "ペ", 148: "ポ"
+        };
+        // Parse NoteTable
         for(i = 0x300; i < 0x500; i += 32)
         {
-            p = data[i + 0x07]; a = data[i + 0x06];
-            b = data[i + 0x0A]; c = data[i + 0x0B];
-            d0 = data[i]+data[i+1]+data[i+2]+data[i+3];
-            d1 = data[i+4]+data[i+5];
+            p  = data[i + 0x07];
             
-            if(p>=5 && p<=127 && d0>0 && d1>0 && a===0 && b===0 && c===0)
+            a = data[i]+data[i+1]+data[i+2]+data[i+3]>0 && data[i+4]+data[i+5]>0;
+            b = p>=5 && p<=127 && data[i + 0x06] === 0;
+            c = data[i + 0x0A]===0 && data[i + 0x0B]===0;
+            
+            if(a && b && c)
             {
-                noteKeys.push(p);  
-                notes[(i - 0x300) / 32] = {
+                // Repair 0x08:2 bit shit.
+                if((data[i + 0x08] & 0x02) === 0)
+                {
+                    console.log("INFO: Fixing bit 0x08:2(%s) in %s", (i - 0x300) / 32);
+                    data[i + 0x08] |= 0x02;
+                }
+                
+                for(j = 0, noteName = ""; j < 16; j++)
+                {
+                    noteName += n64code[data[i + 16 + j]];
+                }
+                if(data[i + 12] !== 0)
+                {
+                    noteName += "." + n64code[data[i + 12]];
+                    noteName += n64code[data[i + 13]];
+                    noteName += n64code[data[i + 14]];
+                    noteName += n64code[data[i + 15]];
+                }
+                NoteKeys.push(p);
+                Notes[(i - 0x300) / 32] = {
                     indexes: p,
                     serial: String.fromCharCode(data[i],data[i+1],data[i+2],data[i+3]),
-                    publisher: String.fromCharCode(data[i+4],data[i+5])
+                    publisher: String.fromCharCode(data[i+4],data[i+5]),
+                    noteName: noteName
                 };
             }
         }
-    
+        
         output = checkIndexes(0x100) || checkIndexes(0x200);
-
+        
         if(output)
         {
-            for(i = 0; i < Object.keys(notes).length; i++)
+            for(i = 0; i < Object.keys(Notes).length; i++)
             {
-                notes[Object.keys(notes)[i]].indexes = output[notes[Object.keys(notes)[i]].indexes];
+                Notes[Object.keys(Notes)[i]].indexes = output[Notes[Object.keys(Notes)[i]].indexes];
             }
-            return notes;
-        } else {
-            return false;
-        }
+            return Notes;
+        } else { return false; }
     }
 
     var ref   = this;
@@ -117,9 +238,6 @@ function MemPak()
 };
  
 var T = new MemPak();
-//T.init(); 
-//T.parse();
-//console.log(T); 
 
 ////////////////////////////////////////////////////////////
 window.addEventListener("drop", function(event)
