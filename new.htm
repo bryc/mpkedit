@@ -1,5 +1,76 @@
+<div id="out"></div>
+<link href='http://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet' type='text/css'>
+<style>
+body{background:#fff;margin:16px;}
+body,table{font:bold 16px Lato,sans-serif;color:#444}
+table{border-collapse:collapse;width:100%;margin-bottom:32px;}
+td{padding:6px 12px;}td.pgs{width:100px}
+tr{background:#fff;margin:4px;border-bottom:2px solid #eee;}
+tr:nth-child(even){background:#f6f6f6;}
+div.code{font-weight:300;font-size:12px;color:#999}
+.line{font-size:22px;border-bottom:4px solid #232d51;padding:6px;background-color:#FFF;}
+.empty{text-align:center;font-size:20px;font-style:italic;padding:16px;background-color:#FFF;}
+</style>
+
+<script>
 (function () {
 /* ---- */
+function elem()
+{
+    var i;
+    var keys    = {};
+    var elmnt   = null;
+    var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
+    var prop    = arguments[0][1]; // Argument 0 -> Index 1 (Object)
+ 
+    if(typeof tagName === "string")
+    {
+        elmnt = document.createElement(tagName);
+    } else {
+        // use a doc fragment if no tag specified
+        elmnt = document.createDocumentFragment();
+    }
+    
+    if(typeof prop === "object")
+    {
+        keys = Object.keys(prop);
+    }
+    else if(typeof prop !== "object")
+    {
+        elmnt.textContent = prop;
+    }
+ 
+    for(i = 0; i < keys.length; i++)
+    {
+        var key    = keys[i];
+        var method = elmnt[key.slice(2)];
+ 
+        // specify methods with $_
+        if(key.indexOf("$_") > -1)
+        {
+            // run a method with array of arguments
+            method.apply(elmnt, prop[key]);
+        } else {
+            elmnt[key] = prop[key]; 
+        } 
+    }
+ 
+    // look for other elements to append
+    if(arguments.length > 1)
+    {
+        for(i = 1; i < arguments.length; i++)
+        {
+            // check if the argument is an element
+            if(arguments[i].nodeType > 0)
+            {
+                elmnt.appendChild(arguments[i]);
+            }
+        }
+    }
+ 
+    return elmnt;
+}
+
 function MemPak()
 {
     function init()
@@ -7,12 +78,11 @@ function MemPak()
         var i, data = new Uint8Array(32768);
         function A(a) {for(i=0;i<7;++i) {data[a+i]=[1,1,0,1,1,254,241][i];}}
         A(57);A(121);A(153);A(217);
-        for(i=4;i<128;i++) {data[256+i*2+1]=3;data[512+i*2+1]=3;}
+        for(i=5;i<128;i++) {data[256+i*2+1]=3;data[512+i*2+1]=3;}
         data[257]=113;data[513]=113;
-        ref.data = data;
-        ref.filename = "MemPak.mpk";
+        this.data = data;
+        this.filename = "MemPak.mpk";
     }
-
 function parse(data)
     {
         var i, j, IndexKeys, NoteKeys=[], Notes={}, noteName, n64code, p, p2, a, b, c;
@@ -231,13 +301,69 @@ function parse(data)
             return Notes;
         } else { return false; }
     }
+    this.init  = init;
+    this.parse = parse; 
+}
 
-    var ref   = this;
-    ref.init  = init;
-    ref.parse = parse; 
-};
- 
 var T = new MemPak();
+
+T.init();
+display(T.parse(T.data), T.filename);
+
+
+function display(t)
+{
+    var out =  document.getElementById("out");
+    var list =  elem(["table"]);
+    for(var i = 0; i < 16; i++)
+    {
+        if(t[i]) {
+        list.appendChild(
+            elem(["tr", {className:"item"}],
+                elem(["td",{innerHTML:"<div>"+t[i].noteName+"</div><div class='code'>"+t[i].serial+"</div>"}]),
+                elem(["td",{className:"pgs",innerHTML:t[i].indexes.length}])
+                )
+        )
+        }
+    }
+    
+    while(out.firstChild){
+    out.removeChild(out.firstChild);
+    }
+    
+    if(Object.keys(t).length === 0) {
+ 
+        out.appendChild(        elem([],
+            elem(["div",{className:"line",innerHTML:T.filename}]),
+            elem(["div",{className:"empty",innerHTML:"~ empty"}])
+            ));
+
+
+    } else {
+    out.appendChild(elem([],elem(["div",{className:"line",innerHTML:T.filename}]),list));
+    }
+}
+
+function exportMPK()
+{
+    var f = T.filename.replace(".n64", ".mpk"),
+        el = document.createElement("a");
+
+    el.download = f;
+    el.href = "data:application/octet-stream;base64," +
+        btoa(String.fromCharCode.apply(null, T.data));
+    el.dispatchEvent(new MouseEvent("click"));
+}
+
+
+document.addEventListener("keydown", function(e)
+{
+    e.preventDefault();
+    if (e.ctrlKey && e.keyCode == 83)
+    {
+        exportMPK();
+    }
+}, false);
 
 ////////////////////////////////////////////////////////////
 window.addEventListener("drop", function(event)
@@ -250,17 +376,26 @@ window.addEventListener("drop", function(event)
         reader.name   = files[i].name;
         reader.onload = function(event)
         {
+            T.filename = event.target.name;
             var data = new Uint8Array(event.target.result);
             if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
                 data = data.subarray(0x1040);
             }
-            var parsedData = T.parse(data);
+            var data2 = new Uint8Array(32768);
+            for(i = 0; i < data.length; i++) {
+                data2[i] = data[i];
+            }
+            T.data = data2;
+            
+            var parsedData = T.parse(T.data);
             if(parsedData) {
-                console.log("%c"+event.target.name,"font:bold 12px DejaVu Sans");
+                
+                console.log("%c" + T.filename,"font:bold 12px DejaVu Sans");
                 console.log(parsedData);
+                display(parsedData, T.filename);
                 console.log("   ");
             }
-            else { console.error("Invalid file: ", event.target.name); }
+            else { console.error("Invalid file: ", T.filename); }
         };
         reader.readAsArrayBuffer(files[i].slice(0, 36928));
     }
@@ -269,3 +404,4 @@ window.addEventListener("drop", function(event)
 window.addEventListener("dragover",function(event){event.preventDefault();});
 /* ---- */
 }());
+</script>
