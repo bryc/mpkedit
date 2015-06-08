@@ -1,31 +1,93 @@
-<div id="out"></div>
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
-<link href='http://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet' type='text/css'>
+<link href="http://fonts.googleapis.com/css?family=Lato:400,700" rel="stylesheet">
+
 <style>
-body{background:#fff;margin:16px;margin-left:auto;margin-right:auto;max-width:768px;}
-body,table{font:bold 16px Lato,sans-serif;color:#5C5C5C;}
-table{border-bottom:2px solid #ddd;border-collapse:collapse;width:100%;margin-bottom:32px;}
-td{padding:6px 12px;}td.pgs{width:40px;}td.pgs2{text-align:right;width:80px;}
-tr{background:#fff;margin:4px;}
-tr:nth-child(even){background:#f6f6f6;}
-div.code{font-weight:300;font-size:12px;color:#999;}
-.line{font-size:28px;border-bottom:4px solid #92B9CD;padding:3px 6px;background-color:#FFF;}
-.empty{text-align:center;font-size:20px;font-style:italic;padding:16px;background-color:#FFF;}
-  .fa-folder-open{color:#92B9CD;}
-  .fa{padding:6px;color:#92B9CD;}
-  .fa-floppy-o{float:right;}
-  .fa-trash,.fa-download{padding:6px;}
-  .fa-trash:hover,.fa-download:hover,.fa-floppy-o:hover{cursor:pointer;color:#cda692;background:#f3f3f3}
-   .fa-trash:active,.fa-download:active,.fa-floppy-o:active{color:#b89583;background:#eee}
-  span.load:hover{cursor:pointer;background:#f3f3f3}
-  span.load:hover .fa-folder-open {color:#cda692;}
-  span.load{border-radius:5px;padding:3px;}
-   .emp {opacity:0.75;height:15px}
-</style> <!--  fa-download'></i> <i class='fa fa-trash -->
+body, table {font:bold 16px Lato, sans-serif;}
+
+body {
+  color:#5c5c5c;
+  margin:16px auto;
+  max-width:768px;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-bottom:32px;
+  background:#fff;
+  border-bottom:2px solid #ddd;
+}
+
+tr:nth-child(even) {background:#f6f6f6;}
+td {padding:6px 12px;}
+td.pgs {width:40px;text-align:right;}
+td.pgs2 {text-align:right;width:80px;}
+div.code {font-weight:300;font-size:12px;color:#999;}
+
+.line {
+  font-size:28px;
+  border-bottom:4px solid #92b9cd;
+  padding:3px 6px;
+  background-color:#fff;
+}
+
+.fa {padding:6px;color:#92b9cd;}
+.fa-floppy-o {float:right;}
+.fa-trash,.fa-download {padding:6px;}
+
+span.load {border-radius:5px;padding:3px;}
+span.load:hover {cursor:pointer;background:#f3f3f3;}
+span.load:hover .fa-folder-open {color:#cda692;}
+
+.fa-trash:hover,
+.fa-download:hover,
+.fa-floppy-o:hover {
+  cursor:pointer;
+  color:#cda692;
+  background:#eee;
+}
+.fa-trash:active,
+.fa-download:active,
+.fa-floppy-o:active {
+  color:#b89583;
+  background:#ddd;
+}
+
+.empty {
+  text-align:center;
+  font-size:20px;
+  font-style:italic;
+  padding:16px;
+  background-color:#fff;
+}
+</style>
+
+<div id="out"></div>
 
 <script>
 (function () {
 /* ---- */
+    function crc32(data)
+    {
+        var i, j, tmp, l, crc, table;
+    
+        l = data.length;
+        crc = -1;
+        table = new Uint32Array(256);
+    
+        for (i = 256; i--;) {
+            for (j = 8, tmp = i; j--;) {
+                tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
+            }
+            table[i] = tmp;
+        }
+    
+        for (i = 0; i < l; i++) {
+            crc = crc >>> 8 ^ table[crc & 255 ^ data[i]];
+        }
+    
+        return ("00000000"+((crc^-1)>>>0).toString(16)).slice(-8).toUpperCase();
+    }
 function elem()
 {
     var i;
@@ -34,56 +96,116 @@ function elem()
     var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
     var prop    = arguments[0][1]; // Argument 0 -> Index 1 (Object)
  
-    if(typeof tagName === "string")
-    {
+    if(typeof tagName === "string"){
         elmnt = document.createElement(tagName);
     } else {
         // use a doc fragment if no tag specified
         elmnt = document.createDocumentFragment();
     }
-    
-    if(typeof prop === "object")
-    {
+    if(typeof prop === "object"){
         keys = Object.keys(prop);
     }
-    else if(typeof prop !== "object")
-    {
+    else if(typeof prop !== "object"){
         elmnt.textContent = prop;
     }
- 
-    for(i = 0; i < keys.length; i++)
-    {
+    for(i = 0; i < keys.length; i++){
         var key    = keys[i];
         var method = elmnt[key.slice(2)];
  
         // specify methods with $_
-        if(key.indexOf("$_") > -1)
-        {
+        if(key.indexOf("$_") > -1){
             // run a method with array of arguments
             method.apply(elmnt, prop[key]);
         } else {
             elmnt[key] = prop[key]; 
         } 
     }
- 
     // look for other elements to append
-    if(arguments.length > 1)
-    {
-        for(i = 1; i < arguments.length; i++)
-        {
+    if(arguments.length > 1){
+        for(i = 1; i < arguments.length; i++){
             // check if the argument is an element
-            if(arguments[i].nodeType > 0)
-            {
+            if(arguments[i].nodeType > 0){
                 elmnt.appendChild(arguments[i]);
             }
         }
     }
- 
     return elmnt;
 }
 
 function MemPak()
 {
+    function exportNote()
+    {
+        var i, j, pageAddress, name, fn, MemPak, noteID, gameCode,
+            indexes, fileOut, el;
+    
+        MemPak   = T;
+        noteID   = this.id;
+        gameCode = MemPak.parsedData[noteID].serial;
+        indexes  = MemPak.parsedData[noteID].indexes;
+        fileOut  = [];
+        el       = document.createElement("a");
+    
+        // Get Note Header
+        for(i = 0; i < 32; i++)
+        {
+            fileOut.push(MemPak.data[0x300 + (noteID * 32) + i]);
+        }
+    
+        fileOut[6] = 0xCA;
+        fileOut[7] = 0xFE;
+    
+        // Get Page Data
+        for(i = 0; i < indexes.length; i++)
+        {
+            pageAddress = indexes[i] * 0x100;
+            for(j = 0; j < 0x100; j++)
+            {
+                fileOut.push(MemPak.data[pageAddress + j]);
+            }
+        }
+    
+        if(this.codeDB !== undefined && this.codeDB[gameCode])
+        {
+            name = this.codeDB[gameCode];
+        } else {
+            name = gameCode;
+        }
+    
+        fn = name + "," + crc32(fileOut) + ".note.bin";
+    
+        el.href = "data:application/octet-stream;base64," +
+            btoa(String.fromCharCode.apply(null, fileOut));
+        el.download = fn;
+        el.dispatchEvent(new MouseEvent("click"));
+    }
+
+    function deleteNote()
+    {
+        var i, MemPak, targetIndex, noteID, noteKeyIndex, indexes, newMPK;
+        MemPak       = T;
+        noteID       = parseInt(this.id, 10);
+        noteKeyIndex = MemPak.parsedData[noteID].indexes[0];
+        indexes      = MemPak.parsedData[noteID].indexes;
+    
+        // Mark Indexes as Free
+        for(i = 0; i < indexes.length; i++)
+        {
+            targetIndex = 0x100 + (indexes[i] * 2) + 1;
+            MemPak.data[targetIndex] = 0x03;
+        }
+    
+        // Delete Note Entry
+        for(i = 0; i < 32; i++)
+        {
+            targetIndex = 0x300 + (noteID * 32) + i;
+            MemPak.data[targetIndex] = 0x00;
+        }
+
+        newMPK = MemPak.parse(MemPak.data);
+        display(newMPK, MemPak.filename);
+    }
+
     function init()
     {
         var i, data = new Uint8Array(32768);
@@ -243,7 +365,7 @@ function parse(data)
         {
             return false;
         }
-        n64code = {
+         n64code = {
               0:  "",   3:  "",  15: " ", 16: "0",  17: "1",  18: "2",  19: "3",  20: "4",
              21: "5",  22: "6",  23: "7", 24: "8",  25: "9",  26: "A",  27: "B",  28: "C",
              29: "D",  30: "E",  31: "F", 32: "G",  33: "H",  34: "I",  35: "J",  36: "K",
@@ -314,10 +436,11 @@ function parse(data)
     }
     this.init  = init;
     this.parse = parse; 
+    this.deleteNote = deleteNote; 
+    this.exportNote = exportNote; 
 }
 
 var T = new MemPak();
-
 T.init();
 display(T.parse(T.data), T.filename);
 
@@ -328,42 +451,54 @@ function display(t)
     var list =  elem(["table"]);
     for(var i = 0; i < 16; i++)
     {  
-        if(t[i]) {
-        list.appendChild(
-            elem(["tr", {className:"item"}],
-                elem(["td",{innerHTML:"<div>"+t[i].noteName+"</div><div class='code'>"+t[i].serial+"</div>"}]),
-                elem(["td",{className:"pgs",innerHTML:t[i].indexes.length}]),
-                 elem(["td",{className:"pgs2",innerHTML:"<i class='fa fa-trash'></i><i class='fa fa-download'></i>"}])
+        if(t[i])
+        {
+
+            list.appendChild(
+                elem(["tr", {className:"item"}],
+                    elem(["td",{innerHTML:"<div>"+t[i].noteName+"</div><div class='code'>"+t[i].serial+"</div>"}]),
+                    elem(["td",{className:"pgs",innerHTML:t[i].indexes.length}]),
+                    elem(["td",{className:"pgs2"}],
+                       
+                            elem(["i",{id:i,onclick:T.deleteNote,className:"fa fa-trash"}]),
+                            elem(["i",{id:i,onclick:T.exportNote,className:"fa fa-download"}])
+                        )
                 )
-        )
+            )
         } else {
-        list.appendChild(
-            elem(["tr", {className:"item emp",innerHTML:"<td colspan=3></td>"}]
-               
-                ))
+
         }
     }
     
     while(out.firstChild){
     out.removeChild(out.firstChild);
     }
-    
+    //,innerHTML:"<span class=load><i class='fa fa-folder-open'></i>"+T.filename+"</span><i class='fa fa-floppy-o'></i>"
+    var line = elem(["div",{className:"line"}],
+            elem(["span",{className:"load"}],
+                elem(["i",{className:"fa fa-folder-open"}]),
+                elem(["span",{innerHTML:T.filename}])
+                ),
+            elem(["i",{onclick:exportMPK,className:"fa fa-floppy-o"}])
+        );
+
+
     if(Object.keys(t).length === 0) {
- 
-        out.appendChild(        elem([],
-            elem(["div",{className:"line",innerHTML:"<span class=load><i class='fa fa-folder-open'></i>"+T.filename+"</span><i class='fa fa-floppy-o'></i>"}]),
+ //exportMPK
+        out.appendChild(elem([],
+            line,
             elem(["div",{className:"empty",innerHTML:"~ empty"}])
             ));
 
 
     } else {
-    out.appendChild(elem([],elem(["div",{className:"line",innerHTML:"<span class=load><i class='fa fa-folder-open'></i>"+T.filename+"</span><i class='fa fa-floppy-o'></i>"}]),list));
+    out.appendChild(elem([],line,list));
     }
 }
 
 function exportMPK()
 {
-    var f = T.filename.replace(".n64", ".mpk"),
+    var f = T.filename.replace(".n64", ".mpk").replace(".N64", ".mpk"),
         el = document.createElement("a");
 
     el.download = f;
@@ -372,32 +507,12 @@ function exportMPK()
     el.dispatchEvent(new MouseEvent("click"));
 }
 
-document.addEventListener("keyup", function(e)
-{   if (e.keyCode == 69)
-    {
-             var ttt = document.querySelectorAll(".fa-download");
-      for(var i = 0; i < ttt.length; i++)
-        {
-           ttt[i].style.color = "";
-        }
-    }
-}, false);
-document.addEventListener("keydown", function(e)
+document.addEventListener("keydown", function(event)
 {
-    e.preventDefault();
-    if (e.ctrlKey && e.keyCode == 83)
+    event.preventDefault();
+    if (event.ctrlKey && event.keyCode == 83)
     {
         exportMPK();
-    }
-    e.preventDefault();
-    if (e.keyCode == 69)
-    {
-        var ttt = document.querySelectorAll(".fa-download");
-      for(var i = 0; i < ttt.length; i++)
-        {
-           ttt[i].style.color = "#cd929c";
-        }
-     
     }
 }, false);
 
@@ -412,7 +527,7 @@ window.addEventListener("drop", function(event)
         reader.name   = files[i].name;
         reader.onload = function(event)
         {
-            T.filename = event.target.name;
+            
             var data = new Uint8Array(event.target.result);
             if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
                 data = data.subarray(0x1040);
@@ -421,17 +536,19 @@ window.addEventListener("drop", function(event)
             for(i = 0; i < data.length; i++) {
                 data2[i] = data[i];
             }
-            T.data = data2;
             
-            var parsedData = T.parse(T.data);
+            var parsedData = T.parse(data2);
+
             if(parsedData) {
-                
+                T.data = data2;
+                T.parsedData = parsedData;
+                T.filename = event.target.name;
                 console.log("%c" + T.filename,"font:bold 12px DejaVu Sans");
-                console.log(parsedData);
-                display(parsedData, T.filename);
+                console.log(T.parsedData);
+                display(T.parsedData, T.filename);
                 console.log("   ");
             }
-            else { console.error("Invalid file: ", T.filename); }
+            else { console.error("Invalid file: ", event.target.name); }
         };
         reader.readAsArrayBuffer(files[i].slice(0, 36928));
     }
