@@ -465,15 +465,12 @@ function display(t)
                         )
                 )
             )
-        } else {
-
         }
     }
     
     while(out.firstChild){
     out.removeChild(out.firstChild);
     }
-    //,innerHTML:"<span class=load><i class='fa fa-folder-open'></i>"+T.filename+"</span><i class='fa fa-floppy-o'></i>"
     var line = elem(["div",{className:"line"}],
             elem(["span",{className:"load"}],
                 elem(["i",{className:"fa fa-folder-open"}]),
@@ -481,16 +478,13 @@ function display(t)
                 ),
             elem(["i",{onclick:exportMPK,className:"fa fa-floppy-o"}])
         );
-
-
+        
     if(Object.keys(t).length === 0) {
- //exportMPK
         out.appendChild(elem([],
             line,
             elem(["div",{className:"empty",innerHTML:"~ empty"}])
             ));
-
-
+            
     } else {
     out.appendChild(elem([],line,list));
     }
@@ -527,7 +521,6 @@ window.addEventListener("drop", function(event)
         reader.name   = files[i].name;
         reader.onload = function(event)
         {
-            
             var data = new Uint8Array(event.target.result);
             if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
                 data = data.subarray(0x1040);
