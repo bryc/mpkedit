@@ -1,16 +1,27 @@
 <div id="out"></div>
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
 <link href='http://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet' type='text/css'>
 <style>
-body{background:#fff;margin:16px;}
+body{background:#fff;margin:16px;margin-left:auto;margin-right:auto;max-width:768px;}
 body,table{font:bold 16px Lato,sans-serif;color:#5C5C5C;}
-table{border-collapse:collapse;width:100%;margin-bottom:32px;}
-td{padding:6px 12px;}td.pgs{width:100px;}
+table{border-bottom:2px solid #ddd;border-collapse:collapse;width:100%;margin-bottom:32px;}
+td{padding:6px 12px;}td.pgs{width:40px;}td.pgs2{text-align:right;width:80px;}
 tr{background:#fff;margin:4px;}
 tr:nth-child(even){background:#f6f6f6;}
 div.code{font-weight:300;font-size:12px;color:#999;}
-.line{font-size:26px;border-bottom:4px solid #92B9CD;padding:3px 6px;background-color:#FFF;}
+.line{font-size:28px;border-bottom:4px solid #92B9CD;padding:3px 6px;background-color:#FFF;}
 .empty{text-align:center;font-size:20px;font-style:italic;padding:16px;background-color:#FFF;}
-</style>
+  .fa-folder-open{color:#92B9CD;}
+  .fa{padding:6px;color:#92B9CD;}
+  .fa-floppy-o{float:right;}
+  .fa-trash,.fa-download{padding:6px;}
+  .fa-trash:hover,.fa-download:hover,.fa-floppy-o:hover{cursor:pointer;color:#cda692;background:#f3f3f3}
+   .fa-trash:active,.fa-download:active,.fa-floppy-o:active{color:#b89583;background:#eee}
+  span.load:hover{cursor:pointer;background:#f3f3f3}
+  span.load:hover .fa-folder-open {color:#cda692;}
+  span.load{border-radius:5px;padding:3px;}
+   .emp {opacity:0.75;height:15px}
+</style> <!--  fa-download'></i> <i class='fa fa-trash -->
 
 <script>
 (function () {
@@ -249,7 +260,7 @@ function parse(data)
             117: "ヨ", 118: "ラ", 119: "リ", 120: "ル", 121: "レ", 122: "ロ", 123: "ワ", 124: "ガ",
             125: "ギ", 126: "グ", 127: "ゲ", 128: "ゴ", 129: "ザ", 130: "ジ", 131: "ズ", 132: "ゼ",
             133: "ゾ", 134: "ダ", 135: "ヂ", 136: "ヅ", 137: "デ", 138: "ド", 139: "バ", 140: "ビ",
-            141: "ブ", 142: "ベ", 143: "ボ", 144: "パ", 145: "ピ", 146: "プ", 147: "ペ", 148: "ポ"
+            141: "ブ", 142: "ベ", 143: "ボ", 144: "パ", 145: "ピ", 146: "プ", 147: "ペ", 148: "ポ", 178: ""
         };
         // Parse NoteTable
         for(i = 0x300; i < 0x500; i += 32)
@@ -316,14 +327,20 @@ function display(t)
     var out =  document.getElementById("out");
     var list =  elem(["table"]);
     for(var i = 0; i < 16; i++)
-    {
+    {  
         if(t[i]) {
         list.appendChild(
             elem(["tr", {className:"item"}],
                 elem(["td",{innerHTML:"<div>"+t[i].noteName+"</div><div class='code'>"+t[i].serial+"</div>"}]),
-                elem(["td",{className:"pgs",innerHTML:t[i].indexes.length}])
+                elem(["td",{className:"pgs",innerHTML:t[i].indexes.length}]),
+                 elem(["td",{className:"pgs2",innerHTML:"<i class='fa fa-trash'></i><i class='fa fa-download'></i>"}])
                 )
         )
+        } else {
+        list.appendChild(
+            elem(["tr", {className:"item emp",innerHTML:"<td colspan=3></td>"}]
+               
+                ))
         }
     }
     
@@ -334,13 +351,13 @@ function display(t)
     if(Object.keys(t).length === 0) {
  
         out.appendChild(        elem([],
-            elem(["div",{className:"line",innerHTML:T.filename}]),
+            elem(["div",{className:"line",innerHTML:"<span class=load><i class='fa fa-folder-open'></i>"+T.filename+"</span><i class='fa fa-floppy-o'></i>"}]),
             elem(["div",{className:"empty",innerHTML:"~ empty"}])
             ));
 
 
     } else {
-    out.appendChild(elem([],elem(["div",{className:"line",innerHTML:T.filename}]),list));
+    out.appendChild(elem([],elem(["div",{className:"line",innerHTML:"<span class=load><i class='fa fa-folder-open'></i>"+T.filename+"</span><i class='fa fa-floppy-o'></i>"}]),list));
     }
 }
 
@@ -355,13 +372,32 @@ function exportMPK()
     el.dispatchEvent(new MouseEvent("click"));
 }
 
-
+document.addEventListener("keyup", function(e)
+{   if (e.keyCode == 69)
+    {
+             var ttt = document.querySelectorAll(".fa-download");
+      for(var i = 0; i < ttt.length; i++)
+        {
+           ttt[i].style.color = "";
+        }
+    }
+}, false);
 document.addEventListener("keydown", function(e)
 {
     e.preventDefault();
     if (e.ctrlKey && e.keyCode == 83)
     {
         exportMPK();
+    }
+    e.preventDefault();
+    if (e.keyCode == 69)
+    {
+        var ttt = document.querySelectorAll(".fa-download");
+      for(var i = 0; i < ttt.length; i++)
+        {
+           ttt[i].style.color = "#cd929c";
+        }
+     
     }
 }, false);
 
