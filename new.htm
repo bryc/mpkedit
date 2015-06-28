@@ -60,6 +60,7 @@ span.load:hover .fa-folder-open {color:#cda692;}
   padding:16px;
   background-color:#fff;
 }
+#fopen{display:none}
 </style>
 
 <div id="out"></div>
@@ -471,8 +472,16 @@ function display(t)
     while(out.firstChild){
     out.removeChild(out.firstChild);
     }
+
+    function browse()
+    {
+        document.getElementById("fopen").click();
+    }
+
+
     var line = elem(["div",{className:"line"}],
-            elem(["span",{className:"load"}],
+            elem(["input",{type:"file",id:"fopen",onchange:fileHandler}]),
+            elem(["span",{className:"load",onclick:browse}],
                 elem(["i",{className:"fa fa-folder-open"}]),
                 elem(["span",{innerHTML:T.filename}])
                 ),
@@ -511,10 +520,12 @@ document.addEventListener("keydown", function(event)
 }, false);
 
 ////////////////////////////////////////////////////////////
-window.addEventListener("drop", function(event)
+
+function fileHandler(event)
 {
-    var i, files = event.dataTransfer.files, reader;
-    
+        console.log(event);
+        var i, files = event.target.files || event.dataTransfer.files, reader;
+        console.log(files)
     for(i = 0; i < files.length; i++)
     {
         reader        = new FileReader();
@@ -546,7 +557,9 @@ window.addEventListener("drop", function(event)
         reader.readAsArrayBuffer(files[i].slice(0, 36928));
     }
     event.preventDefault();
-});
+}
+
+window.addEventListener("drop", fileHandler);
 window.addEventListener("dragover",function(event){event.preventDefault();});
 /* ---- */
 }());
