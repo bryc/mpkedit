@@ -22,7 +22,6 @@ window.addEventListener("load", function()
     	if (!event.ctrlKey)
     	{ 
     	    var y = document.querySelectorAll(".fa-download");
-    	   console.log(111111111)
     	    for(var i=0; i < y.length; i++)
     	    {
     	    	y[i].style.color = "";
