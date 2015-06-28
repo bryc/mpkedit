@@ -523,9 +523,7 @@ document.addEventListener("keydown", function(event)
 
 function fileHandler(event)
 {
-        console.log(event);
-        var i, files = event.target.files || event.dataTransfer.files, reader;
-        console.log(files)
+    var i, files = event.target.files || event.dataTransfer.files, reader;
     for(i = 0; i < files.length; i++)
     {
         reader        = new FileReader();
