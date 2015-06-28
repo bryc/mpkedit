@@ -157,9 +157,6 @@ function _MPKEditor()
         fileOut  = [];
         el       = document.createElement("a");
 
-
-
-
         // Get Note Header
         for(i = 0; i < 32; i++)
         {
@@ -188,21 +185,16 @@ function _MPKEditor()
     
         fn = name + "," + crc32(fileOut) + ".note.bin";
     
- if (event.ctrlKey)
-            { 
-                fn = noteName + "," + crc32(fileOut) + ".sav";
-                fileOut = fileOut.splice(32);
-                
-            }
-
+        if (event.ctrlKey)
+        { 
+            fn = noteName + "," + crc32(fileOut) + ".sav";
+            fileOut = fileOut.splice(32);
+        }
 
         el.href = "data:application/octet-stream;base64," +
             btoa(String.fromCharCode.apply(null, fileOut));
         el.download = fn;
         el.dispatchEvent(new MouseEvent("click"));
-
- 
-        
     }
 
     function deleteNote()
