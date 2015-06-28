@@ -1,14 +1,67 @@
 <meta charset="utf-8">
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+<link href="http://fonts.googleapis.com/css?family=Lato:400,700" rel="stylesheet">
 
 <style>
-body{background:#F0E9D1;font-family:sans-serif}
-table{font-size:14px;border-collapse:collapse}
-td,th{padding:4px;height:20px}th:nth-child(2){width:250px}
-td{border:1px solid #BFBAA7;background:#FFF}tr.empty{opacity:.5}
-th{border:1px solid #423B2f;background:#332E24;color:#fff}
-h2{margin:0;padding:6px;background:#fff;border-bottom:1px solid}
-span{padding:6px;background:#332E24;color:#FFF;display:inline-block;margin:6px}
-i{font-size:12px;color:#AAA}
+body, table {font:bold 16px Lato, sans-serif;}
+
+body {
+  color:#5c5c5c;
+  margin:16px auto;
+  max-width:768px;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-bottom:32px;
+  background:#fff;
+  border-bottom:2px solid #ddd;
+}
+
+tr:nth-child(even) {background:#f6f6f6;}
+td {padding:6px 12px;}
+td.pgs {width:40px;text-align:right;}
+td.pgs2 {text-align:right;width:80px;}
+div.code {font-weight:300;font-size:12px;color:#999;}
+
+.line {
+  font-size:28px;
+  border-bottom:4px solid #92b9cd;
+  padding:3px 6px;
+  background-color:#fff;
+}
+
+.fa {padding:6px;color:#92b9cd;}
+.fa-floppy-o {float:right;}
+.fa-trash,.fa-download {padding:6px;}
+
+span.load {border-radius:5px;padding:3px;}
+span.load:hover {cursor:pointer;background:#f3f3f3;}
+span.load:hover .fa-folder-open {color:#cda692;}
+
+.fa-trash:hover,
+.fa-download:hover,
+.fa-floppy-o:hover {
+  cursor:pointer;
+  color:#cda692;
+  background:#eee;
+}
+.fa-trash:active,
+.fa-download:active,
+.fa-floppy-o:active {
+  color:#b89583;
+  background:#ddd;
+}
+
+.empty {
+  text-align:center;
+  font-size:20px;
+  font-style:italic;
+  padding:16px;
+  background-color:#fff;
+}
+#fopen{display:none}
 </style>
 
 <!-- Load MPKEditor -->

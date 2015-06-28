@@ -2,13 +2,15 @@
 {
 	window.addEventListener("load", function()
 	{
-    	if(MPKEditor.constructor.name === "MPKEditor")
+    	if(MPKEditor.constructor.name === "_MPKEditor")
     	{
     		MPKEditor.codeDB = codeDB;
     	}
 	});
 
 	var codeDB = {
+		"Þ­¾ï": "EEPROM/SRAM/Flash Cartridge Save",
+		";­Ñå": "EEPROM/SRAM/Flash Cartridge Save",
 		"NO7P": "007 - The World is Not Enough (E)",
 		"NO7E": "007 - The World is Not Enough (U)",
 		"NTEP": "1080 Snowboarding (E)",
