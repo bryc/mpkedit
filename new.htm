@@ -67,74 +67,71 @@ span.load:hover .fa-folder-open {color:#cda692;}
 
 <script>
 (function () {
-/* ---- */
-    function crc32(data)
-    {
-        var i, j, tmp, l, crc, table;
-    
-        l = data.length;
-        crc = -1;
-        table = new Uint32Array(256);
-    
-        for (i = 256; i--;) {
-            for (j = 8, tmp = i; j--;) {
-                tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
-            }
-            table[i] = tmp;
-        }
-    
-        for (i = 0; i < l; i++) {
-            crc = crc >>> 8 ^ table[crc & 255 ^ data[i]];
-        }
-    
-        return ("00000000"+((crc^-1)>>>0).toString(16)).slice(-8).toUpperCase();
-    }
-function elem()
-{
-    var i;
-    var keys    = {};
-    var elmnt   = null;
-    var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
-    var prop    = arguments[0][1]; // Argument 0 -> Index 1 (Object)
- 
-    if(typeof tagName === "string"){
-        elmnt = document.createElement(tagName);
-    } else {
-        // use a doc fragment if no tag specified
-        elmnt = document.createDocumentFragment();
-    }
-    if(typeof prop === "object"){
-        keys = Object.keys(prop);
-    }
-    else if(typeof prop !== "object"){
-        elmnt.textContent = prop;
-    }
-    for(i = 0; i < keys.length; i++){
-        var key    = keys[i];
-        var method = elmnt[key.slice(2)];
- 
-        // specify methods with $_
-        if(key.indexOf("$_") > -1){
-            // run a method with array of arguments
-            method.apply(elmnt, prop[key]);
-        } else {
-            elmnt[key] = prop[key]; 
-        } 
-    }
-    // look for other elements to append
-    if(arguments.length > 1){
-        for(i = 1; i < arguments.length; i++){
-            // check if the argument is an element
-            if(arguments[i].nodeType > 0){
-                elmnt.appendChild(arguments[i]);
-            }
-        }
-    }
-    return elmnt;
-}
-
+/* ---------------------------------------------------------- */
 function MemPak()
 {
+    var ref = this;
+
+    function doUpdate(_data, _fname)
+    {
+        function isNoteFile(data)
+        {
+            var a = 0 === data[0x0A],
+                b = 0 === data[0x0B],
+                c = 0xCAFE === data[0x07] + (data[0x06] << 8),
+                d = 0 === data.subarray(32).length % 256;
+        
+            return a && b && c && d;
+        }
+
+        if(!_data && !_fname)
+        {
+            _data = init();
+            _fname = "NewMemPak.mpk";
+        }
+
+        var _data2 = new Uint8Array(32768), parsedData;
+
+        for(i = 0; i < _data.length; i++) {
+            _data2[i] = _data[i];
+        }
+
+        parsedData = parse(_data2);
+
+        if(parsedData) {
+            ref.filename   = _fname;
+            ref.data       = _data2;
+            ref.parsedData = parsedData;
+            display(ref.parsedData, ref.filename);
+        } else if(isNoteFile(_data)) {
+            importNote(_data);
+        } else {
+            console.error("Invalid file: ", event.target.name);
+        }
+    }
+
+    function init()
+    {
+        function A(a){for(i=0;i<7;++i){data[a+i]=[1,1,0,1,1,254,241][i];}}
+        var i, data = new Uint8Array(32768);
+        A(57);A(121);A(153);A(217);
+        for(i=5;i<128;i++){data[256+i*2+1]=3;data[512+i*2+1]=3;}
+        data[257]=113;data[513]=113;
+
+        return data;
+    }
+
+    function exportMPK()
+    {
+        var f = ref.filename.replace(".n64", ".mpk").replace(".N64", ".mpk"),
+            el = document.createElement("a");
+    
+        el.download = f;
+        el.href = "data:application/octet-stream;base64," +
+            btoa(String.fromCharCode.apply(null, ref.data));
+        el.dispatchEvent(new MouseEvent("click"));
+    }
+
     function importNote(data)
     {
         var i, j, slotsToUse, newMPK, 
@@ -145,17 +142,15 @@ function MemPak()
         gdata     = data.subarray(32);
         pageCount = gdata.length / 256;
         
-        console.log(this)
-        for(i = 0; i < Object.keys(this.parsedData).length; i++)
+        for(i = 0; i < Object.keys(ref.parsedData).length; i++)
         {
-            if(this.parsedData[i])
+            if(ref.parsedData[i])
             {
-                usedPages += this.parsedData[i].indexes.length;    
+                usedPages += ref.parsedData[i].indexes.length;    
             }
             
             usedNotes++;
         }
-        console.log(usedPages, usedNotes);
 
         if(usedPages + pageCount <= 123 && usedNotes < 16)
         {
@@ -167,7 +162,7 @@ function MemPak()
                     break;
                 }
     
-                if(this.data[0x100 + i + 1] === 3)
+                if(ref.data[0x100 + i + 1] === 3)
                 {
                     slotsToUse.push(i / 2);
                 }
@@ -184,38 +179,31 @@ function MemPak()
     
                 if(i === slotsToUse.length - 1)
                 {
-                    this.data[dest1] = 0x01;
+                    ref.data[dest1] = 0x01;
                 } else {
-                    this.data[dest1] = slotsToUse[i+1];
+                    ref.data[dest1] = slotsToUse[i+1];
                 }
     
                 for(j = 0; j < 0x100; j++)
                 {
-                    this.data[dest2+j] = gdata[dest3+j];
+                    ref.data[dest2+j] = gdata[dest3+j];
                 }
             }
     
             for(i = 0; i < 16; i++)
             {
-                if(this.parsedData[i] === undefined)
+                if(ref.parsedData[i] === undefined)
                 {
                     dest = 0x300 + i * 32;
                     for(j = 0; j < 32; j++)
                     {
-                        this.data[dest+j] = note[j];
+                        ref.data[dest+j] = note[j];
                     }
                     break;
                 }
             }
-            newMPK = this.parse(this.data);
-            if(newMPK)
-            {
-                this.parsedData = newMPK;
-                display(this.parsedData, this.filename);
-            }
-            //newMPK = parseMPK(MemPak.data, MemPak.filename);
-            
-            //updateMPK(newMPK);
+
+            ref.doUpdate(ref.data, ref.filename);
         } else {
             alert("Pages: " + usedPages +  " / 123, Notes: " + usedNotes + " / 16\n" +
                   "Requires 1 Note and " + pageCount + " Page(s).");
@@ -224,21 +212,20 @@ function MemPak()
 
     function exportNote()
     {
-        var i, j, pageAddress, name, fn, MemPak, noteID, gameCode,
+        var i, j, pageAddress, name, fn, noteID, gameCode,
             indexes, fileOut, el;
     
-        MemPak   = T;
         noteID   = this.id;
-        gameCode = MemPak.parsedData[noteID].serial;
-        noteName = MemPak.parsedData[noteID].noteName;
-        indexes  = MemPak.parsedData[noteID].indexes;
+        gameCode = ref.parsedData[noteID].serial;
+        noteName = ref.parsedData[noteID].noteName;
+        indexes  = ref.parsedData[noteID].indexes;
         fileOut  = [];
         el       = document.createElement("a");
     
         // Get Note Header
         for(i = 0; i < 32; i++)
         {
-            fileOut.push(MemPak.data[0x300 + (noteID * 32) + i]);
+            fileOut.push(ref.data[0x300 + (noteID * 32) + i]);
         }
     
         fileOut[6] = 0xCA;
@@ -250,13 +237,13 @@ function MemPak()
             pageAddress = indexes[i] * 0x100;
             for(j = 0; j < 0x100; j++)
             {
-                fileOut.push(MemPak.data[pageAddress + j]);
+                fileOut.push(ref.data[pageAddress + j]);
             }
         }
     
-        if(this.codeDB !== undefined && this.codeDB[gameCode])
+        if(ref.codeDB !== undefined && ref.codeDB[gameCode])
         {
-            name = this.codeDB[gameCode];
+            name = ref.codeDB[gameCode];
         } else {
             name = noteName;
         }
@@ -271,46 +258,29 @@ function MemPak()
 
     function deleteNote()
     {
-        var i, MemPak, targetIndex, noteID, noteKeyIndex, indexes, newMPK;
-        MemPak       = T;
+        var i, targetIndex, noteID, noteKeyIndex, indexes, newMPK;
         noteID       = parseInt(this.id, 10);
-        noteKeyIndex = MemPak.parsedData[noteID].indexes[0];
-        indexes      = MemPak.parsedData[noteID].indexes;
+        noteKeyIndex = ref.parsedData[noteID].indexes[0];
+        indexes      = ref.parsedData[noteID].indexes;
     
         // Mark Indexes as Free
         for(i = 0; i < indexes.length; i++)
         {
             targetIndex = 0x100 + (indexes[i] * 2) + 1;
-            MemPak.data[targetIndex] = 0x03;
+            ref.data[targetIndex] = 0x03;
         }
     
         // Delete Note Entry
         for(i = 0; i < 32; i++)
         {
             targetIndex = 0x300 + (noteID * 32) + i;
-            MemPak.data[targetIndex] = 0x00;
+            ref.data[targetIndex] = 0x00;
         }
 
-
-        newMPK = MemPak.parse(MemPak.data);
-        if(newMPK)
-        {
-            MemPak.parsedData = newMPK;
-            display(MemPak.parsedData, MemPak.filename);
-        }
+        ref.doUpdate(ref.data, ref.filename);
     }
 
-    function init()
-    {
-        var i, data = new Uint8Array(32768);
-        function A(a) {for(i=0;i<7;++i) {data[a+i]=[1,1,0,1,1,254,241][i];}}
-        A(57);A(121);A(153);A(217);
-        for(i=5;i<128;i++) {data[256+i*2+1]=3;data[512+i*2+1]=3;}
-        data[257]=113;data[513]=113;
-        this.data = data;
-        this.filename = "MemPak.mpk";
-    }
-function parse(data)
+    function parse(data)
     {
         var i, j, IndexKeys, NoteKeys=[], Notes={}, noteName, n64code, p, p2, a, b, c;
         
@@ -489,10 +459,9 @@ function parse(data)
             
             if(a && b && c)
             {
-                // Repair 0x08:2 bit shit.
+                // Repair 0x08:2 bit thing.
                 if((data[i + 0x08] & 0x02) === 0)
                 {
-                    console.log("INFO: Fixing bit 0x08:2(%s) in %s", (i - 0x300) / 32);
                     data[i + 0x08] |= 0x02;
                 }
                 
@@ -528,18 +497,15 @@ function parse(data)
             return Notes;
         } else { return false; }
     }
-    this.init  = init;
-    this.parse = parse; 
-    this.deleteNote = deleteNote; 
-    this.importNote = importNote;
-    this.exportNote = exportNote; 
+
+    ref.deleteNote = deleteNote; 
+    ref.exportNote = exportNote; 
+    ref.exportMPK  = exportMPK;
+    ref.doUpdate   = doUpdate;
 }
 
-var T = new MemPak();
-T.init();
-T.parsedData = T.parse(T.data);
-display(T.parsedData, T.filename);
-
+var Mempak = new MemPak();
+Mempak.doUpdate();
 
 function display(t)
 {
@@ -549,15 +515,14 @@ function display(t)
     {  
         if(t[i])
         {
-
             list.appendChild(
                 elem(["tr", {className:"item"}],
                     elem(["td",{innerHTML:"<div>"+t[i].noteName+"</div><div class='code'>"+t[i].serial+"</div>"}]),
                     elem(["td",{className:"pgs",innerHTML:t[i].indexes.length}]),
                     elem(["td",{className:"pgs2"}],
                        
-                            elem(["i",{id:i,onclick:T.deleteNote,className:"fa fa-trash"}]),
-                            elem(["i",{id:i,onclick:T.exportNote,className:"fa fa-download"}])
+                            elem(["i",{id:i,onclick:Mempak.deleteNote,className:"fa fa-trash"}]),
+                            elem(["i",{id:i,onclick:Mempak.exportNote,className:"fa fa-download"}])
                         )
                 )
             )
@@ -565,7 +530,7 @@ function display(t)
     }
     
     while(out.firstChild){
-    out.removeChild(out.firstChild);
+        out.removeChild(out.firstChild);
     }
 
     function browse()
@@ -573,14 +538,13 @@ function display(t)
         document.getElementById("fopen").click();
     }
 
-
     var line = elem(["div",{className:"line"}],
             elem(["input",{type:"file",id:"fopen",multiple:"multiple",onchange:fileHandler}]),
             elem(["span",{className:"load",onclick:browse}],
                 elem(["i",{className:"fa fa-folder-open"}]),
-                elem(["span",{innerHTML:T.filename}])
+                elem(["span",{innerHTML:Mempak.filename}])
                 ),
-            elem(["i",{onclick:exportMPK,className:"fa fa-floppy-o"}])
+            elem(["i",{onclick:Mempak.exportMPK,className:"fa fa-floppy-o"}])
         );
         
     if(Object.keys(t).length === 0) {
@@ -594,78 +558,14 @@ function display(t)
     }
 }
 
-function exportMPK()
-{
-    var f = T.filename.replace(".n64", ".mpk").replace(".N64", ".mpk"),
-        el = document.createElement("a");
-
-    el.download = f;
-    el.href = "data:application/octet-stream;base64," +
-        btoa(String.fromCharCode.apply(null, T.data));
-    el.dispatchEvent(new MouseEvent("click"));
-}
-
 document.addEventListener("keydown", function(event)
 {
     event.preventDefault();
     if (event.ctrlKey && event.keyCode == 83)
     {
-        exportMPK();
+        Mempak.exportMPK();
     }
 }, false);
-
-////////////////////////////////////////////////////////////
-
-function readData(event)
-{
-    function isNoteFile(data)
-    {
-        var a = 0 === data[0x0A],
-            b = 0 === data[0x0B],
-            c = 0xCAFE === data[0x07] + (data[0x06] << 8),
-            d = 0 === data.subarray(32).length % 256;
-    
-        return a && b && c && d;
-    }
-
-    var data  = new Uint8Array(event.target.result),
-        data2 = new Uint8Array(32768),
-        parsedData;
-
-    // DexDrive support - Remove DexDrive header
-    if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
-        data = data.subarray(0x1040);
-    }
-
-    // MPK - Refill Memory
-    for(i = 0; i < data.length; i++) {
-        data2[i] = data[i];
-    }
-    
-    parsedData = T.parse(data2);
-
-    if(parsedData)
-    {
-        T.data = data2;
-        T.parsedData = parsedData;
-        T.filename = event.target.name;
-        display(T.parsedData, T.filename);
-
-        console.log("%c" + T.filename,"font:bold 12px DejaVu Sans");
-        console.log(T.parsedData);
-        console.log("   ");
-    }
-    else if(isNoteFile(data))
-    {
-        T.importNote(data, T);
-        //alert("NOTE FILE FOUND");
-    }
-    else
-    {
-        console.error("Invalid file: ", event.target.name);
-    }
-}
-
 
 function fileHandler(event)
 {
@@ -674,7 +574,18 @@ function fileHandler(event)
     {
         reader        = new FileReader();
         reader.name   = files[i].name;
-        reader.onload = readData;
+        reader.onload = function(event)
+        {
+            var data  = new Uint8Array(event.target.result),
+                data2 = new Uint8Array(32768);
+        
+            // DexDrive support - Remove DexDrive header
+            if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
+                data = data.subarray(0x1040);
+            }
+            
+            Mempak.doUpdate(data, event.target.name);
+        };
         reader.readAsArrayBuffer(files[i].slice(0, 36928));
     }
     event.preventDefault();
@@ -682,6 +593,72 @@ function fileHandler(event)
 
 window.addEventListener("drop", fileHandler);
 window.addEventListener("dragover",function(event){event.preventDefault();});
-/* ---- */
+
+function crc32(data)
+{
+    var i, j, tmp, l, crc, table;
+
+    l = data.length;
+    crc = -1;
+    table = new Uint32Array(256);
+
+    for (i = 256; i--;) {
+        for (j = 8, tmp = i; j--;) {
+            tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
+        }
+        table[i] = tmp;
+    }
+
+    for (i = 0; i < l; i++) {
+        crc = crc >>> 8 ^ table[crc & 255 ^ data[i]];
+    }
+
+    return ("00000000"+((crc^-1)>>>0).toString(16)).slice(-8).toUpperCase();
+}
+
+function elem()
+{
+    var i;
+    var keys    = {};
+    var elmnt   = null;
+    var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
+    var prop    = arguments[0][1]; // Argument 0 -> Index 1 (Object)
+ 
+    if(typeof tagName === "string"){
+        elmnt = document.createElement(tagName);
+    } else {
+        // use a doc fragment if no tag specified
+        elmnt = document.createDocumentFragment();
+    }
+    if(typeof prop === "object"){
+        keys = Object.keys(prop);
+    }
+    else if(typeof prop !== "object"){
+        elmnt.textContent = prop;
+    }
+    for(i = 0; i < keys.length; i++){
+        var key    = keys[i];
+        var method = elmnt[key.slice(2)];
+ 
+        // specify methods with $_
+        if(key.indexOf("$_") > -1){
+            // run a method with array of arguments
+            method.apply(elmnt, prop[key]);
+        } else {
+            elmnt[key] = prop[key]; 
+        } 
+    }
+    // look for other elements to append
+    if(arguments.length > 1){
+        for(i = 1; i < arguments.length; i++){
+            // check if the argument is an element
+            if(arguments[i].nodeType > 0){
+                elmnt.appendChild(arguments[i]);
+            }
+        }
+    }
+    return elmnt;
+}
+/* ---------------------------------------------------------- */
 }());
 </script>
