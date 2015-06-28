@@ -8,7 +8,7 @@ Allows you to open N64 Controller Pak files, and then export/import notes, delet
 * **Export**, **Import** and **Delete** notes
 * **Game code database** - automatically identifies game name
 
-[Try it](https://cdn.rawgit.com/bryc/mempak/master/index.html)
+[Try it](http://cdn.rawgit.com/bryc/mempak/7332089e5c7ebc6d11227efe4e313db76f924201/index.html)
 
 
 
