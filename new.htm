@@ -135,6 +135,93 @@ function elem()
 
 function MemPak()
 {
+    function importNote(data)
+    {
+        var i, j, slotsToUse, newMPK, 
+        dest, dest1, dest2, dest3, 
+        note, gdata, pageCount, usedPages = 0, usedNotes = 0;
+    
+        note      = data.subarray(0, 32);
+        gdata     = data.subarray(32);
+        pageCount = gdata.length / 256;
+        
+        console.log(this)
+        for(i = 0; i < Object.keys(this.parsedData).length; i++)
+        {
+            if(this.parsedData[i])
+            {
+                usedPages += this.parsedData[i].indexes.length;    
+            }
+            
+            usedNotes++;
+        }
+        console.log(usedPages, usedNotes);
+
+        if(usedPages + pageCount <= 123 && usedNotes < 16)
+        {
+            slotsToUse = [];
+            for(i = 0xA; i < 0x100; i += 2)
+            {
+                if(slotsToUse.length === pageCount)
+                {
+                    break;
+                }
+    
+                if(this.data[0x100 + i + 1] === 3)
+                {
+                    slotsToUse.push(i / 2);
+                }
+            }
+    
+            note[0x06] = 0;
+            note[0x07] = slotsToUse[0];
+    
+            for(i = 0; i < slotsToUse.length; i++)
+            {
+                dest1 = 0x100 + (slotsToUse[i] * 2) + 1;
+                dest2 = 0x100 * slotsToUse[i];
+                dest3 = 0x100 * i;
+    
+                if(i === slotsToUse.length - 1)
+                {
+                    this.data[dest1] = 0x01;
+                } else {
+                    this.data[dest1] = slotsToUse[i+1];
+                }
+    
+                for(j = 0; j < 0x100; j++)
+                {
+                    this.data[dest2+j] = gdata[dest3+j];
+                }
+            }
+    
+            for(i = 0; i < 16; i++)
+            {
+                if(this.parsedData[i] === undefined)
+                {
+                    dest = 0x300 + i * 32;
+                    for(j = 0; j < 32; j++)
+                    {
+                        this.data[dest+j] = note[j];
+                    }
+                    break;
+                }
+            }
+            newMPK = this.parse(this.data);
+            if(newMPK)
+            {
+                this.parsedData = newMPK;
+                display(this.parsedData, this.filename);
+            }
+            //newMPK = parseMPK(MemPak.data, MemPak.filename);
+            
+            //updateMPK(newMPK);
+        } else {
+            alert("Pages: " + usedPages +  " / 123, Notes: " + usedNotes + " / 16\n" +
+                  "Requires 1 Note and " + pageCount + " Page(s).");
+        }
+    }
+
     function exportNote()
     {
         var i, j, pageAddress, name, fn, MemPak, noteID, gameCode,
@@ -143,6 +230,7 @@ function MemPak()
         MemPak   = T;
         noteID   = this.id;
         gameCode = MemPak.parsedData[noteID].serial;
+        noteName = MemPak.parsedData[noteID].noteName;
         indexes  = MemPak.parsedData[noteID].indexes;
         fileOut  = [];
         el       = document.createElement("a");
@@ -170,7 +258,7 @@ function MemPak()
         {
             name = this.codeDB[gameCode];
         } else {
-            name = gameCode;
+            name = noteName;
         }
     
         fn = name + "," + crc32(fileOut) + ".note.bin";
@@ -203,8 +291,13 @@ function MemPak()
             MemPak.data[targetIndex] = 0x00;
         }
 
+
         newMPK = MemPak.parse(MemPak.data);
-        display(newMPK, MemPak.filename);
+        if(newMPK)
+        {
+            MemPak.parsedData = newMPK;
+            display(MemPak.parsedData, MemPak.filename);
+        }
     }
 
     function init()
@@ -438,12 +531,14 @@ function parse(data)
     this.init  = init;
     this.parse = parse; 
     this.deleteNote = deleteNote; 
+    this.importNote = importNote;
     this.exportNote = exportNote; 
 }
 
 var T = new MemPak();
 T.init();
-display(T.parse(T.data), T.filename);
+T.parsedData = T.parse(T.data);
+display(T.parsedData, T.filename);
 
 
 function display(t)
@@ -480,7 +575,7 @@ function display(t)
 
 
     var line = elem(["div",{className:"line"}],
-            elem(["input",{type:"file",id:"fopen",onchange:fileHandler}]),
+            elem(["input",{type:"file",id:"fopen",multiple:"multiple",onchange:fileHandler}]),
             elem(["span",{className:"load",onclick:browse}],
                 elem(["i",{className:"fa fa-folder-open"}]),
                 elem(["span",{innerHTML:T.filename}])
@@ -521,6 +616,57 @@ document.addEventListener("keydown", function(event)
 
 ////////////////////////////////////////////////////////////
 
+function readData(event)
+{
+    function isNoteFile(data)
+    {
+        var a = 0 === data[0x0A],
+            b = 0 === data[0x0B],
+            c = 0xCAFE === data[0x07] + (data[0x06] << 8),
+            d = 0 === data.subarray(32).length % 256;
+    
+        return a && b && c && d;
+    }
+
+    var data  = new Uint8Array(event.target.result),
+        data2 = new Uint8Array(32768),
+        parsedData;
+
+    // DexDrive support - Remove DexDrive header
+    if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
+        data = data.subarray(0x1040);
+    }
+
+    // MPK - Refill Memory
+    for(i = 0; i < data.length; i++) {
+        data2[i] = data[i];
+    }
+    
+    parsedData = T.parse(data2);
+
+    if(parsedData)
+    {
+        T.data = data2;
+        T.parsedData = parsedData;
+        T.filename = event.target.name;
+        display(T.parsedData, T.filename);
+
+        console.log("%c" + T.filename,"font:bold 12px DejaVu Sans");
+        console.log(T.parsedData);
+        console.log("   ");
+    }
+    else if(isNoteFile(data))
+    {
+        T.importNote(data, T);
+        //alert("NOTE FILE FOUND");
+    }
+    else
+    {
+        console.error("Invalid file: ", event.target.name);
+    }
+}
+
+
 function fileHandler(event)
 {
     var i, files = event.target.files || event.dataTransfer.files, reader;
@@ -528,30 +674,7 @@ function fileHandler(event)
     {
         reader        = new FileReader();
         reader.name   = files[i].name;
-        reader.onload = function(event)
-        {
-            var data = new Uint8Array(event.target.result);
-            if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
-                data = data.subarray(0x1040);
-            }
-            var data2 = new Uint8Array(32768);
-            for(i = 0; i < data.length; i++) {
-                data2[i] = data[i];
-            }
-            
-            var parsedData = T.parse(data2);
-
-            if(parsedData) {
-                T.data = data2;
-                T.parsedData = parsedData;
-                T.filename = event.target.name;
-                console.log("%c" + T.filename,"font:bold 12px DejaVu Sans");
-                console.log(T.parsedData);
-                display(T.parsedData, T.filename);
-                console.log("   ");
-            }
-            else { console.error("Invalid file: ", event.target.name); }
-        };
+        reader.onload = readData;
         reader.readAsArrayBuffer(files[i].slice(0, 36928));
     }
     event.preventDefault();
