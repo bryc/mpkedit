@@ -11,10 +11,10 @@ function MPKEditor()
 {
     var ref = this;
 
-    function deleteNote()
-    {
+    function deleteNote(event, num)
+    {   
         var i, targetIndex, noteID, noteKeyIndex, indexes, newMPK;
-        noteID       = parseInt(this.id, 10);
+        noteID       = parseInt(num, 10);
         noteKeyIndex = ref.parsedData[noteID].indexes[0];
         indexes      = ref.parsedData[noteID].indexes;
     
@@ -34,12 +34,12 @@ function MPKEditor()
 
         doUpdate(ref.data, ref.filename);
     }
-    function exportNote(event)
+    function exportNote(event, num)
     {
         var i, j, pageAddress, name, fn, noteID, gameCode,
             indexes, fileOut, el, shft;
     
-        noteID   = this.id;
+        noteID   = num;
         gameCode = ref.parsedData[noteID].serial;
         noteName = ref.parsedData[noteID].noteName;
         indexes  = ref.parsedData[noteID].indexes;
@@ -464,9 +464,8 @@ function MPKEditor()
                         elem(["td",{innerHTML:t[i].noteName+"<div>"+name+"</div>"}]),
                         elem(["td",{innerHTML:t[i].indexes.length}]),
                         elem(["td"],
-                           
-                                elem(["i",{id:i,onclick:deleteNote,className:"fa fa-trash"}]),
-                                elem(["i",{id:i,onclick:exportNote,className:"fa fa-download"}])
+                                elem(["i",{onclick: evarg(deleteNote, i), className:"fa fa-trash"}]),
+                                elem(["i",{onclick: evarg(exportNote, i), className:"fa fa-download"}])
                             )
                     )
                 )
@@ -521,6 +520,12 @@ function MPKEditor()
         }
 
         return ("00000000"+((crc^-1)>>>0).toString(16)).slice(-8).toUpperCase();
+    }
+    function evarg(func) {   
+        var args = Array.prototype.slice.call(arguments, 1);
+        return function(event) {
+            func.apply(null, [event].concat(args));
+        };
     }
     function elem()
     {
