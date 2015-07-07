@@ -7,162 +7,138 @@ window.addEventListener("load", function()
         MPKEdit.init();
 });
 
+function elem()
+{
+    var i;
+    var keys    = {};
+    var elmnt   = null;
+    var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
+    var prop    = arguments[0][1]; // Argument 0 -> Index 1 (Object)
+
+    if(typeof tagName === "string"){
+        elmnt = document.createElement(tagName);
+    } else {
+        // use a doc fragment if no tag specified
+        elmnt = document.createDocumentFragment();
+    }
+    if(typeof prop === "object"){
+        keys = Object.keys(prop);
+    }
+    else if(typeof prop !== "object"){
+        elmnt.textContent = prop;
+    }
+    for(i = 0; i < keys.length; i++){
+        var key    = keys[i];
+        var method = elmnt[key.slice(2)];
+
+        // specify methods with $_
+        if(key.indexOf("$_") > -1){
+            // run a method with array of arguments
+            method.apply(elmnt, prop[key]);
+        } else {
+            elmnt[key] = prop[key]; 
+        } 
+    }
+    // look for other elements to append
+    if(arguments.length > 1){
+        for(i = 1; i < arguments.length; i++){
+            // check if the argument is an element
+            if(arguments[i].nodeType > 0){
+                elmnt.appendChild(arguments[i]);
+            }
+        }
+    }
+    return elmnt;
+}
+function evarg(func) {   
+    var args = Array.prototype.slice.call(arguments, 1);
+    return function(event) {
+        func.apply(null, [event].concat(args));
+    };
+}
+function crc32(data)
+{
+    var i, j, tmp, l, crc, table;
+
+    l = data.length;
+    crc = -1;
+    table = new Uint32Array(256);
+
+    for (i = 256; i--;) {
+        for (j = 8, tmp = i; j--;) {
+            tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
+        }
+        table[i] = tmp;
+    }
+
+    for (i = 0; i < l; i++) {
+        crc = crc >>> 8 ^ table[crc & 255 ^ data[i]];
+    }
+
+    return ("00000000"+((crc^-1)>>>0).toString(16)).slice(-8).toUpperCase();
+}
+
 function MPKEditor()
 {
     var ref = this;
 
-    function deleteNote(event, num)
-    {   
-        var i, targetIndex, noteID, noteKeyIndex, indexes, newMPK;
-        noteID       = parseInt(num, 10);
-        noteKeyIndex = ref.parsedData[noteID].indexes[0];
-        indexes      = ref.parsedData[noteID].indexes;
-    
-        // Mark Indexes as Free
-        for(i = 0; i < indexes.length; i++)
-        {
-            targetIndex = 0x100 + (indexes[i] * 2) + 1;
-            ref.data[targetIndex] = 0x03;
-        }
-    
-        // Delete Note Entry
-        for(i = 0; i < 32; i++)
-        {
-            targetIndex = 0x300 + (noteID * 32) + i;
-            ref.data[targetIndex] = 0x00;
-        }
-
-        doUpdate(ref.data, ref.filename);
-    }
-    function exportNote(event, num)
+    function initApp()
     {
-        var i, j, pageAddress, name, fn, noteID, gameCode,
-            indexes, fileOut, el, shft;
-    
-        noteID   = num;
-        gameCode = ref.parsedData[noteID].serial;
-        noteName = ref.parsedData[noteID].noteName;
-        indexes  = ref.parsedData[noteID].indexes;
-        fileOut  = [];
-        el       = document.createElement("a");
+        updateMPK();
 
-        // Get Note Header
-        for(i = 0; i < 32; i++)
+        window.addEventListener("drop", fileHandler);
+        window.addEventListener("dragover",function(event){event.preventDefault();});
+
+        window.addEventListener("keydown", function(event)
         {
-            fileOut.push(ref.data[0x300 + (noteID * 32) + i]);
-        }
-    
-        fileOut[6] = 0xCA;
-        fileOut[7] = 0xFE;
-    
-        // Get Page Data
-        for(i = 0; i < indexes.length; i++)
-        {
-            pageAddress = indexes[i] * 0x100;
-            for(j = 0; j < 0x100; j++)
-            {
-                fileOut.push(ref.data[pageAddress + j]);
+            event.preventDefault();
+            if (event.ctrlKey)
+            { 
+                var y = document.querySelectorAll(".fa-download");
+                for(var i=0; i < y.length; i++)
+                {
+                    y[i].style.color = "#C00";
+                }
             }
-        }
-        
-        if(ref.codeDB !== undefined && ref.codeDB[gameCode])
-        {
-            name = ref.codeDB[gameCode];
-        } else {
-            name = noteName;
-        }
-    
-        fn = name + "," + crc32(fileOut) + ".note.bin";
-    
-        if (event.ctrlKey)
-        { 
-            fn = noteName + "," + crc32(fileOut) + ".sav";
-            fileOut = fileOut.splice(32);
-        }
 
-        el.href = "data:application/octet-stream;base64," +
-            btoa(String.fromCharCode.apply(null, fileOut));
-        el.download = fn;
-        el.dispatchEvent(new MouseEvent("click"));
+        }, false);
+        window.addEventListener("keyup", function(event)
+        {
+            event.preventDefault();
+            if (!event.ctrlKey)
+            { 
+                var y = document.querySelectorAll(".fa-download");
+                for(var i=0; i < y.length; i++)
+                {
+                    y[i].style.color = "";
+                }
+            }
+        }, false);
     }
-    function importNote(data)
+    function fileHandler(event)
     {
-        var i, j, slotsToUse, newMPK, 
-        dest, dest1, dest2, dest3, 
-        note, gdata, pageCount, usedPages = 0, usedNotes = 0;
-    
-        note      = data.subarray(0, 32);
-        gdata     = data.subarray(32);
-        pageCount = gdata.length / 256;
-        
-        for(i = 0; i < Object.keys(ref.parsedData).length; i++)
+        var i, files = event.target.files || event.dataTransfer.files, reader;
+        for(i = 0; i < files.length; i++)
         {
-            if(ref.parsedData[i])
+            reader        = new FileReader();
+            reader.name   = files[i].name;
+            reader.onload = function(event)
             {
-                usedPages += ref.parsedData[i].indexes.length;    
-            }
+                var data  = new Uint8Array(event.target.result),
+                    data2 = new Uint8Array(32768);
             
-            usedNotes++;
+                // DexDrive support - Remove DexDrive header
+                if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
+                    data = data.subarray(0x1040);
+                }
+                
+                updateMPK(data, event.target.name);
+            };
+            reader.readAsArrayBuffer(files[i].slice(0, 36928));
         }
-
-        if(usedPages + pageCount <= 123 && usedNotes < 16)
-        {
-            slotsToUse = [];
-            for(i = 0xA; i < 0x100; i += 2)
-            {
-                if(slotsToUse.length === pageCount)
-                {
-                    break;
-                }
-    
-                if(ref.data[0x100 + i + 1] === 3)
-                {
-                    slotsToUse.push(i / 2);
-                }
-            }
-    
-            note[0x06] = 0;
-            note[0x07] = slotsToUse[0];
-    
-            for(i = 0; i < slotsToUse.length; i++)
-            {
-                dest1 = 0x100 + (slotsToUse[i] * 2) + 1;
-                dest2 = 0x100 * slotsToUse[i];
-                dest3 = 0x100 * i;
-    
-                if(i === slotsToUse.length - 1)
-                {
-                    ref.data[dest1] = 0x01;
-                } else {
-                    ref.data[dest1] = slotsToUse[i+1];
-                }
-    
-                for(j = 0; j < 0x100; j++)
-                {
-                    ref.data[dest2+j] = gdata[dest3+j];
-                }
-            }
-    
-            for(i = 0; i < 16; i++)
-            {
-                if(ref.parsedData[i] === undefined)
-                {
-                    dest = 0x300 + i * 32;
-                    for(j = 0; j < 32; j++)
-                    {
-                        ref.data[dest+j] = note[j];
-                    }
-                    break;
-                }
-            }
-
-            doUpdate(ref.data, ref.filename);
-        } else {
-            alert("Pages: " + usedPages +  " / 123, Notes: " + usedNotes + " / 16\n" +
-                  "Requires 1 Note and " + pageCount + " Page(s).");
-        }
+        event.preventDefault();
     }
-    function doUpdate(_data, _fname)
+    function updateMPK(_data, _fname)
     {
         function isNoteFile(data)
         {
@@ -178,24 +154,22 @@ function MPKEditor()
 
         if(!_data && !_fname)
         {
-            window.addEventListener("drop", fileHandler);
-            window.addEventListener("dragover",function(event){event.preventDefault();});
-            _data = initMPKData();
-            _fname = "New MemPak.mpk";
+            _data = initMPK();
+            _fname = "New.mpk";
         }
 
         for(i = 0; i < _data.length; i++) {
             _data2[i] = _data[i];
         }
 
-        parsedData = parseMPKData(_data2);
+        parsedData = parseMPK(_data2);
 
         if(parsedData)
         {
             ref.filename   = _fname;
             ref.data       = _data2;
             ref.parsedData = parsedData;
-            updateDisplay(ref.parsedData, ref.filename);
+            updateUI(ref.parsedData, ref.filename);
         }
         else if(isNoteFile(_data))
         {
@@ -206,17 +180,59 @@ function MPKEditor()
             console.error("Invalid file: ", event.target.name);
         }
     }
-    function initMPKData()
+    function updateUI(t)
     {
-        function A(a){for(i=0;i<7;++i){data[a+i]=[1,1,0,1,1,254,241][i];}}
-        var i, data = new Uint8Array(32768);
-        A(57);A(121);A(153);A(217);
-        for(i=5;i<128;i++){data[256+i*2+1]=3;data[512+i*2+1]=3;}
-        data[257]=113;data[513]=113;
-
-        return data;
+        var out =  document.querySelector("body"), name;
+        var list =  elem(["table"]);
+    
+        for(var i = 0; i < 16; i++)
+        {   
+    
+            if(t[i])
+            {
+            if(ref.codeDB !== undefined && ref.codeDB[t[i].serial])
+            {
+                name = ref.codeDB[t[i].serial];
+            } else {
+                name = t[i].serial;
+            }
+                list.appendChild(
+                    elem(["tr"],
+                        elem(["td",{innerHTML:t[i].noteName+"<div>"+name+"</div>"}]),
+                        elem(["td",{innerHTML:t[i].indexes.length}]),
+                        elem(["td"],
+                                elem(["i",{onclick: evarg(deleteNote, i), className:"fa fa-trash"}]),
+                                elem(["i",{onclick: evarg(exportNote, i), className:"fa fa-download"}])
+                            )
+                    )
+                )
+            }
+        }
+        
+        while(out.firstChild){
+            out.removeChild(out.firstChild);
+        }
+    
+        var topToolbar = elem(["div",{className:"topToolbar"}],
+                elem(["input",{type:"file",id:"fileOpen",multiple:"multiple",onchange:fileHandler}]),
+                elem(["span",{className:"loadButton",onclick:function(){document.getElementById("fileOpen").click();}}],
+                    elem(["i",{className:"fa fa-folder-open"}]),
+                    elem(["span",{innerHTML:ref.filename}])
+                    ),
+                elem(["i",{onclick:saveMPK,className:"fa fa-floppy-o"}])
+            );
+            
+        if(Object.keys(t).length === 0) {
+            out.appendChild(elem([],
+                topToolbar,
+                elem(["div",{id:"emptyFile",innerHTML:"~ empty"}])
+                ));
+                
+        } else {
+        out.appendChild(elem([],topToolbar,list));
+        }
     }
-    function parseMPKData(data)
+    function parseMPK(data)
     {
         var output, i, j, IndexKeys, NoteKeys=[], Notes={}, noteName, n64code, p, p2, a, b, c;
         
@@ -433,6 +449,16 @@ function MPKEditor()
             return Notes;
         } else { return false; }
     }
+    function initMPK()
+    {
+        function A(a){for(i=0;i<7;++i){data[a+i]=[1,1,0,1,1,254,241][i];}}
+        var i, data = new Uint8Array(32768);
+        A(57);A(121);A(153);A(217);
+        for(i=5;i<128;i++){data[256+i*2+1]=3;data[512+i*2+1]=3;}
+        data[257]=113;data[513]=113;
+
+        return data;
+    }
     function saveMPK()
     {
         var f = ref.filename.replace(".n64", ".mpk").replace(".N64", ".mpk"),
@@ -443,186 +469,157 @@ function MPKEditor()
             btoa(String.fromCharCode.apply(null, ref.data));
         el.dispatchEvent(new MouseEvent("click"));
     }
-    function updateDisplay(t)
+    function exportNote(event, num)
     {
-        var out =  document.querySelector("body"), name;
-        var list =  elem(["table"]);
+        var i, j, pageAddress, name, fn, noteID, gameCode,
+            indexes, fileOut, el, shft, noteName;
     
-        for(var i = 0; i < 16; i++)
-        {   
+        noteID   = num;
+        gameCode = ref.parsedData[noteID].serial;
+        noteName = ref.parsedData[noteID].noteName;
+        indexes  = ref.parsedData[noteID].indexes;
+        fileOut  = [];
+        el       = document.createElement("a");
+
+        // Get Note Header
+        for(i = 0; i < 32; i++)
+        {
+            fileOut.push(ref.data[0x300 + (noteID * 32) + i]);
+        }
     
-            if(t[i])
+        fileOut[6] = 0xCA;
+        fileOut[7] = 0xFE;
+    
+        // Get Page Data
+        for(i = 0; i < indexes.length; i++)
+        {
+            pageAddress = indexes[i] * 0x100;
+            for(j = 0; j < 0x100; j++)
             {
-            if(ref.codeDB !== undefined && ref.codeDB[t[i].serial])
-            {
-                name = ref.codeDB[t[i].serial];
-            } else {
-                name = t[i].serial;
-            }
-                list.appendChild(
-                    elem(["tr"],
-                        elem(["td",{innerHTML:t[i].noteName+"<div>"+name+"</div>"}]),
-                        elem(["td",{innerHTML:t[i].indexes.length}]),
-                        elem(["td"],
-                                elem(["i",{onclick: evarg(deleteNote, i), className:"fa fa-trash"}]),
-                                elem(["i",{onclick: evarg(exportNote, i), className:"fa fa-download"}])
-                            )
-                    )
-                )
+                fileOut.push(ref.data[pageAddress + j]);
             }
         }
         
-        while(out.firstChild){
-            out.removeChild(out.firstChild);
-        }
-    
-        function browse()
+        if(ref.codeDB !== undefined && ref.codeDB[gameCode])
         {
-            document.getElementById("fileOpen").click();
-        }
-    
-        var topToolbar = elem(["div",{className:"topToolbar"}],
-                elem(["input",{type:"file",id:"fileOpen",multiple:"multiple",onchange:fileHandler}]),
-                elem(["span",{className:"loadButton",onclick:browse}],
-                    elem(["i",{className:"fa fa-folder-open"}]),
-                    elem(["span",{innerHTML:ref.filename}])
-                    ),
-                elem(["i",{onclick:saveMPK,className:"fa fa-floppy-o"}])
-            );
-            
-        if(Object.keys(t).length === 0) {
-            out.appendChild(elem([],
-                topToolbar,
-                elem(["div",{id:"emptyFile",innerHTML:"~ empty"}])
-                ));
-                
+            name = ref.codeDB[gameCode];
         } else {
-        out.appendChild(elem([],topToolbar,list));
+            name = noteName;
         }
-    }
-    function crc32(data)
-    {
-        var i, j, tmp, l, crc, table;
-
-        l = data.length;
-        crc = -1;
-        table = new Uint32Array(256);
-
-        for (i = 256; i--;) {
-            for (j = 8, tmp = i; j--;) {
-                tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
-            }
-            table[i] = tmp;
-        }
-
-        for (i = 0; i < l; i++) {
-            crc = crc >>> 8 ^ table[crc & 255 ^ data[i]];
-        }
-
-        return ("00000000"+((crc^-1)>>>0).toString(16)).slice(-8).toUpperCase();
-    }
-    function evarg(func) {   
-        var args = Array.prototype.slice.call(arguments, 1);
-        return function(event) {
-            func.apply(null, [event].concat(args));
-        };
-    }
-    function elem()
-    {
-        var i;
-        var keys    = {};
-        var elmnt   = null;
-        var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
-        var prop    = arguments[0][1]; // Argument 0 -> Index 1 (Object)
     
-        if(typeof tagName === "string"){
-            elmnt = document.createElement(tagName);
-        } else {
-            // use a doc fragment if no tag specified
-            elmnt = document.createDocumentFragment();
-        }
-        if(typeof prop === "object"){
-            keys = Object.keys(prop);
-        }
-        else if(typeof prop !== "object"){
-            elmnt.textContent = prop;
-        }
-        for(i = 0; i < keys.length; i++){
-            var key    = keys[i];
-            var method = elmnt[key.slice(2)];
+        fn = name + "," + crc32(fileOut) + ".note.bin";
     
-            // specify methods with $_
-            if(key.indexOf("$_") > -1){
-                // run a method with array of arguments
-                method.apply(elmnt, prop[key]);
-            } else {
-                elmnt[key] = prop[key]; 
-            } 
+        if (event.ctrlKey)
+        { 
+            fn = noteName + "," + crc32(fileOut) + ".sav";
+            fileOut = fileOut.splice(32);
         }
-        // look for other elements to append
-        if(arguments.length > 1){
-            for(i = 1; i < arguments.length; i++){
-                // check if the argument is an element
-                if(arguments[i].nodeType > 0){
-                    elmnt.appendChild(arguments[i]);
-                }
-            }
-        }
-        return elmnt;
+
+        el.href = "data:application/octet-stream;base64," +
+            btoa(String.fromCharCode.apply(null, fileOut));
+        el.download = fn;
+        el.dispatchEvent(new MouseEvent("click"));
     }
-    function fileHandler(event)
+    function importNote(data)
     {
-        var i, files = event.target.files || event.dataTransfer.files, reader;
-        for(i = 0; i < files.length; i++)
+        var i, j, slotsToUse, newMPK, 
+        dest, dest1, dest2, dest3, 
+        note, gdata, pageCount, usedPages = 0, usedNotes = 0;
+    
+        note      = data.subarray(0, 32);
+        gdata     = data.subarray(32);
+        pageCount = gdata.length / 256;
+        
+        for(i = 0; i < 16; i++)
         {
-            reader        = new FileReader();
-            reader.name   = files[i].name;
-            reader.onload = function(event)
+            if(ref.parsedData[i])
             {
-                var data  = new Uint8Array(event.target.result),
-                    data2 = new Uint8Array(32768);
-            
-                // DexDrive support - Remove DexDrive header
-                if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
-                    data = data.subarray(0x1040);
-                }
-                
-                doUpdate(data, event.target.name);
-            };
-            reader.readAsArrayBuffer(files[i].slice(0, 36928));
+                usedPages += ref.parsedData[i].indexes.length; 
+                usedNotes++;  
+            }
         }
-        event.preventDefault();
-    }
-    function initApp()
-    {
-        doUpdate();
 
-        document.addEventListener("keydown", function(event)
+        if(usedPages + pageCount <= 123 && usedNotes < 16)
         {
-            event.preventDefault();
-            if (event.ctrlKey)
-            { 
-                var y = document.querySelectorAll(".fa-download");
-                for(var i=0; i < y.length; i++)
+            slotsToUse = [];
+            for(i = 0xA; i < 0x100; i += 2)
+            {
+                if(slotsToUse.length === pageCount)
                 {
-                    y[i].style.color = "#C00";
+                    break;
+                }
+    
+                if(ref.data[0x100 + i + 1] === 3)
+                {
+                    slotsToUse.push(i / 2);
+                }
+            }
+    
+            note[0x06] = 0;
+            note[0x07] = slotsToUse[0];
+    
+            for(i = 0; i < slotsToUse.length; i++)
+            {
+                dest1 = 0x100 + (slotsToUse[i] * 2) + 1;
+                dest2 = 0x100 * slotsToUse[i];
+                dest3 = 0x100 * i;
+    
+                if(i === slotsToUse.length - 1)
+                {
+                    ref.data[dest1] = 0x01;
+                } else {
+                    ref.data[dest1] = slotsToUse[i+1];
+                }
+    
+                for(j = 0; j < 0x100; j++)
+                {
+                    ref.data[dest2+j] = gdata[dest3+j];
+                }
+            }
+    
+            for(i = 0; i < 16; i++)
+            {
+                if(ref.parsedData[i] === undefined)
+                {
+                    dest = 0x300 + i * 32;
+                    for(j = 0; j < 32; j++)
+                    {
+                        ref.data[dest+j] = note[j];
+                    }
+                    break;
                 }
             }
 
-        }, false);
-        document.addEventListener("keyup", function(event)
-        {
-            event.preventDefault();
-            if (!event.ctrlKey)
-            { 
-                var y = document.querySelectorAll(".fa-download");
-                for(var i=0; i < y.length; i++)
-                {
-                    y[i].style.color = "";
-                }
-            }
-        }, false);
+            updateMPK(ref.data, ref.filename);
+        } else {
+            alert("Pages: " + usedPages +  " / 123 ("+(123-usedPages)+" free), Notes: " + usedNotes + " / 16\n" +
+                  "Requires 1 Note and " + pageCount + " Page(s).");
+        }
     }
+    function deleteNote(event, num)
+    {   
+        var i, targetIndex, noteID, noteKeyIndex, indexes, newMPK;
+        noteID       = parseInt(num, 10);
+        noteKeyIndex = ref.parsedData[noteID].indexes[0];
+        indexes      = ref.parsedData[noteID].indexes;
+    
+        // Mark Indexes as Free
+        for(i = 0; i < indexes.length; i++)
+        {
+            targetIndex = 0x100 + (indexes[i] * 2) + 1;
+            ref.data[targetIndex] = 0x03;
+        }
+    
+        // Delete Note Entry
+        for(i = 0; i < 32; i++)
+        {
+            targetIndex = 0x300 + (noteID * 32) + i;
+            ref.data[targetIndex] = 0x00;
+        }
+
+        updateMPK(ref.data, ref.filename);
+    }
+
     ref.init = initApp;
 }
 
@@ -1451,5 +1448,4 @@ var _codeDB = {
     "NYSP": "Yoshi's Story (U)",
     "NMZJ": "Zool - Majou Tsukai Densetsu (J)"
 };
-
 }());
