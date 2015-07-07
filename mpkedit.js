@@ -1,10 +1,12 @@
 ~function() {
+
+	/* app init onload */
 	window.addEventListener("load", function() {
 		var MPKEdit = new MPKEditor();
-			MPKEdit.codeDB = _codeDB;
 			MPKEdit.init();
 	});
 
+	/* elem - element constructor */
 	function elem() {
 		var i, key, method,
 			keys    = {},
@@ -47,12 +49,15 @@
 		}
 		return elmnt;
 	}
+
+	/* evarg - arguments for event handlers */
 	function evarg(func) {
 		var args = Array.prototype.slice.call(arguments, 1);
 		return function(event) {
 			func.apply(null, [event].concat(args));
 		};
 	}
+
 	function crc32(data) {
 		var i, j, tmp, l = data.length, crc = -1,
 			table = new Uint32Array(256);
@@ -68,252 +73,187 @@
 		return ("00000000"+((crc^-1)>>>0).toString(16)).slice(-8).toUpperCase();
 	}
 
+	/* MPKEditor - app functions */
 	function MPKEditor() {
+		var ref = this;
+		ref.init = initApp;
+
+		/* initApp - initialisation of app */
 		function initApp() {
-			var i, y;
-			updateMPK();
+
+			function savcol() {
+				var i, y = document.querySelectorAll(".fa-download");
+				for(i = 0; i < y.length; i++) {
+					y[i].style.color = event.ctrlKey ? "#c00" : "";
+				}
+			}
+
+			// Drag & drop handler
+			window.addEventListener("dragover", function(event) {
+				event.preventDefault();
+			});
 			window.addEventListener("drop", fileHandler);
-			window.addEventListener("dragover", function(event) {event.preventDefault();});
-			window.addEventListener("keydown", function(event) {
-				event.preventDefault();
-				if (event.ctrlKey) {
-					y = document.querySelectorAll(".fa-download");
-					for(i = 0; i < y.length; i++) {
-						y[i].style.color = "#c00";
-					}
-				}
-			}, false);
-			window.addEventListener("keyup", function(event) {
-				event.preventDefault();
-				if (!event.ctrlKey) {
-					y = document.querySelectorAll(".fa-download");
-					for(i = 0; i < y.length; i++) {
-						y[i].style.color = "";
-					}
-				}
-			}, false); // TODO: check this false shit
+
+			// Holding CTRL, change color of save icon.
+			window.addEventListener("keydown", savcol);
+			window.addEventListener("keyup", savcol);
+
+			updateMPK();
 		}
+
+		/* fileHandler - handles file input (drag/drop + browse) */
 		function fileHandler(event) {
-			var i, files = event.target.files || event.dataTransfer.files, reader;
+
+			// loadData - Load file data, proceeding to parse
+			function loadData(event) {
+				var data  = new Uint8Array(event.target.result),
+					data2 = new Uint8Array(32768);
+				// DexDrive support - Remove DexDrive header
+				if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
+					data = data.subarray(0x1040);
+				}
+				updateMPK(data, event.target.name);
+			}
+
+			var i, reader,
+				// depending if triggered by input.file or drag/drop
+				files = event.target.files || event.dataTransfer.files;
+
 			for(i = 0; i < files.length; i++) {
 				reader        = new FileReader();
 				reader.name   = files[i].name;
-				reader.onload = function(event) {
-					var data  = new Uint8Array(event.target.result),
-						data2 = new Uint8Array(32768);
-					// DexDrive support - Remove DexDrive header
-					if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
-						data = data.subarray(0x1040);
-					}
-					updateMPK(data, event.target.name);
-				};
+				reader.onload = loadData;
+
+				// 36,928 is max for DexDrive, 32,768 is max for MPK
+				// We read no more than DexDrive's maximum
 				reader.readAsArrayBuffer(files[i].slice(0, 36928));
 			}
 			event.preventDefault();
 		}
+
+		/* updateMPK - parse/check data then update UI */
 		function updateMPK(_data, _fname) {
+
+			//isNoteFile - detects note file data
 			function isNoteFile(data) {
+
+					// these are known to be 0
 				var a = 0 === data[0x0A],
 					b = 0 === data[0x0B],
+
+					// 0xCAFE is the fileid defined in the export file
 					c = 0xCAFE === data[0x07] + (data[0x06] << 8),
+
+					// The size of the pagedata should be a multiple of 256
 					d = 0 === data.subarray(32).length % 256;
+
 				return a && b && c && d;
 			}
+
 			var i, parsedData, _data2 = new Uint8Array(32768);
+
+			// Init the MPK data and filename if they don't exist
 			if(!_data && !_fname) {
 				_data = initMPK();
 				_fname = "New.mpk";
 			}
+
+			// Copy to fixed-size array
+			// This is to ensure that the data is always 32KiB 
 			for(i = 0; i < _data.length; i++) {
 				_data2[i] = _data[i];
 			}
+
 			parsedData = parseMPK(_data2);
+
+			// check if parseMPK is successful
 			if(parsedData) {
 				ref.filename   = _fname;
 				ref.data       = _data2;
 				ref.parsedData = parsedData;
-				updateUI(ref.parsedData, ref.filename);
-			} else if(isNoteFile(_data)) {
-				importNote(_data);
-			} else {
-				console.error("Invalid file: ", event.target.name);
+
+				updateUI(ref.parsedData);
+			}
+			else if(isNoteFile(_data)) {
+				importNote(_data, _fname);
+			}
+			else {
+				console.error("Invalid file: ", _fname);
 			}
 		}
-		function updateUI(t) {
-			var i, name, topToolbar,
+
+		/* updateUI - produce user-interface */
+		function updateUI(notes) {
+			function browse() { document.getElementById("fileOpen").click(); }
+
+			var i, name, topToolbar, trow, browse,
 				out = document.querySelector("body"),
 				list = elem(["table"]);
+
+			topToolbar =
+			elem(["div", {className: "topToolbar"}],
+				elem(["input", {type: "file", id: "fileOpen",
+					multiple: "multiple", onchange: fileHandler}]),
+
+				elem(["span", {className: "loadButton", onclick: browse}],
+					elem(["i", {className: "fa fa-folder-open"}]),
+					elem(["span", {innerHTML: ref.filename}])
+				),
+				elem(["i", {onclick: saveMPK, className: "fa fa-floppy-o"}])
+			);
+
+			document.title = (123-ref.pages) + ", " + (16-ref.notes) + ", " + ref.filename;
+
 			for(i = 0; i < 16; i++) {
-				if(t[i]) {
-					if(ref.codeDB !== undefined && ref.codeDB[t[i].serial]) {
-						name = ref.codeDB[t[i].serial];
-					} else {
-						name = t[i].serial;
-					}
-					list.appendChild(
-						elem(["tr"],
-							elem(["td", {innerHTML: t[i].noteName + 
-								"<div>" + name + "</div>"}]),
+				if(notes[i]) {
+					name = codeDB[notes[i].serial];
 
-							elem(["td", {innerHTML: t[i].indexes.length}]),
+					trow =
+					elem(["tr"],
+						elem(["td", {innerHTML: notes[i].noteName +
+							"<div>" + name + "</div>"}]),
 
-							elem(["td"],
-									elem(["i", {onclick: evarg(deleteNote, i),
-										className: "fa fa-trash"}]),
-									elem(["i", {onclick: evarg(exportNote, i),
-										className: "fa fa-download"}])
-								)
+						elem(["td", {innerHTML: notes[i].indexes.length}]),
+						elem(["td"],
+							elem(["i", {onclick: evarg(deleteNote, i),
+								className: "fa fa-trash"}]),
+
+							elem(["i", {onclick: evarg(exportNote, i),
+								className: "fa fa-download"}])
 						)
 					);
+
+					list.appendChild(trow);
 				}
 			}
+
+			// remove all children in the body
 			while(out.firstChild) {
 				out.removeChild(out.firstChild);
 			}
 
-			topToolbar = elem(["div", {className: "topToolbar"}],
-
-				elem(["input", {type: "file", id: "fileOpen",
-					multiple: "multiple", onchange: fileHandler}]),
-
-				elem(["span", {className: "loadButton",
-					onclick:function() {document.getElementById("fileOpen").click();}}],
-
-					elem(["i", {className: "fa fa-folder-open"}]),
-					elem(["span", {innerHTML: ref.filename}])
-				),
-
-				elem(["i", {onclick: saveMPK, className: "fa fa-floppy-o"}])
-			);
-			if(Object.keys(t).length === 0) {
-				out.appendChild(elem([],
-					topToolbar,
+			if(Object.keys(notes).length === 0) {
+				out.appendChild(topToolbar);
+				out.appendChild(
 					elem(["div", {id: "emptyFile", innerHTML: "~ empty"}])
-				));
+				);
 			} else {
-				out.appendChild(elem([],topToolbar,list));
+				out.appendChild(topToolbar);
+				out.appendChild(list);
 			}
+			console.log(ref);
 		}
+
+		/* parseMPK - checks, validates and parses MPK file data */
 		function parseMPK(data) {
-			function calculateChecksum(o) {
-				// X,Y = stored checksum | A,B = calculated checksum
-				var i, sumX, sumY, sumA = 0, sumB = 0xFFF2;
-				sumX  = (data[o + 28] << 8) + data[o + 29];
-				sumY  = (data[o + 30] << 8) + data[o + 31];
-				for(i = 0; i < 28; i += 2) {
-					sumA += (data[o + i] << 8) + data[o + i + 1];
-					sumA &= 0xFFFF;
-				}
-				sumB -= sumA;
-				// Repair corrupt DexDrive checksums
-				if(sumX === sumA && (sumY ^ 0x0C) === sumB) {
-					sumY ^= 0xC;
-					data[o + 31] ^= 0xC;
-				}
-				// Detect unset bits.. if they're not set, game gets mad.
-				if((data[o + 25] & 1) === 0 || (data[o + 26] & 1) === 0) {
-					return false;
-				}
-				return (sumX === sumA && sumY === sumB);
-			}
-			function checkIndexes(o) {
-				var sum, seq, ends = 0, Output={},
-					found = {parsed:[], keys:[], vals:[]};
-				for(i = o + 0xA; i < o + 0x100; i += 2) {
-					p  = data[i + 1]; p2 = data[i];
-					// Capture all non-empty indexes
-					if (p2 === 0 && p === 1 || p >= 5 && p <= 127 && p !== 3) {
-						if(p === 1) {
-							ends += 1;
-						}
-						// Return false if duplicate values found
-						if(p !== 1 && found.vals.indexOf(p) > -1) {
-							return false;
-						}
-						found.vals.push(p);
-						found.keys.push((i - o) / 2);
-					} else if (p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127) {
-						return false;
-					}
-				}
-				// Filter out the key indexes
-				IndexKeys = found.keys.filter(function(n) {
-					return found.vals.indexOf(n) === -1;
-				});
-				// Check the length of NoteKeys, IndexKeys and ends
-				if (NoteKeys.length !== IndexKeys.length || NoteKeys.length !== ends) {
-					return false;
-				}
-				// Check that all NoteKeys exist in the list of IndexKeys
-				for (i = 0; i < NoteKeys.length; i++) {
-					if (NoteKeys.indexOf(IndexKeys[i]) === -1) {
-						return false;
-					}
-				}
-				for(i = 0; i < IndexKeys.length; i++) {
-					p = IndexKeys[i]; seq = [];
-					while(p === 1 || p >= 5 && p <= 127) {
-						if(p === 1) {
-							Output[IndexKeys[i]] = seq;
-							break;
-						}
-						seq.push(p);
-						found.parsed.push(p);
-						p = data[p*2 + o + 1];
-					}
-				}
-				// Check parsed indexes against original list
-				if(found.parsed.length !== found.keys.length) {
-					return false;
-				}
-				for (i = 0; i < found.parsed.length; i++) {
-					if (found.parsed.indexOf(found.keys[i]) === -1) {
-						return false;
-					}
-				}
-				// Check IndexTable checksum
-				for(i = o+0xA, sum = 0; i < o+0x100; i++) {
-					sum += data[i];
-				}
-				sum &= 0xFF;
-				if (data[o+1] !== sum) {
-					data[o+1] = sum;
-				}
-				// Backup or Restore the valid table
-				p = (o === 0x100) ? 0x200 : 0x100;
-				for(i = 0; i < 0x100; i++) {
-					data[p + i] = data[o + i];
-				}
-				return Output;
-			}
-			var i, j, a, b, c, p, p2, noteName, n64code, output,
-				IndexKeys, chk, currentLoc, lastValidLoc = -1,
+			var i, j, a, b, c, p, _note, noteName, n64code, output,
+				chk, currentLoc, lastValidLoc = -1,
 				loc = [0x20, 0x60, 0x80, 0xC0], Notes = {}, 
 				NoteKeys = [];
-			// Check Header - Quickly check all locations, saving the last valid one.
-			for(i = 0; i < loc.length; i++) {
-				chk = calculateChecksum(loc[i], data);
-				if(chk) {
-					lastValidLoc = loc[i];
-				}
-			}
-			// Check all locations storing each result.
-			for(i = 0; i < loc.length; i++) {
-				currentLoc = loc[i];
-				chk = calculateChecksum(currentLoc, data);
-				// Detect and replace invalid locations
-				if(lastValidLoc > -1 && chk === false) {
-					for(j = 0; j < 32; j++) {
-						data[currentLoc + j] = data[lastValidLoc + j];
-					}
-					chk = calculateChecksum(currentLoc, data);
-				}
-				loc[i] = chk;
-			}
-			// Check if all checksums are correct
-			if(true !== (loc[0] && loc[1] && loc[2] && loc[3])) {
-				return false;
-			}
+
+			// This is the N64 Font code which stores text data in the Note headers.
+			// index 178 and 3 are not officially defined, but are required
+			// to prevent from showing "undefined". TODO: Default to "" instead of undefined?
 			n64code = {
 				  0:  "",   3:  "",  15: " ", 16: "0",  17: "1",  18: "2",  19: "3",  20: "4",
 				 21: "5",  22: "6",  23: "7", 24: "8",  25: "9",  26: "A",  27: "B",  28: "C",
@@ -333,61 +273,267 @@
 				133: "ゾ", 134: "ダ", 135: "ヂ", 136: "ヅ", 137: "デ", 138: "ド", 139: "バ", 140: "ビ",
 				141: "ブ", 142: "ベ", 143: "ボ", 144: "パ", 145: "ピ", 146: "プ", 147: "ペ", 148: "ポ", 178: ""
 			};
+
+			// validateChecksum - validate and repair checksums
+			// at an offset address (o)
+			function validateChecksum(o) {
+
+				// X,Y = stored checksum | A,B = calculated checksum
+				var i, sumX, sumY, sumA = 0, sumB = 0xFFF2;
+				sumX  = (data[o + 28] << 8) + data[o + 29];
+				sumY  = (data[o + 30] << 8) + data[o + 31];
+
+				for(i = 0; i < 28; i += 2) {
+					sumA += (data[o + i] << 8) + data[o + i + 1];
+					sumA &= 0xFFFF;
+				}
+				sumB -= sumA;
+
+				// Repair corrupt DexDrive checksums
+				if(sumX === sumA && (sumY ^ 0x0C) === sumB) {
+					sumY ^= 0xC;
+					data[o + 31] ^= 0xC;
+				}
+
+				// Detect unset bits.. if they're not set, game gets mad.
+				if((data[o + 25] & 1) === 0 || (data[o + 26] & 1) === 0) {
+					return false;
+				}
+
+				return (sumX === sumA && sumY === sumB);
+			}
+
+			// checkIndexes - checks and parses an IndexTable
+			// at the specified address offset
+			function checkIndexes(o) {
+				var i, p, p2, sum, IndexKeys, seq, ends = 0, Output = {},
+					found = {parsed: [], keys: [], vals: []};
+
+				// Loop over each Index Block
+				for(i = o + 0xA; i < o + 0x100; i += 2) {
+					p  = data[i + 1]; p2 = data[i];
+
+					// Capture all non-empty indexes
+					if (p2 === 0 && p === 1 || p >= 5 && p <= 127 && p !== 3) {
+						if(p === 1) {
+							ends += 1;
+						}
+						// Return false if duplicate values found
+						if(p !== 1 && found.vals.indexOf(p) > -1) {
+							return false;
+						}
+						found.vals.push(p);
+						found.keys.push((i - o) / 2);
+					} else if (p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127) {
+						return false;
+					}
+				}
+
+				// Filter out the key indexes
+				IndexKeys = found.keys.filter(function(n) {
+					return found.vals.indexOf(n) === -1;
+				});
+
+				// Check the length of NoteKeys, IndexKeys and ends
+				if (NoteKeys.length !== IndexKeys.length || NoteKeys.length !== ends) {
+					return false;
+				}
+
+				// Check that all NoteKeys exist in the list of IndexKeys
+				for (i = 0; i < NoteKeys.length; i++) {
+					if (NoteKeys.indexOf(IndexKeys[i]) === -1) {
+						return false;
+					}
+				}
+
+				// Parse index sequences for each IndexKey
+				for(i = 0; i < IndexKeys.length; i++) {
+					p = IndexKeys[i]; seq = [];
+					while(p === 1 || p >= 5 && p <= 127) {
+						if(p === 1) {
+							Output[IndexKeys[i]] = seq;
+							break;
+						}
+						seq.push(p);
+						found.parsed.push(p);
+						p = data[p*2 + o + 1];
+					}
+				}
+
+				// Check parsed indexes against original list
+				if(found.parsed.length !== found.keys.length) {
+					return false;
+				}
+				for (i = 0; i < found.parsed.length; i++) {
+					if (found.parsed.indexOf(found.keys[i]) === -1) {
+						return false;
+					}
+				}
+
+				// Check IndexTable checksum
+				for(i = o+0xA, sum = 0; i < o+0x100; i++) {
+					sum += data[i];
+				}
+				sum &= 0xFF;
+				if (data[o+1] !== sum) {
+					data[o+1] = sum;
+				}
+
+				// Backup or Restore the valid table
+				p = (o === 0x100) ? 0x200 : 0x100;
+				for(i = 0; i < 0x100; i++) {
+					data[p + i] = data[o + i];
+				}
+
+				return Output;
+			}
+
+			// Check Header - Quickly check all locations, saving the last valid one.
+			for(i = 0; i < loc.length; i++) {
+				chk = validateChecksum(loc[i], data);
+				if(chk) {
+					lastValidLoc = loc[i];
+				}
+			}
+
+			// Check all locations storing each result.
+			for(i = 0; i < loc.length; i++) {
+				currentLoc = loc[i];
+				chk = validateChecksum(currentLoc, data);
+
+				// Detect and replace invalid locations
+				if(lastValidLoc > -1 && chk === false) {
+					for(j = 0; j < 32; j++) {
+						data[currentLoc + j] = data[lastValidLoc + j];
+					}
+					chk = validateChecksum(currentLoc, data);
+				}
+				loc[i] = chk;
+			}
+
+			// Check if all checksums are correct
+			if(true !== (loc[0] && loc[1] && loc[2] && loc[3])) {
+				return false;
+			}
+
 			// Parse NoteTable
 			for(i = 0x300; i < 0x500; i += 32) {
+
 				p  = data[i + 0x07];
-				a = data[i]+data[i+1]+data[i+2]+data[i+3]>0 && data[i+4]+data[i+5]>0;
-				b = p>=5 && p<=127 && data[i + 0x06] === 0;
-				c = data[i + 0x0A]===0 && data[i + 0x0B]===0;
+
+				// a: check if gamecode and companycode aren't NULL
+				a = data[i]+data[i+1]+data[i+2]+data[i+3]>0 &&
+					data[i+4]+data[i+5]>0;
+
+				// b: checks the initial index
+				b = data[i + 0x06]===0 && p>=5 && p<=127;
+
+				// c: these offsets are assumed to be 0
+				c = (data[i + 0x0A]===0) && (data[i + 0x0B]===0);
+
 				if(a && b && c) {
-					// Repair 0x08:2 bit thing.
+
+					// Repair 0x08:2 bit thing
 					if((data[i + 0x08] & 0x02) === 0) {
 						data[i + 0x08] |= 0x02;
 					}
+
+					// Note filename
 					for(j = 0, noteName = ""; j < 16; j++) {
 						noteName += n64code[data[i + 16 + j]];
 					}
+
+					// Note filename extension
 					if(data[i + 12] !== 0) {
 						noteName += "." + n64code[data[i + 12]];
 						noteName += n64code[data[i + 13]];
 						noteName += n64code[data[i + 14]];
 						noteName += n64code[data[i + 15]];
 					}
+
+					// This is used for checkIndexes
 					NoteKeys.push(p);
+
+					// Store Note data
 					Notes[(i - 0x300) / 32] = {
 						indexes: p,
-						serial: String.fromCharCode(data[i],data[i+1],data[i+2],data[i+3]),
-						publisher: String.fromCharCode(data[i+4],data[i+5]),
+						serial: String.fromCharCode(
+							data[i],
+							data[i+1],
+							data[i+2],
+							data[i+3]
+						),
+						publisher: String.fromCharCode(
+							data[i+4],
+							data[i+5]
+						),
 						noteName: noteName
 					};
 				}
 			}
+
+			// Checks both primary and backup IndexTable
+			// keeps whichever is valid, with 0x100 being preferred.
 			output = checkIndexes(0x100) || checkIndexes(0x200);
+
+			// if a valid IndexTable was found
 			if(output) {
+				ref.pages = 0;
+				ref.notes = 0;
+				// Populate each Note's indexes with the ones from checkIndexes
 				for(i = 0; i < Object.keys(Notes).length; i++) {
-					Notes[Object.keys(Notes)[i]].indexes = output[Notes[Object.keys(Notes)[i]].indexes];
+					_note = Notes[Object.keys(Notes)[i]];
+					_note.indexes = output[_note.indexes];
+					ref.pages += _note.indexes.length;
+					ref.notes++;
 				}
 				return Notes;
-			} else {
+			}
+			else {
 				return false;
 			}
 		}
+
+		/* initMPK - generates an empty MPK file */
 		function initMPK() {
-			function A(a){for(i=0;i<7;++i){data[a+i]=[1,1,0,1,1,254,241][i];}}
 			var i, data = new Uint8Array(32768);
-			A(57);A(121);A(153);A(217);
-			for(i=5;i<128;i++){data[256+i*2+1]=3;data[512+i*2+1]=3;}
-			data[257]=113;data[513]=113;
+
+			// A: At each offset, it writes 7 bytes of data
+			function A(a) {
+				for(i = 0; i < 7; i++) {
+					data[a+i] = [1, 1, 0, 1, 1, 254, 241][i];
+				}
+			}
+
+			// This initializes the headers
+			A(57); A(121); A(153); A(217);
+
+			// This initializes the empty IndexTables
+			for(i = 5;i < 128; i++) {
+				data[256+i*2+1] = 3;
+				data[512+i*2+1] = 3;
+			}
+
+			// Store the IndexTable checksums
+			data[257] = 113;
+			data[513] = 113;
+
 			return data;
 		}
+
+		/* saveMPK - send the MPK to user as a download */
 		function saveMPK() {
-			var f = ref.filename.replace(".n64", ".mpk").replace(".N64", ".mpk"),
+			var f = ref.filename,
 				el = document.createElement("a");
+
 			el.download = f;
 			el.href = "data:application/octet-stream;base64," +
 				btoa(String.fromCharCode.apply(null, ref.data));
+
 			el.dispatchEvent(new MouseEvent("click"));
 		}
+
+		/* exportNote - send the selected Note to user as a download */
 		function exportNote(event, num) {
 			var i, j, pageAddress, name, fn, shft,
 				noteID   = num,
@@ -396,12 +542,16 @@
 				indexes  = ref.parsedData[noteID].indexes,
 				fileOut  = [],
 				el       = document.createElement("a");
+
 			// Get Note Header
 			for(i = 0; i < 32; i++) {
 				fileOut.push(ref.data[0x300 + (noteID * 32) + i]);
 			}
+
+			// Add the file magic, so identifying is easier on import
 			fileOut[6] = 0xCA;
 			fileOut[7] = 0xFE;
+
 			// Get Page Data
 			for(i = 0; i < indexes.length; i++) {
 				pageAddress = indexes[i] * 0x100;
@@ -409,36 +559,46 @@
 					fileOut.push(ref.data[pageAddress + j]);
 				}
 			}
-			if(ref.codeDB !== undefined && ref.codeDB[gameCode]) {
-				name = ref.codeDB[gameCode];
-			} else {
-				name = noteName;
-			}
+
+			name = codeDB[gameCode];
 			fn = name + "," + crc32(fileOut) + ".note.bin";
+
+			// if CTRL is held, change the filename and strip the header.
 			if (event.ctrlKey) {
 				fn = noteName + "," + crc32(fileOut) + ".sav";
 				fileOut = fileOut.splice(32);
 			}
+
 			el.href = "data:application/octet-stream;base64," +
 				btoa(String.fromCharCode.apply(null, fileOut));
 			el.download = fn;
+
 			el.dispatchEvent(new MouseEvent("click"));
 		}
-		function importNote(data) {
+
+		/* importNote - insert the note file into the MPK data */
+		function importNote(data, fname) {
 			var i, j, newMPK, slotsToUse, dest, dest1, dest2, dest3,
 				usedPages = 0,
 				usedNotes = 0,
 				note = data.subarray(0, 32),
 				gdata = data.subarray(32),
 				pageCount = gdata.length / 256;
+
+			// Loop over the curent notes in the MPK, calculate usedPages
+			// and usedNotes
 			for(i = 0; i < 16; i++) {
 				if(ref.parsedData[i]) {
 					usedPages += ref.parsedData[i].indexes.length;
 					usedNotes++;
 				}
 			}
+
+			// If there is enough room, go ahead and insert the data
 			if(usedPages + pageCount <= 123 && usedNotes < 16) {
 				slotsToUse = [];
+
+				// Determine which slots are empty and usable
 				for(i = 0xA; i < 0x100; i += 2) {
 					if(slotsToUse.length === pageCount) {
 						break;
@@ -447,21 +607,34 @@
 						slotsToUse.push(i / 2);
 					}
 				}
+
 				note[0x06] = 0;
+				// The first slot to use, is the initial Index
 				note[0x07] = slotsToUse[0];
+
+				// TODO: Check if this actually touches the backup.
+				// Another portion of code backsup data, so the code can be simplified here?
+
+				// Loop over the slotsToUse, and populate the empty data
 				for(i = 0; i < slotsToUse.length; i++) {
 					dest1 = 0x100 + (slotsToUse[i] * 2) + 1;
 					dest2 = 0x100 * slotsToUse[i];
 					dest3 = 0x100 * i;
+
+					// Write the new indexes to IndexTable
 					if(i === slotsToUse.length - 1) {
 						ref.data[dest1] = 0x01;
 					} else {
 						ref.data[dest1] = slotsToUse[i+1];
 					}
+
+					// Write the actual pagedata
 					for(j = 0; j < 0x100; j++) {
 						ref.data[dest2+j] = gdata[dest3+j];
 					}
 				}
+
+				// Writes the note entry
 				for(i = 0; i < 16; i++) {
 					if(ref.parsedData[i] === undefined) {
 						dest = 0x300 + i * 32;
@@ -471,39 +644,45 @@
 						break;
 					}
 				}
+
 				updateMPK(ref.data, ref.filename);
-			} else {
-				
-				alert(
-					"Pages: " + usedPages +  " / 123 ("+(123-usedPages)+" free), " +
-					"Notes: " + usedNotes + " / 16\n" +
-					"Requires 1 Note and " + pageCount + " Page(s)."
-					);
+			}
+			else {
+				console.log(
+					fname + "\n",
+					"Requires " + pageCount + " Page(s) and 1 Note.\n" +
+					"Pages: " + usedPages +  " / 123 (" + (123-usedPages) + " free), " +
+					"Notes: " + usedNotes + " / 16\n"
+				);
 			}
 		}
+
+		/* deleteNote - deletes the selected note */
 		function deleteNote(event, num) {
 			var i, targetIndex, newMPK,
 			noteID       = parseInt(num, 10),
 			noteKeyIndex = ref.parsedData[noteID].indexes[0],
 			indexes      = ref.parsedData[noteID].indexes;
+
 			// Mark Indexes as Free
 			for(i = 0; i < indexes.length; i++) {
 				targetIndex = 0x100 + (indexes[i] * 2) + 1;
 				ref.data[targetIndex] = 0x03;
 			}
+
 			// Delete Note Entry
 			for(i = 0; i < 32; i++) {
 				targetIndex = 0x300 + (noteID * 32) + i;
 				ref.data[targetIndex] = 0x00;
 			}
+
 			updateMPK(ref.data, ref.filename);
 		}
-		var ref = this;
-		ref.init = initApp;
 	}
-	var _codeDB = {
-		"Þ­¾ï": "EEPROM Cartridge Save",
-		";­Ñå": "EEPROM Cartridge Save",
+
+	var codeDB = {
+		"Þ­¾ï": "Cartridge Save",
+		";­Ñå": "Cartridge Save",
 		"NO7P": "007 - The World is Not Enough (E)",
 		"NO7E": "007 - The World is Not Enough (U)",
 		"NTEP": "1080 Snowboarding (E)",
@@ -850,9 +1029,10 @@
 		"NZSE": "Legend of Zelda, The - Majora's Mask (U)",
 		"NDLE": "Legend of Zelda, The - Majora's Mask - Preview Demo (U)",
 		"NZSJ": "Zelda no Densetsu - Mujura no Kamen (J)",
-		"NZLP": "Legend of Zelda, The - Ocarina of Time - Master Quest (E)",
-		"CZLE": "Legend of Zelda, The - Ocarina of Time - Master Quest (U)",
-		"NZLE": "Legend of Zelda, The - Ocarina of Time - Master Quest (U)",
+		"NZLP": "Legend of Zelda, The - Ocarina of Time (E)",
+		"CZLE": "Legend of Zelda, The - Ocarina of Time (U)",
+		"CZGE": "Legend of Zelda, The - Ocarina of Time (U)",	
+		"NZLE": "Legend of Zelda, The - Ocarina of Time (U)",
 		"CZLJ": "Zelda no Densetsu - Toki no Ocarina GC URA (J)",
 		"NLGP": "LEGO Racers (E)",
 		"NLGE": "LEGO Racers (U)",
