@@ -1,5 +1,4 @@
-/*jshint -W030 */
-/*jshint bitwise: false */
+/* jshint bitwise: false, -W030 */
 
 /* N64 Controller Pak viewer/editor/manager - github.com/bryc */
 ~function() {
@@ -247,10 +246,8 @@
 
 		/* parseMPK - checks, validates and parses MPK file data */
 		function parseMPK(data) {
-			var i, j, a, b, c, p, _note, noteName, n64code, output,
-				chk, currentLoc, lastValidLoc = -1,
-				loc = [0x20, 0x60, 0x80, 0xC0], Notes = {}, 
-				NoteKeys = [];
+			var i, j, a, b, c, p, _note, noteName, n64code, output, chk, currentLoc,
+			lastValidLoc = -1, loc = [0x20, 0x60, 0x80, 0xC0], Notes = {}, NoteKeys = [];
 
 			// This is the N64 Font code which stores text data in the Note headers.
 			// index 178 and 3 are not officially defined, but are required
