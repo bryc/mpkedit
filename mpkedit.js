@@ -1,3 +1,5 @@
+/*jshint -W030 */
+/*jshint bitwise: false */
 ~function() {
 
 	/* app init onload */
@@ -106,8 +108,7 @@
 
 			// loadData - Load file data, proceeding to parse
 			function loadData(event) {
-				var data  = new Uint8Array(event.target.result),
-					data2 = new Uint8Array(32768);
+				var data  = new Uint8Array(event.target.result);
 				// DexDrive support - Remove DexDrive header
 				if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
 					data = data.subarray(0x1040);
@@ -186,7 +187,7 @@
 		function updateUI(notes) {
 			function browse() { document.getElementById("fileOpen").click(); }
 
-			var i, name, topToolbar, trow, browse,
+			var i, name, topToolbar, trow,
 				out = document.querySelector("body"),
 				list = elem(["table"]);
 
@@ -535,7 +536,7 @@
 
 		/* exportNote - send the selected Note to user as a download */
 		function exportNote(event, num) {
-			var i, j, pageAddress, name, fn, shft,
+			var i, j, pageAddress, name, fn,
 				noteID   = num,
 				gameCode = ref.parsedData[noteID].serial,
 				noteName = ref.parsedData[noteID].noteName,
@@ -578,7 +579,7 @@
 
 		/* importNote - insert the note file into the MPK data */
 		function importNote(data, fname) {
-			var i, j, newMPK, slotsToUse, dest, dest1, dest2, dest3,
+			var i, j, slotsToUse, dest, dest1, dest2, dest3,
 				usedPages = 0,
 				usedNotes = 0,
 				note = data.subarray(0, 32),
@@ -659,9 +660,8 @@
 
 		/* deleteNote - deletes the selected note */
 		function deleteNote(event, num) {
-			var i, targetIndex, newMPK,
+			var i, targetIndex,
 			noteID       = parseInt(num, 10),
-			noteKeyIndex = ref.parsedData[noteID].indexes[0],
 			indexes      = ref.parsedData[noteID].indexes;
 
 			// Mark Indexes as Free
@@ -681,8 +681,8 @@
 	}
 
 	var codeDB = {
-		"Þ­¾ï": "Cartridge Save",
-		";­Ñå": "Cartridge Save",
+		"\x3B\xAD\xD1\xE5": "Cartridge Save",
+		"\xDE\xAD\xBE\xEF": "Cartridge Save",
 		"NO7P": "007 - The World is Not Enough (E)",
 		"NO7E": "007 - The World is Not Enough (U)",
 		"NTEP": "1080 Snowboarding (E)",
