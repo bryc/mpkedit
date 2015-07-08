@@ -1,8 +1,8 @@
 /*jshint -W030 */
 /*jshint bitwise: false */
-~function() {
 
-	/* app init onload */
+/* N64 Controller Pak viewer/editor/manager - github.com/bryc */
+~function() {
 	window.addEventListener("load", function() {
 		var MPKEdit = new MPKEditor();
 			MPKEdit.init();
@@ -43,7 +43,7 @@
 		// look for other elements to append
 		if(arguments.length > 1) {
 			for(i = 1; i < arguments.length; i++) {
-				// check if the argument is an element
+				// check if the argument is a DOM Node
 				if(arguments[i].nodeType > 0) {
 					elmnt.appendChild(arguments[i]);
 				}
