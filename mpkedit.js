@@ -1,9 +1,7 @@
 /* N64 Controller Pak viewer/editor/manager - github.com/bryc */
 /* jshint bitwise: false */
 
-
 (function() {
-
 	window.addEventListener("load", function() {
 		var MPKEdit = new MPKEditor();
 		MPKEdit.init();
@@ -13,14 +11,15 @@
 	/* elem - element constructor */
 	function elem() {
 		var i, key, method;
-		var keys    = {};
-		var elmnt   = null;
+		var keys = {};
+		var elmnt = null;
 		var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
-		var prop    = arguments[0][1]; // Argument 0 -> Index 1 (Object)
+		var prop = arguments[0][1]; // Argument 0 -> Index 1 (Object)
 
 		if(typeof tagName === "string") {
 			elmnt = document.createElement(tagName);
-		} else {
+		}
+		else {
 			// use a doc fragment if no tag specified
 			elmnt = document.createDocumentFragment();
 		}
@@ -31,14 +30,15 @@
 			elmnt.textContent = prop;
 		}
 		for(i = 0; i < keys.length; i++) {
-			key    = keys[i];
+			key = keys[i];
 			method = elmnt[key.slice(2)];
 
 			// specify methods with $_
 			if(key.indexOf("$_") > -1) {
 				// run a method with array of arguments
 				method.apply(elmnt, prop[key]);
-			} else {
+			}
+			else {
 				elmnt[key] = prop[key];
 			}
 		}
@@ -66,7 +66,7 @@
 		var i, j, tmp;
 		var l = data.length;
 		var crc = -1;
-		var	table = new Uint32Array(256);
+		var table = new Uint32Array(256);
 
 		for (i = 256; i--;) {
 			for (j = 8, tmp = i; j--;) {
@@ -89,7 +89,6 @@
 
 		/* initApp - initialisation of app */
 		function initApp() {
-
 			function savcol() {
 				var i;
 				var y = document.querySelectorAll(".fa-download");
@@ -114,10 +113,9 @@
 
 		/* fileHandler - handles file input (drag/drop + browse) */
 		function fileHandler(event) {
-
 			// loadData - Load file data, proceeding to parse
 			function loadData(event) {
-				var data  = new Uint8Array(event.target.result);
+				var data = new Uint8Array(event.target.result);
 
 				// DexDrive support - Remove DexDrive header
 				if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
@@ -127,12 +125,12 @@
 			}
 
 			var i, reader;
-			// depending if triggered by input.file or drag/drop
+			// files depends if triggered by input.file or drag/drop
 			var files = event.target.files || event.dataTransfer.files;
 
 			for(i = 0; i < files.length; i++) {
-				reader        = new FileReader();
-				reader.name   = files[i].name;
+				reader = new FileReader();
+				reader.name = files[i].name;
 				reader.onload = loadData;
 
 				// 36,928 is max for DexDrive, 32,768 is max for MPK
@@ -144,7 +142,6 @@
 
 		/* updateMPK - parse/check data then update UI */
 		function updateMPK(_data, _fname) {
-
 			//isNoteFile - detects note file data
 			function isNoteFile(data) {
 				// these are known to be 0
@@ -170,17 +167,17 @@
 			}
 
 			// Copy to fixed-size array
-			// This is to ensure that the data is always 32KiB 
+			// This is to ensure that the data is always 32KiB
 			for(i = 0; i < _data.length; i++) {
 				_data2[i] = _data[i];
 			}
 
-			parsedData = parseMPK(_data2);
+			parsedData = parseMPK(_data2,_fname);
 
 			// check if parseMPK is successful
 			if(parsedData) {
-				ref.filename   = _fname;
-				ref.data       = _data2;
+				ref.filename = _fname;
+				ref.data = _data2;
 				ref.parsedData = parsedData;
 
 				updateUI(ref.parsedData);
@@ -213,7 +210,7 @@
 				elem(["i", {onclick: saveMPK, className: "fa fa-floppy-o"}])
 			);
 
-			document.title = (123-ref.pages) + ", " + (16-ref.notes) + ", " + 
+			document.title = (123-ref.pages) + ", " + (16-ref.notes) + ", " +
 			ref.filename;
 
 			for(i = 0; i < 16; i++) {
@@ -256,8 +253,7 @@
 		}
 
 		/* parseMPK - checks, validates and parses MPK file data */
-		function parseMPK(data) {
-
+		function parseMPK(data, fname) {
 			// validateChecksum - validate and repair checksums
 			// at an offset address (o)
 			function validateChecksum(o) {
@@ -267,8 +263,8 @@
 				var sumA = 0;
 				var sumB = 0xFFF2;
 
-				sumX  = (data[o + 28] << 8) + data[o + 29];
-				sumY  = (data[o + 30] << 8) + data[o + 31];
+				sumX = (data[o + 28] << 8) + data[o + 29];
+				sumY = (data[o + 30] << 8) + data[o + 31];
 
 				for(i = 0; i < 28; i += 2) {
 					sumA += (data[o + i] << 8) + data[o + i + 1];
@@ -301,7 +297,7 @@
 
 				// Loop over each Index Block
 				for(i = o + 0xA; i < o + 0x100; i += 2) {
-					p  = data[i + 1];
+					p = data[i + 1];
 					p2 = data[i];
 
 					// Capture all non-empty indexes
@@ -387,13 +383,10 @@
 			var NoteKeys = [];
 
 			/*
-				This is the N64 Font code. Index 178 and 3 are not officially
-				defined, but are defined here to prevent "undefined" from
-				showing in the app. A better solution should be done.
-				TODO: Default to "" for undefined offsets.
+			This is the N64 Font code.
 			*/
 			var n64code = {
-				  0:  "",   3:  "",  15: " ", 16: "0",
+				  0:  "",  15: " ",  16: "0",
 				 17: "1",  18: "2",  19: "3",  20: "4",
 				 21: "5",  22: "6",  23: "7", 24: "8",
 				 25: "9",  26: "A",  27: "B",  28: "C",
@@ -426,7 +419,7 @@
 				133: "ゾ", 134: "ダ", 135: "ヂ", 136: "ヅ",
 				137: "デ", 138: "ド", 139: "バ", 140: "ビ",
 				141: "ブ", 142: "ベ", 143: "ボ", 144: "パ",
-				145: "ピ", 146: "プ", 147: "ペ", 148: "ポ", 178: ""
+				145: "ピ", 146: "プ", 147: "ペ", 148: "ポ"
 			};
 
 			// Check Header - Quickly check all locations, saving the last valid one.
@@ -460,11 +453,10 @@
 			// Parse NoteTable
 			for(i = 0x300; i < 0x500; i += 32) {
 
-				p  = data[i + 0x07];
+				p = data[i + 0x07];
 
 				// a: check if gamecode and companycode aren't NULL
-				a = data[i]+data[i+1]+data[i+2]+data[i+3]>0 &&
-					data[i+4]+data[i+5]>0;
+				a = data[i]+data[i+1]+data[i+2]+data[i+3]>0 && data[i+4]+data[i+5]>0;
 
 				// b: checks the initial index
 				b = data[i + 0x06]===0 && p>=5 && p<=127;
@@ -473,7 +465,6 @@
 				c = (data[i + 0x0A]===0) && (data[i + 0x0B]===0);
 
 				if(a && b && c) {
-
 					// Repair 0x08:2 bit thing
 					if((data[i + 0x08] & 0x02) === 0) {
 						data[i + 0x08] |= 0x02;
@@ -481,15 +472,16 @@
 
 					// Note filename
 					for(j = 0, noteName = ""; j < 16; j++) {
-						noteName += n64code[data[i + 16 + j]];
+						noteName += n64code[ data[i + 16 + j] ] || "";
 					}
 
 					// Note filename extension
 					if(data[i + 12] !== 0) {
-						noteName += "." + n64code[data[i + 12]];
-						noteName += n64code[data[i + 13]];
-						noteName += n64code[data[i + 14]];
-						noteName += n64code[data[i + 15]];
+
+						noteName += "." + n64code[data[i + 12]] || "";
+						noteName += n64code[data[i + 13]] || "";
+						noteName += n64code[data[i + 14]] || "";
+						noteName += n64code[data[i + 15]] || "";
 					}
 
 					// This is used for checkIndexes
@@ -537,19 +529,16 @@
 
 		/* initMPK - generates an empty MPK file */
 		function initMPK() {
-
 			// A: At each offset, it writes 7 bytes of data
 			function A(a) {
 				for(i = 0; i < 7; i++) {
 					data[a+i] = _arr[i];
 				}
 			}
-			
+
 			var i;
 			var data = new Uint8Array(32768);
 			var _arr = [1, 1, 0, 1, 1, 254, 241];
-
-
 
 			// This initializes the headers
 			A(57); A(121); A(153); A(217);
@@ -582,12 +571,12 @@
 		/* exportNote - send the selected Note to user as a download */
 		function exportNote(event, num) {
 			var i, j, pageAddress, name, fn;
-			var noteID   = num;
+			var noteID = num;
 			var gameCode = ref.parsedData[noteID].serial;
 			var noteName = ref.parsedData[noteID].noteName;
-			var indexes  = ref.parsedData[noteID].indexes;
-			var fileOut  = [];
-			var el       = document.createElement("a");
+			var indexes = ref.parsedData[noteID].indexes;
+			var fileOut = [];
+			var el = document.createElement("a");
 
 			// Get Note Header
 			for(i = 0; i < 32; i++) {
@@ -697,7 +686,7 @@
 				console.log(
 					fname + "\n",
 					"Requires " + pageCount + " Page(s) and 1 Note.\n" +
-					"Pages: " + usedPages +  " / 123 (" + (123-usedPages) + " free), " +
+					"Pages: " + usedPages + " / 123 (" + (123-usedPages) + " free), " +
 					"Notes: " + usedNotes + " / 16\n"
 				);
 			}
