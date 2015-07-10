@@ -1,5 +1,5 @@
 /* N64 Controller Pak viewer/editor/manager - github.com/bryc */
-/* jshint -W004, bitwise: false, unused: true */
+/* jshint -W004, bitwise: false */
 
 (function() {
 	window.addEventListener("load", function() {
@@ -17,8 +17,8 @@
 		if(typeof tagName === "string") {
 			elmnt = document.createElement(tagName);
 		}
+		// use a doc fragment if no tag specified
 		else {
-			// use a doc fragment if no tag specified
 			elmnt = document.createDocumentFragment();
 		}
 		if(typeof prop === "object") {
@@ -56,7 +56,7 @@
 	function evarg(func) {
 		var args = Array.prototype.slice.call(arguments, 1);
 		return function(event) {
-			func.apply(null, [event].concat(args));
+			func.apply(null, args.concat([event]));
 		};
 	}
 
@@ -116,7 +116,7 @@
 		/* fileHandler - handles file input (drag/drop + browse) */
 		function fileHandler(event) {
 			// loadData - Load file data, proceeding to parse
-			function loadData(event, filename) {
+			function loadData(filename, event) {
 				var data = new Uint8Array(event.target.result);
 
 				// DexDrive support - Remove DexDrive header
@@ -502,7 +502,7 @@
 				ref.pages = 0;
 				ref.notes = 0;
 				// Populate each Note's indexes with the ones from checkIndexes
-				for(i = 0; i < Object.keys(NoteTable).length; i++) {
+				for(var i = 0; i < Object.keys(NoteTable).length; i++) {
 					var _note = NoteTable[Object.keys(NoteTable)[i]];
 					_note.indexes = output[_note.indexes];
 
@@ -558,7 +558,7 @@
 		}
 
 		/* exportNote - send the selected Note to user as a download */
-		function exportNote(event, noteID) {
+		function exportNote(noteID) {
 			var fileOut = [];
 			var indexes = ref.parsedData[noteID].indexes;
 			var gameCode = ref.parsedData[noteID].serial;
@@ -632,9 +632,6 @@
 				// The first slot to use, is the initial Index
 				ndata[0x07] = slotsToUse[0];
 
-				// TODO: Check if this actually touches the backup.
-				// Another portion of code backsup data, so the code can be simplified here?
-
 				// Loop over the slotsToUse, and populate the empty data
 				for(var i = 0; i < slotsToUse.length; i++) {
 					var dest1 = 0x100 + (slotsToUse[i] * 2) + 1;
@@ -670,8 +667,7 @@
 		}
 
 		/* deleteNote - deletes the selected note */
-		function deleteNote(event, num) {
-			var noteID = parseInt(num, 10);
+		function deleteNote(noteID) {
 			var indexes = ref.parsedData[noteID].indexes;
 
 			// Mark Indexes as Free
