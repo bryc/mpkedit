@@ -10,9 +10,8 @@
 	// NOTE: UPDATE ACTUAL SCRIPT
 	/* elem - element constructor */
 	function elem() {
-		var i, key, method;
+		var i, elmnt, key, method;
 		var keys = {};
-		var elmnt = null;
 		var tagName = arguments[0][0]; // Argument 0 -> Index 0 (String)
 		var prop = arguments[0][1]; // Argument 0 -> Index 1 (Object)
 
@@ -26,8 +25,8 @@
 		if(typeof prop === "object") {
 			keys = Object.keys(prop);
 		}
-		else if(typeof prop !== "object") {
-			elmnt.textContent = prop;
+		else if(prop && typeof prop !== "object") {
+			elmnt.innerHTML = prop;
 		}
 		for(i = 0; i < keys.length; i++) {
 			key = keys[i];
@@ -63,23 +62,29 @@
 	}
 
 	function crc32(data) {
-		var i, j, tmp;
-		var l = data.length;
-		var crc = -1;
-		var table = new Uint32Array(256);
+		var i, j, crc, ptr;
+		var table = [];
 
 		for (i = 256; i--;) {
-			for (j = 8, tmp = i; j--;) {
-				tmp = tmp & 1 ? 3988292384 ^ tmp >>> 1 : tmp >>> 1;
+			crc = i;
+			for (j = 8; j--;) {
+				if(crc & 1) {
+					crc = crc >>> 1 ^ 3988292384;
+				}
+				else {
+					crc = crc >>> 1;
+				}
 			}
-			table[i] = tmp;
+			table[i] = crc;
 		}
-		for (i = 0; i < l; i++) {
-			crc = crc >>> 8 ^ table[crc & 255 ^ data[i]];
+		crc = -1;
+		for (i = 0; i < data.length; i++) {
+			ptr = crc & 255 ^ data[i];
+			crc = crc >>> 8 ^ table[ptr];
 		}
-		tmp = ((crc ^ -1) >>> 0).toString(16).toUpperCase();
 
-		return ("00000000" + tmp).slice(-8);
+		crc = ((crc ^ -1) >>> 0).toString(16);
+		return ("00000000" + crc).slice(-8);
 	}
 
 	/* MPKEditor - app functions */
@@ -90,10 +95,9 @@
 		/* initApp - initialisation of app */
 		function initApp() {
 			function savcol() {
-				var i;
 				var y = document.querySelectorAll(".fa-download");
 
-				for(i = 0; i < y.length; i++) {
+				for(var i = 0; i < y.length; i++) {
 					y[i].style.color = event.ctrlKey ? "#c00" : "";
 				}
 			}
@@ -186,7 +190,7 @@
 				importNote(_data, _fname);
 			}
 			else {
-				console.error("Invalid file: ", _fname);
+				console.warn("Invalid file: ", _fname);
 			}
 		}
 
@@ -205,7 +209,7 @@
 
 				elem(["span", {className: "loadButton", onclick: browse}],
 					elem(["i", {className: "fa fa-folder-open"}]),
-					elem(["span", {innerHTML: ref.filename}])
+					elem(["span", ref.filename])
 				),
 				elem(["i", {onclick: saveMPK, className: "fa fa-floppy-o"}])
 			);
@@ -219,10 +223,9 @@
 
 					trow =
 					elem(["tr"],
-						elem(["td", {innerHTML: notes[i].noteName +
-							"<div>" + name + "</div>"}]),
+						elem(["td", notes[i].noteName + "<div>" + name + "</div>"]),
 
-						elem(["td", {innerHTML: notes[i].indexes.length}]),
+						elem(["td", notes[i].indexes.length]),
 						elem(["td"],
 							elem(["i", {onclick: evarg(deleteNote, i),
 								className: "fa fa-trash"}]),
