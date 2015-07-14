@@ -1,0 +1,108 @@
+@font-face {
+  font-family: "Lato";
+  font-weight: 400;
+  src: url("fonts/lato-regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Lato";
+  font-weight: bold;
+  src: url("fonts/lato-bold.woff2") format("woff2");
+}
+
+body {
+    max-width: 768px;
+    margin: 16px auto;
+    color: #5c5c5c;
+    background: #ffffff;
+}
+body, table {
+    font: bold 16px "Lato", sans-serif;
+}
+#fileOpen {
+    display: none;
+}
+#emptyFile {
+    font-size: 20px;
+    font-style: italic;
+    text-align: center;
+    padding: 16px;
+    background: #fdfdfd;
+}
+
+/* ---- TOP_TOOLBAR ---- */
+div.topToolbar {
+    font-size: 28px;
+    border-bottom: 4px solid #92b9cd;
+    padding: 3px 6px;
+    background: #fdfdfd;
+}
+span#loadButton {
+    border-radius: 5px;
+    padding: 3px;
+}
+span#loadButton:hover {
+    cursor: pointer;
+    background: #f3f3f3;
+}
+span#loadButton:hover .fa-folder-open {
+    color: #cda692;
+}
+
+/* ---- MAIN_TABLE ---- */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #fdfdfd;
+    border-bottom: 2px solid #dddddd;
+    margin-bottom: 32px;
+}
+tr:nth-child(even) {
+    background: #f6f6f6;
+}
+td {
+    padding: 6px 12px;
+}
+td:nth-child(1) div {
+    font-size: 12px;
+    font-weight: 400;
+    color: #999999;
+}
+td:nth-child(2) {
+    width: 40px;
+    text-align: right;
+}
+td:nth-child(3) {
+    text-align: right;
+    width: 80px;
+}
+
+/* ---- ICON_STUFF ---- */
+.fa {
+    color: #92b9cd;
+    padding: 6px;
+}
+.fa-floppy-o {
+    float: right;
+}
+.fa-trash,.fa-download {
+    padding: 6px;
+}
+.fa-trash:hover,
+.fa-download:hover,
+.fa-floppy-o:hover {
+    cursor: pointer;
+    color: #cda692;
+    background: #eeeeee;
+}
+.fa-trash:active,
+.fa-download:active,
+.fa-floppy-o:active {
+    color: #b89583;
+    background: #dddddd;
+}
+::-moz-selection {
+    background: #cda692;
+}
+::selection {
+    background: #cda692;
+}

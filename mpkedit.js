@@ -92,13 +92,25 @@
 
 		/* initApp - initialisation of app */
 		function initApp() {
-			function changeExportColor() {
+			function browse() {
+				var t = document.getElementById("fileOpen");
+				t.onchange = fileHandler;
+				t.click();
+
+				t.parentElement.replaceChild(elem(["input",{id:"fileOpen",type:"file","multiple":true}]),t);
+			}
+
+			function changeExportColor(event) {
 				var target = document.querySelectorAll(".fa-download");
 
 				for(var i = 0; i < target.length; i++) {
 					target[i].style.color = event.ctrlKey ? "#c00" : "";
 				}
 			}
+
+			document.getElementById("fileOpen").onchange = fileHandler;
+			document.getElementById("loadButton").onclick = browse;
+			document.getElementById("save").onclick = saveMPK;
 
 			// Drag & drop handler
 			window.addEventListener("dragover", function(event) {
@@ -190,23 +202,12 @@
 
 		/* updateUI - produce user-interface */
 		function updateUI() {
-			function browse() {
-				document.getElementById("fileOpen").click();
-			}
-
-			// Construct top toolbar
-			var topToolbar =
-			elem(["div", {className: "topToolbar"}],
-				elem(["input", {type: "file", id: "fileOpen", multiple: "multiple", onchange: fileHandler}]),
-				elem(["span", {className: "loadButton", onclick: browse}],
-					elem(["span", {className: "fa fa-folder-open"}]),
-					elem(["span", ref.filename])
-				),
-				elem(["span", {onclick: saveMPK, className: "fa fa-floppy-o"}])
-			);
-
 			// Construct Note table
-			var noteTable = elem(["table"]);
+
+			var out = document.querySelector("table");
+			while(out.firstChild) {
+				out.removeChild(out.firstChild);
+			}
 
 			for(var i = 0; i < 16; i++) {
 				if(ref.parsedData[i]) {
@@ -217,32 +218,23 @@
 						elem(["td", ref.parsedData[i].noteName + "<div>" + gameName + "</div>"]),
 						elem(["td", ref.parsedData[i].indexes.length]),
 						elem(["td"],
-							elem(["span", {onclick: evarg(deleteNote, i), className: "fa fa-trash"}]),
-							elem(["span", {onclick: evarg(exportNote, i), className: "fa fa-download"}])
+							elem(["span", {title:"Delete note",onclick: evarg(deleteNote, i), className: "fa fa-trash"}]),
+							elem(["span", {title:"Export note",onclick: evarg(exportNote, i), className: "fa fa-download"}])
 						)
 					);
 
-					noteTable.appendChild(tableRow);
+					out.appendChild(tableRow);
 				}
 			}
 
-			// Remove all child nodes in the body
-			var out = document.querySelector("body");
-			while(out.firstChild) {
-				out.removeChild(out.firstChild);
-			}
-
 			document.title = (123-ref.pages) + ", " + (16-ref.notes) + ", " + ref.filename;
- 
-			if(Object.keys(ref.parsedData).length > 0) {
-				out.appendChild(topToolbar);
-				out.appendChild(noteTable);
-			} else {
-				out.appendChild(topToolbar);
+ 			document.getElementById("filename").innerHTML = ref.filename;
+
+			if(Object.keys(ref.parsedData).length === 0) {
 				out.appendChild(
-					elem(["div", {id: "emptyFile", innerHTML: "~ empty"}])
+					elem(["tr"], elem(["td",{innerHTML:"<div id=emptyFile>~ empty</div>"}]))
 				);
-			}
+			} 
 		}
 
 		/* parseMPK - checks, validates and parses MPK file data */
@@ -449,7 +441,7 @@
 				// b: checks the initial index
 				var b = data[i + 0x06]===0 && p>=5 && p<=127;
 
-				// c: these offsets are assumed to be 0
+				// c: these offsets are assumed to be 0. TODO: CHECK REAL HARDWARE!
 				var c = (data[i + 0x0A]===0) && (data[i + 0x0B]===0);
 
 				if(a && b && c) {
@@ -550,7 +542,7 @@
 		/* saveMPK - send the MPK to user as a download */
 		function saveMPK() {
 			var el = document.createElement("a");
-			el.download = ref.filename;
+			el.download = ref.filename.substr(0, ref.filename.lastIndexOf('.'))+".mpk";
 			el.href = "data:application/octet-stream;base64," +
 				btoa(String.fromCharCode.apply(null, ref.data));
 
@@ -558,7 +550,7 @@
 		}
 
 		/* exportNote - send the selected Note to user as a download */
-		function exportNote(noteID) {
+		function exportNote(noteID, event) {
 			var fileOut = [];
 			var indexes = ref.parsedData[noteID].indexes;
 			var gameCode = ref.parsedData[noteID].serial;
