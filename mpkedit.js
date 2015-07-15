@@ -85,17 +85,83 @@
 		return ("00000000" + crc).slice(-8);
 	}
 
+
+
 	/* MPKEditor - app functions */
 	function MPKEditor() {
 		var ref = this;
 		ref.init = initApp;
 
+
+		function ca_saveNote(fileOut, filename) {
+           chrome.fileSystem.chooseEntry({
+            	type:"saveFile",
+            	suggestedName: filename,
+            	accepts: [ {extensions : ["note.bin"]} ]
+            }, function(Entry) {
+				if(!chrome.runtime.lastError) {
+				Entry.createWriter(function(writer){Entry.file(function(fl) {
+	
+					writer.write( new Blob([ new Uint8Array(fileOut) ]) );
+					
+					writer.onwriteend = function()
+					{
+						writer.onwriteend = null;
+						writer.truncate(fileOut.length);
+						console.log("NOTE saved:  " + fl.name);
+					};
+				});});
+				}
+            });
+		}
+
+        function saveAsFile() {
+            chrome.fileSystem.chooseEntry({
+            	type:"saveFile",
+            	suggestedName: "New.mpk",
+            	accepts: [ {extensions : ["mpk"]} ]
+            }, doSave);
+        }
+
+        function saveFile(Entry) {
+            chrome.fileSystem.getWritableEntry(Entry, doSave);
+        }
+
+		function doSave(Entry) {
+			if(!chrome.runtime.lastError) {
+			Entry.createWriter(function(writer){Entry.file(function(fl) {
+
+				writer.write( new Blob([ new Uint8Array(ref.data) ]) );
+				
+				writer.onwriteend = function()
+				{
+					writer.onwriteend = null;
+					writer.truncate(32768);
+					console.log("File saved:  " + fl.name);
+				};
+			});});
+			}
+		}
+
+
+
 		/* initApp - initialisation of app */
 		function initApp() {
 			function browse() {
 				var t = document.getElementById("fileOpen");
-				t.onchange = fileHandler;
-				t.click();
+
+				if(ref.chromeApp) {
+					chrome.fileSystem.chooseEntry({type:"openFile"}, function(Entry) {
+						if(!chrome.runtime.lastError){
+							Entry.file(function(fl) {
+									fileHandler(null, fl, Entry);
+							});
+						}
+					});
+				} else {
+					t.onchange = fileHandler;
+					t.click();
+				}
 
 				t.parentElement.replaceChild(elem(["input",{
 					id:"fileOpen",
@@ -112,15 +178,58 @@
 				}
 			}
 
+			function isFile(event) {
+			    var dt = event.dataTransfer;
+			    for (var i = 0; i < dt.types.length; i++) {
+			        if (dt.types[i] === "Files") {
+			            return true;
+			        }
+			    }
+			    return false;
+			}
+
+			ref.chromeApp = location.protocol === "chrome-extension:";
+
 			document.getElementById("fileOpen").onchange = fileHandler;
 			document.getElementById("loadButton").onclick = browse;
 			document.getElementById("save").onclick = saveMPK;
+
+
+			var lastTarget = null;
+			var dropzone = document.getElementById("dropzone");
+
+			window.addEventListener("dragenter", function (event) {
+			    if (isFile(event)) {
+			        lastTarget = event.target;
+			        dropzone.style.visibility = "";
+			        dropzone.style.opacity = 1;
+			        document.getElementById("wrapper").className = "blr";
+			    }
+			});
+
+			window.addEventListener("dragleave", function (event) {
+			    event.preventDefault();
+			    if (event.target === lastTarget) {
+			        dropzone.style.visibility = "hidden";
+			        dropzone.style.opacity = 0;
+			        document.getElementById("wrapper").className = "";
+			    }
+			});
 
 			// Drag & drop handler
 			window.addEventListener("dragover", function(event) {
 				event.preventDefault();
 			});
+
 			window.addEventListener("drop", fileHandler);
+
+			window.addEventListener("drop", function(event) {
+    			dropzone.style.visibility = "hidden";
+    			dropzone.style.opacity = 0;
+    			document.getElementById("wrapper").className = "";
+    		    event.preventDefault();
+			});
+
 
 			// Holding CTRL, change color of save icon.
 			window.addEventListener("keydown", changeExportColor);
@@ -130,7 +239,7 @@
 		}
 
 		/* fileHandler - handles file input (drag/drop + browse) */
-		function fileHandler(event) {
+		function fileHandler(event, fl, Entry) {
 			// loadData - Load file data, proceeding to parse
 			function loadData(filename, event) {
 				var data = new Uint8Array(event.target.result);
@@ -140,21 +249,37 @@
 					data = data.subarray(0x1040);
 				}
 
+				if(ref.chromeApp && parseMPK(data)) {
+					console.log("ENTRY: " + event.target.Entry.name);
+					ref.Entry = event.target.Entry;
+				}
+
 				updateMPK(data, filename);
 			}
 
-			// Get the FileList (input[type=file] or drag/drop)
-			var files = event.target.files || event.dataTransfer.files;
-
-			for(var i = 0; i < files.length; i++) {
+			if(ref.chromeApp && fl) {
 				var reader = new FileReader();
-				reader.onload = evarg(loadData, files[i].name);
-
-				// Read a maximum of 36928 bytes
-				// DexDrive files are 36 KB, MPK is 32 KB
-				reader.readAsArrayBuffer(files[i].slice(0, 36928));
+				reader.Entry = Entry;
+				reader.onload = evarg(loadData, fl.name);
+				reader.readAsArrayBuffer(fl.slice(0, 36928));
 			}
-			event.preventDefault();
+			else {
+				// Get the FileList (input[type=file] or drag/drop)
+				var files = event.target.files || event.dataTransfer.files;
+				for(var i = 0; i < files.length; i++) {
+					var reader = new FileReader();
+					reader.onload = evarg(loadData, files[i].name);
+	
+					if(ref.chromeApp) {
+						reader.Entry = event.dataTransfer.items[i].webkitGetAsEntry();
+					}
+	
+					// Read a maximum of 36928 bytes
+					// DexDrive files are 36 KB, MPK is 32 KB
+					reader.readAsArrayBuffer(files[i].slice(0, 36928));
+				}
+				event.preventDefault();
+			}
 		}
 
 		/* updateMPK - parse/check data then update UI */
@@ -544,12 +669,24 @@
 
 		/* saveMPK - send the MPK to user as a download */
 		function saveMPK() {
-			var el = document.createElement("a");
-			el.download = ref.filename.substr(0, ref.filename.lastIndexOf('.'))+".mpk";
-			el.href = "data:application/octet-stream;base64," +
-				btoa(String.fromCharCode.apply(null, ref.data));
 
-			el.dispatchEvent(new MouseEvent("click"));
+			if(ref.chromeApp) {
+
+				if(ref.Entry && !event.ctrlKey) {
+					saveFile(ref.Entry);
+				}
+				else {
+					saveAsFile();
+				}
+			}
+			else {
+				var el = document.createElement("a");
+				el.download = ref.filename.substr(0, ref.filename.lastIndexOf('.'))+".mpk";
+				el.href = "data:application/octet-stream;base64," +
+					btoa(String.fromCharCode.apply(null, ref.data));
+	
+				el.dispatchEvent(new MouseEvent("click"));	
+		}
 		}
 
 		/* exportNote - send the selected Note to user as a download */
@@ -584,12 +721,18 @@
 				fileOut = fileOut.splice(32);
 			}
 
+			if(ref.chromeApp) {
+					ca_saveNote(fileOut, filename);
+			}
+			else {
 			var el = document.createElement("a");
 			el.href = "data:application/octet-stream;base64," +
 				btoa(String.fromCharCode.apply(null, fileOut));
 			el.download = filename;
 
 			el.dispatchEvent(new MouseEvent("click"));
+			}
+
 		}
 
 		/* importNote - insert the note file into the MPK data */

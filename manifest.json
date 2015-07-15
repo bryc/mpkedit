@@ -7,5 +7,6 @@
     "permissions"      : [ { "fileSystem" : ["write"] }, "storage" ],
     "app"              : {
         "background" : { "scripts" : ["background.js"] }
-    }
+    },
+    "icons": { "128": "icon.png"}
 }
