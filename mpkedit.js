@@ -97,7 +97,11 @@
 				t.onchange = fileHandler;
 				t.click();
 
-				t.parentElement.replaceChild(elem(["input",{id:"fileOpen",type:"file","multiple":true}]),t);
+				t.parentElement.replaceChild(elem(["input",{
+					id:"fileOpen",
+					type:"file",
+					multiple:true
+				}]),t);
 			}
 
 			function changeExportColor(event) {
@@ -203,7 +207,6 @@
 		/* updateUI - produce user-interface */
 		function updateUI() {
 			// Construct Note table
-
 			var out = document.querySelector("table");
 			while(out.firstChild) {
 				out.removeChild(out.firstChild);

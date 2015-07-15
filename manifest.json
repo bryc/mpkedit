@@ -1,0 +1,11 @@
+{
+    "name"             : "Controller Pak Editor",
+    "short_name"       : "mempak",
+    "description"      : "Modify Controller Pak files",
+    "version"          : "0.0.0.1",
+    "manifest_version" : 2,
+    "permissions"      : [ { "fileSystem" : ["write"] }, "storage" ],
+    "app"              : {
+        "background" : { "scripts" : ["background.js"] }
+    }
+}
