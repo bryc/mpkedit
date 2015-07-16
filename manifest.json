@@ -8,5 +8,5 @@
     "app"              : {
         "background" : { "scripts" : ["background.js"] }
     },
-    "icons": { "128": "icon.png"}
+    "icons": { "128" : "icon.png" }
 }
