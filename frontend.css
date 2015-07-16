@@ -9,9 +9,11 @@
   font-weight: bold;
   src: url("fonts/lato-bold.woff2") format("woff2");
 }
+
 html, body {
 	overflow-y: visible;
 }
+
 body, table {
 	font: bold 16px "Lato", sans-serif;
 }
@@ -33,11 +35,13 @@ div#dropzone {
     transition: visibility 175ms, opacity 175ms;
     background: rgba(0, 0, 0, 0.3);
 }
+
 .blr {
 	filter: blur(1px); 
 	-webkit-filter: blur(1px); 
 	-moz-filter: blur(1px);
 }
+
 /* ---- TOP TOOLBAR ---- */
 div.topToolbar {
 	display:flex;
@@ -46,6 +50,7 @@ div.topToolbar {
 	border-bottom: 4px solid #92b9cd;
 	font-size: 28px;
 }
+
 div.grow {
 	flex: 1;
 	white-space: nowrap;
@@ -107,7 +112,6 @@ td:nth-child(3) {
 	padding: 16px;
 }
 
-
 /* ---- ICON_STUFF ---- */
 .fa, .fa-trash,.fa-download {
 	color: #92b9cd;
@@ -126,7 +130,7 @@ span#loadButton:hover .fa-folder-open {
 	background: #eeeeee;
 }
 
-span#loadButton:active .fa-folder-open{
+span#loadButton:active .fa-folder-open {
 	color: #b89583;
 }
 
