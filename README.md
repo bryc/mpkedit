@@ -1,4 +1,4 @@
-# N64 Mempak reader/editor
+# N64 Mempak manager
 Allows the user to view the contents of N64 Controller Pak files (.mpk, .n64),
 export/import notes, delete notes, and save the modified MPK file.
 Written in plain Javascript and tested in Chrome and Firefox.
