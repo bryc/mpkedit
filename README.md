@@ -8,4 +8,7 @@ Written in plain Javascript and tested in Chrome and Firefox.
 * DexDrive (.n64) support (saves as standard .mpk)
 * **Export**, **Import** and **Delete** notes
 
-[Try it](http://rawgit.com/bryc/mempak/master/index.html)
+[**Try it**](http://rawgit.com/bryc/mempak/master/index.html)
+
+
+<div  style="align:center"><img src="http://i.imgur.com/XPkbSyR.png"></div>
