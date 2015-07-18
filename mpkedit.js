@@ -2,6 +2,15 @@
 /* jshint -W004, bitwise: false */
 
 (function() {
+	var $MPK = {};
+
+	var $CONFIG = {
+		chromeApp: false,
+		maxSize: 36928,
+		newFileName: "New.mpk",
+		emptyText: "~ empty"
+	};
+
 	window.addEventListener("load", function() {
 		initApp();
 	});
@@ -28,16 +37,7 @@
 		}
 		for(var i = 0; i < keys.length; i++) {
 			var key = keys[i];
-			var method = elmnt[key.slice(2)];
-
-			// specify methods with $_
-			if(key.indexOf("$_") > -1) {
-				// run a method with array of arguments
-				method.apply(elmnt, prop[key]);
-			}
-			else {
-				elmnt[key] = prop[key];
-			}
+			elmnt[key] = prop[key];
 		}
 		// look for other elements to append
 		if(arguments.length > 1) {
@@ -84,34 +84,11 @@
 		return ("00000000" + crc).slice(-8);
 	}
 
-	var $config = {
-		chromeApp: false,
-		maxSize: 36928,
-		newFileName: "New.mpk",
-		emptyText: "~ empty"
-	};
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-	var $MPK = {};
-	
-	function ca_saveNote(fileOut, filename) {
-		chrome.fileSystem.chooseEntry({
-			type:"saveFile",
-			suggestedName: filename,
-			accepts: [ {extensions : ["note"]} ]
-		}, function(Entry) {
-			if(!chrome.runtime.lastError) {
-				Entry.createWriter(function(writer){Entry.file(function(fl) {
-		
-					writer.write( new Blob([ new Uint8Array(fileOut) ]) );
-					
-					writer.onwriteend = function() {
-						writer.onwriteend = null;
-						writer.truncate(fileOut.length);
-						console.log("NOTE saved: " + fl.name);
-					};
-				});});
-			}
-		});
+	function saveFile(Entry) {
+		chrome.fileSystem.getWritableEntry(Entry, doSave);
 	}
 
 	function saveAsFile() {
@@ -119,35 +96,55 @@
 		var ext = fn.lastIndexOf(".");
 		chrome.fileSystem.chooseEntry({
 			type:"saveFile",
-			suggestedName: (ext>0?fn.substr(0,ext):fn)+".mpk",
-			accepts: [ {extensions : ["mpk"]} ]
+			suggestedName: (ext > 0 ? fn.substr(0, ext) : fn) + ".mpk",
+			accepts: [{extensions : ["mpk"]}]
 		}, doSave);
-	}
-
-	function saveFile(Entry) {
-		chrome.fileSystem.getWritableEntry(Entry, doSave);
 	}
 
 	function doSave(Entry) {
 		if(!chrome.runtime.lastError) {
-			Entry.createWriter(function(writer){Entry.file(function(fl) {
-				writer.write( new Blob([ new Uint8Array($MPK.data) ]) );
-				writer.onwriteend = function() {
-					writer.onwriteend = null;
-					writer.truncate(32768);
-					$MPK.Entry = Entry;
-					console.log("File saved: " + fl.name);
-				};
-			});});
+			Entry.createWriter(function(writer) {
+				Entry.file(function(fl) {
+					writer.write(new Blob([new Uint8Array($MPK.data)]));
+					writer.onwriteend = function() {
+						writer.onwriteend = null;
+						writer.truncate(32768);
+						$MPK.Entry = Entry;
+						console.log("File saved: " + fl.name);
+					};
+				});
+			});
 		}
 	}
+
+	function ca_saveNote(fileOut, filename) {
+		chrome.fileSystem.chooseEntry({
+			type:"saveFile",
+			suggestedName: filename,
+			accepts: [{extensions : ["note"]}]
+		}, function(Entry) {
+			if(!chrome.runtime.lastError) {
+				Entry.createWriter(function(writer) {
+					Entry.file(function(fl) {
+						writer.write(new Blob([new Uint8Array(fileOut)]));
+						writer.onwriteend = function() {
+							writer.onwriteend = null;
+							writer.truncate(fileOut.length);
+							console.log("NOTE saved: " + fl.name);
+						};
+					});
+				});
+			}
+		});
+	}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 	/* initApp - initialisation of app */
 	function initApp() {
 		function browse() {
-			var t = document.getElementById("fileOpen");
-
-			if($config.chromeApp) {
+			if($CONFIG.chromeApp) {
 				chrome.fileSystem.chooseEntry({type:"openFile"}, function(Entry) {
 					if(!chrome.runtime.lastError){
 						Entry.file(function(fl) {
@@ -160,15 +157,16 @@
 				});
 			}
 			else {
-				t.onchange = fileHandler;
-				t.click();
-			}
+				var selectFile = document.getElementById("fileOpen");
+				selectFile.onchange = fileHandler;
+				selectFile.click();
 
-			t.parentElement.replaceChild(elem(["input", {
-				id: "fileOpen",
-				type: "file",
-				multiple: true
-			}]), t);
+				selectFile.parentElement.replaceChild(elem(["input", {
+					id: "fileOpen",
+					type: "file",
+					multiple: true
+				}]), selectFile);
+			}
 		}
 
 		function changeExportColor(event) {
@@ -189,12 +187,19 @@
 			return false;
 		}
 
-		$config.chromeApp = location.protocol === "chrome-extension:";
+		$CONFIG.chromeApp = location.protocol === "chrome-extension:";
 
 		document.getElementById("fileOpen").onchange = fileHandler;
 		document.getElementById("loadButton").onclick = browse;
 		document.getElementById("save").onclick = saveMPK;
 
+		window.addEventListener("drop", fileHandler);
+		updateMPK(initMPK(), $CONFIG.newFileName);
+
+		// Drag & drop handler
+		window.addEventListener("dragover", function(event) {
+			event.preventDefault();
+		});
 		var lastTarget = null;
 		var dropzone = document.getElementById("dropzone");
 
@@ -216,13 +221,6 @@
 			}
 		});
 
-		// Drag & drop handler
-		window.addEventListener("dragover", function(event) {
-			event.preventDefault();
-		});
-
-		window.addEventListener("drop", fileHandler);
-
 		window.addEventListener("drop", function(event) {
 			dropzone.style.visibility = "hidden";
 			dropzone.style.opacity = 0;
@@ -234,8 +232,27 @@
 		window.addEventListener("keydown", changeExportColor);
 		window.addEventListener("keyup", changeExportColor);
 		window.addEventListener("blur", changeExportColor);
+	}
 
-		updateMPK(initMPK(), $config.newFileName);
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+	/* fileHandler - handles file input (drag/drop + browse) */
+	function fileHandler(event) {
+		// Get the FileList (input[type=file] or drag/drop)
+		var files = event.target.files || event.dataTransfer.files;
+		for(var i = 0; i < files.length; i++) {
+			var reader = new FileReader();
+			reader.onload = evarg(loadData, files[i].name);
+	
+			if($CONFIG.chromeApp) {
+				reader.Entry = event.dataTransfer.items[i].webkitGetAsEntry();
+			}
+			// Read a maximum of 36928 bytes
+			// DexDrive files are 36 KB, MPK is 32 KB
+			reader.readAsArrayBuffer(files[i].slice(0, 36928));
+		}
+		event.preventDefault();
 	}
 
 	// loadData - Load file data, proceeding to parse
@@ -270,31 +287,13 @@
 				data2[i] = data[i];
 			}
 
-			if($config.chromeApp && parseMPK(data2)) {
+			if($CONFIG.chromeApp && parseMPK(data2)) {
 				//console.log("FileEntry updated: " + event.target.Entry.name);
 				$MPK.Entry = event.target.Entry;
 			}
 
 			updateMPK(data2, filename);
 		}
-	}
-
-	/* fileHandler - handles file input (drag/drop + browse) */
-	function fileHandler(event) {
-		// Get the FileList (input[type=file] or drag/drop)
-		var files = event.target.files || event.dataTransfer.files;
-		for(var i = 0; i < files.length; i++) {
-			var reader = new FileReader();
-			reader.onload = evarg(loadData, files[i].name);
-	
-			if($config.chromeApp) {
-				reader.Entry = event.dataTransfer.items[i].webkitGetAsEntry();
-			}
-			// Read a maximum of 36928 bytes
-			// DexDrive files are 36 KB, MPK is 32 KB
-			reader.readAsArrayBuffer(files[i].slice(0, 36928));
-		}
-		event.preventDefault();
 	}
 
 	/* updateMPK - parse/check data then update UI */
@@ -344,10 +343,13 @@
 
 		if(Object.keys($MPK.gameNotes).length === 0) {
 			out.appendChild(
-				elem(["tr"], elem(["td", {innerHTML: "<div id=emptyFile>"+ $config.emptyText +"</div>"}]))
+				elem(["tr"], elem(["td", {innerHTML: "<div id=emptyFile>"+ $CONFIG.emptyText +"</div>"}]))
 			);
 		} 
 	}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 	/* parseMPK - checks, validates and parses MPK file data */
 	function parseMPK(data) {
@@ -620,105 +622,7 @@
 		}
 	}
 
-	/* initMPK - generates an empty MPK file */
-	function initMPK() {
-		// writeAt: At each offset, it writes 7 bytes of data
-		function writeAt(offset) {
-			var bytes = [1, 1, 0, 1, 1, 254, 241];
-			for(var i = 0; i < 7; i++) {
-				data[offset + i] = bytes[i];
-			}
-		}
-
-		var data = new Uint8Array(32768);
-
-		// This initializes the headers
-		writeAt(57);
-		writeAt(121);
-		writeAt(153);
-		writeAt(217);
-
-		// This initializes the empty IndexTables
-		for(var i = 5; i < 128; i++) {
-			data[256 + i * 2 + 1] = 3;
-			data[512 + i * 2 + 1] = 3;
-		}
-
-		// Store the IndexTable checksums
-		data[257] = 113;
-		data[513] = 113;
-
-		return data;
-	}
-
-	/* saveMPK - send the MPK to user as a download */
-	function saveMPK() {
-		if($config.chromeApp) {
-			if($MPK.Entry && !event.ctrlKey) {
-				saveFile($MPK.Entry);
-			}
-			else {
-				saveAsFile();
-			}
-		}
-		else {
-			var el = document.createElement("a");
-			var fn = $MPK.filename;
-			var ext = fn.lastIndexOf(".");
-			el.download = (ext>0?fn.substr(0,ext):fn)+".mpk";
-			el.href = "data:application/octet-stream;base64," +
-				btoa(String.fromCharCode.apply(null, $MPK.data));
-	
-			el.dispatchEvent(new MouseEvent("click"));	
-		}
-	}
-
-	/* exportNote - send the selected Note to user as a download */
-	function exportNote(noteID, event) {
-		var fileOut = [];
-		var indexes = $MPK.gameNotes[noteID].indexes;
-		var gameCode = $MPK.gameNotes[noteID].serial;
-		var noteName = $MPK.gameNotes[noteID].noteName;
-
-		// Get Note Header
-		for(var i = 0; i < 32; i++) {
-			fileOut.push($MPK.data[0x300 + (noteID * 32) + i]);
-		}
-
-		// Add the file magic, so identifying is easier on import
-		fileOut[6] = 0xCA;
-		fileOut[7] = 0xFE;
-
-		// Get Page Data
-		for(var i = 0; i < indexes.length; i++) {
-			var pageAddress = indexes[i] * 0x100;
-			for(var j = 0; j < 0x100; j++) {
-				fileOut.push($MPK.data[pageAddress + j]);
-			}
-		}
-
-		var filename = codeDB[gameCode] + "," + crc32(fileOut) + ".note";
-
-		// if CTRL is held, change the filename and strip the header.
-		if (event.ctrlKey) {
-			filename = noteName.replace(/[|"<>*?:]/g, "-") + "," + crc32(fileOut) + ".raw";
-			fileOut = fileOut.splice(32);
-		}
-
-		if($config.chromeApp) {
-				ca_saveNote(fileOut, filename);
-		}
-		else {
-			var el = document.createElement("a");
-			el.href = "data:application/octet-stream;base64," +
-				btoa(String.fromCharCode.apply(null, fileOut));
-			el.download = filename;
-	
-			el.dispatchEvent(new MouseEvent("click"));
-		}
-	}
-
-	/* importNote - insert the note file into the MPK data */
+	/* importNote - insert note data into MPK */
 	function importNote(data) {
 		var noteData = data.subarray(0, 32);
 		var pageData = data.subarray(32);
@@ -774,6 +678,8 @@
 		}
 	}
 
+////////////////////////
+
 	/* deleteNote - Deletes the selected note */
 	function deleteNote(noteID, event) {
 		var indexes = $MPK.gameNotes[noteID].indexes;
@@ -793,8 +699,111 @@
 		updateMPK($MPK.data);
 	}
 
+	/* exportNote - send the selected Note to user as a download */
+	function exportNote(noteID, event) {
+		var fileOut = [];
+		var indexes = $MPK.gameNotes[noteID].indexes;
+		var gameCode = $MPK.gameNotes[noteID].serial;
+		var noteName = $MPK.gameNotes[noteID].noteName;
+
+		// Get Note Header
+		for(var i = 0; i < 32; i++) {
+			fileOut.push($MPK.data[0x300 + (noteID * 32) + i]);
+		}
+
+		// Add the file magic, so identifying is easier on import
+		fileOut[6] = 0xCA;
+		fileOut[7] = 0xFE;
+
+		// Get Page Data
+		for(var i = 0; i < indexes.length; i++) {
+			var pageAddress = indexes[i] * 0x100;
+			for(var j = 0; j < 0x100; j++) {
+				fileOut.push($MPK.data[pageAddress + j]);
+			}
+		}
+
+		var filename = codeDB[gameCode] + "," + crc32(fileOut) + ".note";
+
+		// if CTRL is held, change the filename and strip the header.
+		if (event.ctrlKey) {
+			filename = noteName.replace(/[|"\/<>*?:]/g, "-") + "," + crc32(fileOut) + ".raw";
+			fileOut = fileOut.splice(32);
+		}
+
+		if($CONFIG.chromeApp) {
+				ca_saveNote(fileOut, filename);
+		}
+		else {
+			var el = document.createElement("a");
+			el.href = "data:application/octet-stream;base64," +
+				btoa(String.fromCharCode.apply(null, fileOut));
+			el.download = filename;
+	
+			el.dispatchEvent(new MouseEvent("click"));
+		}
+	}
+
+////////////////////////
+
+	/* saveMPK - send the MPK to user as a download */
+	function saveMPK() {
+		if($CONFIG.chromeApp) {
+			if($MPK.Entry && !event.ctrlKey) {
+				saveFile($MPK.Entry);
+			}
+			else {
+				saveAsFile();
+			}
+		}
+		else {
+			var el = document.createElement("a");
+			var fn = $MPK.filename;
+			var ext = fn.lastIndexOf(".");
+			el.download = (ext > 0 ? fn.substr(0, ext) : fn) + ".mpk";
+			el.href = "data:application/octet-stream;base64," +
+				btoa(String.fromCharCode.apply(null, $MPK.data));
+	
+			el.dispatchEvent(new MouseEvent("click"));	
+		}
+	}
+
+	/* initMPK - generates and returns empty MPK file */
+	function initMPK() {
+		// writeAt: At each offset, it writes 7 bytes of data
+		function writeAt(offset) {
+			var bytes = [1, 1, 0, 1, 1, 254, 241];
+			for(var i = 0; i < 7; i++) {
+				data[offset + i] = bytes[i];
+			}
+		}
+
+		var data = new Uint8Array(32768);
+
+		// This initializes the headers
+		writeAt(57);
+		writeAt(121);
+		writeAt(153);
+		writeAt(217);
+
+		// This initializes the empty IndexTables
+		for(var i = 5; i < 128; i++) {
+			data[256 + i * 2 + 1] = 3;
+			data[512 + i * 2 + 1] = 3;
+		}
+
+		// Store the IndexTable checksums
+		data[257] = 113;
+		data[513] = 113;
+
+		return data;
+	}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 	var codeDB = {
-		"\x3B\xAD\xD1\xE5": "Cartridge Save (Gameshark/Action Replay)",
+		"\x3B\xAD\xD1\xE5": "Cartridge Save (Gameshark, Action Replay)",
 		"\xDE\xAD\xBE\xEF": "Cartridge Save (BlackBag's Memory Manager)",
 		"NO7P": "007 - The World is Not Enough (E)",
 		"NO7E": "007 - The World is Not Enough (U)",
