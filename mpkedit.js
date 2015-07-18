@@ -110,6 +110,8 @@
 						writer.onwriteend = null;
 						writer.truncate(32768);
 						$MPK.Entry = Entry;
+						$MPK.filename = fl.name;
+						updateUI();
 						console.log("File saved: " + fl.name);
 					};
 				});
