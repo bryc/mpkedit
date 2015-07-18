@@ -4,11 +4,11 @@
 
 (function() {
 	"use strict";
+
 	var $MPK = {};
 
-	var $CONFIG = {
+	var $cfg = {
 		chromeApp: false,
-		maxSize: 36928,
 		newFileName: "New.mpk",
 		emptyText: "~ empty"
 	};
@@ -63,7 +63,6 @@
 
 	function crc32(data) {
 		var table = [];
-
 		for (var i = 256, crc; i--;) {
 			crc = i;
 			for (var j = 8; j--;) {
@@ -81,7 +80,6 @@
 			var ptr = crc & 255 ^ data[i];
 			crc = crc >>> 8 ^ table[ptr];
 		}
-
 		crc = ((crc ^ -1) >>> 0).toString(16);
 		return ("00000000" + crc).slice(-8);
 	}
@@ -95,11 +93,11 @@
 
 	function saveAsFile() {
 		var fn = $MPK.filename;
-		var ext = fn.lastIndexOf(".");
+		var ext = fn.slice(-3).toUpperCase() === "MPK";
+		console.log(ext)
 		chrome.fileSystem.chooseEntry({
 			type:"saveFile",
-			suggestedName: (ext > 0 ? fn.substr(0, ext) : fn) + ".mpk",
-			accepts: [{extensions : ["mpk"]}]
+			suggestedName: fn + (ext ? "" : ".mpk")
 		}, doSave);
 	}
 
@@ -146,7 +144,7 @@
 	/* initApp - initialisation of app */
 	function initApp() {
 		function browse() {
-			if($CONFIG.chromeApp) {
+			if($cfg.chromeApp) {
 				chrome.fileSystem.chooseEntry({type:"openFile"}, function(Entry) {
 					if(!chrome.runtime.lastError){
 						Entry.file(function(fl) {
@@ -189,14 +187,14 @@
 			return false;
 		}
 
-		$CONFIG.chromeApp = location.protocol === "chrome-extension:";
+		$cfg.chromeApp = location.protocol === "chrome-extension:";
 
 		document.getElementById("fileOpen").onchange = fileHandler;
 		document.getElementById("loadButton").onclick = browse;
 		document.getElementById("save").onclick = saveMPK;
 
 		window.addEventListener("drop", fileHandler);
-		updateMPK(initMPK(), $CONFIG.newFileName);
+		updateMPK(initMPK(), $cfg.newFileName);
 
 		// Drag & drop handler
 		window.addEventListener("dragover", function(event) {
@@ -247,7 +245,7 @@
 			var reader = new FileReader();
 			reader.onload = evarg(loadData, files[i].name);
 	
-			if($CONFIG.chromeApp) {
+			if($cfg.chromeApp) {
 				reader.Entry = event.dataTransfer.items[i].webkitGetAsEntry();
 			}
 			// Read a maximum of 36928 bytes
@@ -289,7 +287,7 @@
 				data2[i] = data[i];
 			}
 
-			if($CONFIG.chromeApp && parseMPK(data2)) {
+			if($cfg.chromeApp && parseMPK(data2)) {
 				//console.log("FileEntry updated: " + event.target.Entry.name);
 				$MPK.Entry = event.target.Entry;
 			}
@@ -345,7 +343,7 @@
 
 		if(Object.keys($MPK.gameNotes).length === 0) {
 			out.appendChild(
-				elem(["tr"], elem(["td", {innerHTML: "<div id=emptyFile>"+ $CONFIG.emptyText +"</div>"}]))
+				elem(["tr"], elem(["td", {innerHTML: "<div id=emptyFile>"+ $cfg.emptyText +"</div>"}]))
 			);
 		} 
 	}
@@ -591,11 +589,11 @@
 						data[i + 1],
 						data[i + 2],
 						data[i + 3]
-					),
+					).replace(/\0/g, '-'),
 					publisher: String.fromCharCode(
 						data[i + 4],
 						data[i + 5]
-					),
+					).replace(/\0/g, '-'),
 					noteName: noteName
 				};
 			}
@@ -724,16 +722,16 @@
 				fileOut.push($MPK.data[pageAddress + j]);
 			}
 		}
-
-		var filename = codeDB[gameCode] + "," + crc32(fileOut) + ".note";
+		console.log(gameCode);
+		var filename = (codeDB[gameCode] || gameCode) + "_" + crc32(fileOut) + ".note";
 
 		// if CTRL is held, change the filename and strip the header.
 		if (event.ctrlKey) {
-			filename = noteName.replace(/[|"\/<>*?:]/g, "-") + "," + crc32(fileOut) + ".raw";
+			filename = noteName.replace(/[\\|\/"<>*?:]/g, "-") + "_" + crc32(fileOut) + "_raw";
 			fileOut = fileOut.splice(32);
 		}
 
-		if($CONFIG.chromeApp) {
+		if($cfg.chromeApp) {
 				ca_saveNote(fileOut, filename);
 		}
 		else {
@@ -750,7 +748,7 @@
 
 	/* saveMPK - send the MPK to user as a download */
 	function saveMPK() {
-		if($CONFIG.chromeApp) {
+		if($cfg.chromeApp) {
 			if($MPK.Entry && !event.ctrlKey) {
 				saveFile($MPK.Entry);
 			}
@@ -761,8 +759,8 @@
 		else {
 			var el = document.createElement("a");
 			var fn = $MPK.filename;
-			var ext = fn.lastIndexOf(".");
-			el.download = (ext > 0 ? fn.substr(0, ext) : fn) + ".mpk";
+			var ext = fn.slice(-3).toUpperCase() === "MPK";
+			el.download = fn + (ext ? "" : ".mpk");
 			el.href = "data:application/octet-stream;base64," +
 				btoa(String.fromCharCode.apply(null, $MPK.data));
 	
