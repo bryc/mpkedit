@@ -1,9 +1,9 @@
-/* N64 Controller Pak viewer/editor/manager - github.com/bryc */
+/* N64 Mempak manager - github.com/bryc */
 /* jshint -W004, bitwise: false */
 /* global chrome */
 
 (function() {
-  "use strict";
+	"use strict";
 	var $MPK = {};
 
 	var $CONFIG = {
