@@ -1,7 +1,9 @@
 /* N64 Controller Pak viewer/editor/manager - github.com/bryc */
 /* jshint -W004, bitwise: false */
+/* global chrome */
 
 (function() {
+  "use strict";
 	var $MPK = {};
 
 	var $CONFIG = {
@@ -681,7 +683,7 @@
 ////////////////////////
 
 	/* deleteNote - Deletes the selected note */
-	function deleteNote(noteID, event) {
+	function deleteNote(noteID) {
 		var indexes = $MPK.gameNotes[noteID].indexes;
 
 		// Mark indexes as 'Free'
