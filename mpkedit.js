@@ -766,7 +766,7 @@
 			el.href = "data:application/octet-stream;base64," +
 				btoa(String.fromCharCode.apply(null, $MPK.data));
 	
-			el.dispatchEvent(new MouseEvent("click"));	
+			el.dispatchEvent(new MouseEvent("click"));
 		}
 	}
 
@@ -1155,7 +1155,7 @@
 		"NZSJ": "Zelda no Densetsu - Mujura no Kamen (J)",
 		"NZLP": "Legend of Zelda, The - Ocarina of Time (E)",
 		"CZLE": "Legend of Zelda, The - Ocarina of Time (U)",
-		"CZGE": "Legend of Zelda, The - Ocarina of Time (U)",	
+		"CZGE": "Legend of Zelda, The - Ocarina of Time (U)",
 		"NZLE": "Legend of Zelda, The - Ocarina of Time (U)",
 		"CZLJ": "Zelda no Densetsu - Toki no Ocarina GC URA (J)",
 		"NLGP": "LEGO Racers (E)",
