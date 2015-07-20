@@ -5,16 +5,16 @@
 (function() {
 	"use strict";
 
-	var $MPK = {};
-
 	var $cfg = {
 		chromeApp: false,
 		newFileName: "New.mpk",
 		emptyText: "~ empty"
 	};
 
+	var $MPK = {};
+
 	window.addEventListener("load", function() {
-		initApp();
+		UIHandler.initApp();
 	});
 
 	/* elem - element constructor */
@@ -85,15 +85,13 @@
 	}
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 
 	var ChromeApp = (function () {
-
 		function writeDone(Entry, event) {
 			if(event.loaded === 32768) {
 				$MPK.Entry = Entry;
 				$MPK.filename = Entry.name;
-				updateUI();
+				UIHandler.updateUI();
 			}
 		}
 
@@ -110,7 +108,7 @@
 		function saveFile(data, Entry) {
 			chrome.fileSystem.getWritableEntry(Entry, evarg(doSave, data));
 		}
-	
+
 		function saveAsFile(data, filename) {
 			chrome.fileSystem.chooseEntry({
 				type:"saveFile",
@@ -125,12 +123,11 @@
 				if(chrome.runtime.lastError) {
 					return false;
 				}
-	
+
 				Entry.file(function(fl) {
 					var reader = new FileReader();
 					$MPK.tmpEntry = Entry;
-					// loadData is Q
-					reader.onload = evarg(loadData, fl.name);
+					reader.onload = evarg(MPKHandler.loadData, fl.name);
 					reader.readAsArrayBuffer(fl.slice(0, 36928));
 				});
 			});
@@ -143,12 +140,8 @@
 		};
 	}());
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-	/* initApp - initialisation of app */
-	function initApp() {
-		function browse() {
+	var UIHandler = (function () {
+		function doBrowse() {
 			if($cfg.chromeApp) {
 				ChromeApp.loadFile();
 			}
@@ -165,190 +158,411 @@
 			}
 		}
 
-		function changeExportColor(event) {
-			var target = document.querySelectorAll(".fa-download");
+		/* initApp - initialisation of app */
+		function initApp() {
+			function changeExportColor(event) {
+				var target = document.querySelectorAll(".fa-download");
 
-			for(var i = 0; i < target.length; i++) {
-				target[i].style.color = event.ctrlKey ? "#c00" : "";
-			}
-		}
-
-		function isFile(event) {
-			var dt = event.dataTransfer;
-			for (var i = 0; i < dt.types.length; i++) {
-				if (dt.types[i] === "Files") {
-					return true;
+				for(var i = 0; i < target.length; i++) {
+					target[i].style.color = event.ctrlKey ? "#c00" : "";
 				}
 			}
-			return false;
-		}
 
-		$cfg.chromeApp = location.protocol === "chrome-extension:";
-
-		document.getElementById("fileOpen").onchange = fileHandler;
-		document.getElementById("loadButton").onclick = browse;
-		document.getElementById("save").onclick = saveMPK;
-
-		window.addEventListener("drop", fileHandler);
-		updateMPK(initMPK(), $cfg.newFileName);
-
-		// Drag & drop handler
-		window.addEventListener("dragover", function(event) {
-			event.preventDefault();
-		});
-		var lastTarget = null;
-		var dropzone = document.getElementById("dropzone");
-
-		window.addEventListener("dragenter", function (event) {
-			if (isFile(event)) {
-				lastTarget = event.target;
-				dropzone.style.visibility = "";
-				dropzone.style.opacity = 1;
-				document.getElementById("wrapper").className = "blr";
+			function isFile(event) {
+				var dt = event.dataTransfer;
+				for (var i = 0; i < dt.types.length; i++) {
+					if (dt.types[i] === "Files") {
+						return true;
+					}
+				}
+				return false;
 			}
-		});
 
-		window.addEventListener("dragleave", function (event) {
-			event.preventDefault();
-			if (event.target === lastTarget) {
+			$cfg.chromeApp = location.protocol === "chrome-extension:";
+
+			document.getElementById("fileOpen").onchange = fileHandler;
+			document.getElementById("loadButton").onclick = doBrowse;
+			document.getElementById("save").onclick = MPKHandler.saveMPK;
+
+			window.addEventListener("drop", fileHandler);
+			MPKHandler.updateMPK(MPKHandler.initMPK(), $cfg.newFileName);
+
+			// Drag & drop handler
+			window.addEventListener("dragover", function(event) {
+				event.preventDefault();
+			});
+			var lastTarget = null;
+			var dropzone = document.getElementById("dropzone");
+
+			window.addEventListener("dragenter", function (event) {
+				if (isFile(event)) {
+					lastTarget = event.target;
+					dropzone.style.visibility = "";
+					dropzone.style.opacity = 1;
+				}
+			});
+
+			window.addEventListener("dragleave", function (event) {
+				event.preventDefault();
+				if (event.target === lastTarget) {
+					dropzone.style.visibility = "hidden";
+					dropzone.style.opacity = 0;
+				}
+			});
+
+			window.addEventListener("drop", function(event) {
 				dropzone.style.visibility = "hidden";
 				dropzone.style.opacity = 0;
-				document.getElementById("wrapper").className = "";
+				event.preventDefault();
+			});
+
+			// Holding CTRL, change color of save icon.
+			window.addEventListener("keydown", changeExportColor);
+			window.addEventListener("keyup", changeExportColor);
+			window.addEventListener("blur", changeExportColor);
+		}
+
+		/* fileHandler - handles file input (drag/drop + browse) */
+		function fileHandler(event) {
+			// Get the FileList (input[type=file] or drag/drop)
+			var files = event.target.files || event.dataTransfer.files;
+
+			for(var i = 0; i < files.length; i++) {
+				var reader = new FileReader();
+				reader.onload = evarg(MPKHandler.loadData, files[i].name);
+
+				if($cfg.chromeApp) {
+					$MPK.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
+				}
+				// Read a maximum of 36928 bytes
+				// DexDrive files are 36 KB, MPK is 32 KB
+				reader.readAsArrayBuffer(files[i].slice(0, 36928));
 			}
-		});
-
-		window.addEventListener("drop", function(event) {
-			dropzone.style.visibility = "hidden";
-			dropzone.style.opacity = 0;
-			document.getElementById("wrapper").className = "";
 			event.preventDefault();
-		});
+		}
 
-		// Holding CTRL, change color of save icon.
-		window.addEventListener("keydown", changeExportColor);
-		window.addEventListener("keyup", changeExportColor);
-		window.addEventListener("blur", changeExportColor);
-	}
+		/* updateUI - produce user-interface */
+		function updateUI() {
+			// Construct Note table
+			var out = document.querySelector("table");
+			while(out.firstChild) {
+				out.removeChild(out.firstChild);
+			}
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+			document.getElementById("filename").innerHTML = $MPK.filename;
+			document.title = (123 - $MPK.usedPages) + ", " + (16 - $MPK.usedNotes) + ", " + $MPK.filename;
 
-	/* fileHandler - handles file input (drag/drop + browse) */
-	function fileHandler(event) {
-		// Get the FileList (input[type=file] or drag/drop)
-		var files = event.target.files || event.dataTransfer.files;
+			for(var i = 0; i < 16; i++) {
+				if($MPK.gameNotes[i]) {
+					var gameName = codeDB[$MPK.gameNotes[i].serial] || $MPK.gameNotes[i].serial;
 
-		for(var i = 0; i < files.length; i++) {
-			var reader = new FileReader();
-			reader.onload = evarg(loadData, files[i].name);
+					var tableRow =
+					elem(["tr"],
+						elem(["td", $MPK.gameNotes[i].noteName + "<div>" + gameName + "</div>"]),
+						elem(["td", $MPK.gameNotes[i].indexes.length]),
+						elem(["td"],
+							elem(["span", {onclick: evarg(MPKHandler.deleteNote, i), className: "fa fa-trash"}]),
+							elem(["span", {onclick: evarg(MPKHandler.exportNote, i), className: "fa fa-download"}])
+						)
+					);
+
+					out.appendChild(tableRow);
+				}
+			}
+
+			if(Object.keys($MPK.gameNotes).length === 0) {
+				out.appendChild(
+					elem(["tr"], elem(["td", {innerHTML: "<div id=emptyFile>"+ $cfg.emptyText +"</div>"}]))
+				);
+			} 
+		}
+
+		return {
+			initApp: initApp,
+			updateUI: updateUI
+		};
+	}());
+
+	var MPKHandler = (function () {
+		// loadData - Load file data, proceeding to parse
+		function loadData(filename, event) {
+			//isNoteFile - detects note file data
+			function isNoteFile(data) {
+				// these are known to be 0
+				var a = 0 === data[0x0A];
+				var b = 0 === data[0x0B];
+				// 0xCAFE is the fileid defined in the export file
+				var c = 0xCAFE === data[0x07] + (data[0x06] << 8);
+				// The size of the pagedata should be a multiple of 256
+				var d = 0 === data.subarray(32).length % 256;
+
+				return a && b && c && d;
+			}
+
+			// ArrayBuffer to Array - first access to data post-FileReader
+			var data = new Uint8Array(event.target.result);
+
+			if(isNoteFile(data)) {
+				importNote(data);
+			}
+			else {
+				// DexDrive support - Remove DexDrive header
+				if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
+					data = data.subarray(0x1040);
+				}
+				// Copy to fixed-size array
+				// This is to ensure that the data is always 32KiB
+				var data2 = new Uint8Array(32768);
+				for(var i = 0; i < data.length; i++) {
+					data2[i] = data[i];
+				}
+
+				updateMPK(data2, filename);
+			}
+		}
+
+		/* updateMPK - parse/check data then update UI */
+		function updateMPK(data, filename) {
+			var gameNotes = MPKHandler.parseMPK(data);
+
+			if(gameNotes) {
+				$MPK.filename = filename || $MPK.filename;
+				$MPK.data = data;
+				$MPK.gameNotes = gameNotes;
+				UIHandler.updateUI();
+
+				if($cfg.chromeApp && filename) {
+					$MPK.Entry = $MPK.tmpEntry;
+				}
+			}
+			else {
+				console.warn("File is invalid: " + filename);
+			}
+		}
+
+		/* importNote - insert note data into MPK */
+		function importNote(data) {
+			var noteData = data.subarray(0, 32);
+			var pageData = data.subarray(32);
+			var pageCount = pageData.length / 256;
+
+			// If there is enough room, go ahead and insert the data
+			if($MPK.usedPages + pageCount <= 123 && $MPK.usedNotes < 16) {
+
+				var freeIndexes = [];
+				// Find free pages to write to
+				for(var i = 0xA; i < 0x100; i += 2) {
+					if(freeIndexes.length === pageCount) {
+						break;
+					}
+					if($MPK.data[0x100 + i + 1] === 3) {
+						freeIndexes.push(i / 2);
+					}
+				}
+
+				noteData[0x06] = 0;
+				noteData[0x07] = freeIndexes[0];
+
+				// Loop over the freeIndexes, writing new data
+				for(var i = 0; i < freeIndexes.length; i++) {
+					var target1 = 0x100 + (2 * freeIndexes[i] + 1);
+					var target2 = 0x100 * freeIndexes[i];
+
+					// Write the new indexes to IndexTable
+					if(i === freeIndexes.length - 1) {
+						$MPK.data[target1] = 0x01;
+					} else {
+						$MPK.data[target1] = freeIndexes[i + 1];
+					}
+
+					// Write the page data
+					for(var j = 0; j < 0x100; j++) {
+						$MPK.data[target2 + j] = pageData[0x100 * i + j];
+					}
+				}
+
+				// Writes the note entry
+				for(var i = 0; i < 16; i++) {
+					if($MPK.gameNotes[i] === undefined) {
+						var target = 0x300 + i * 32;
+						for(var j = 0; j < 32; j++) {
+							$MPK.data[target + j] = noteData[j];
+						}
+						break;
+					}
+				}
+
+				updateMPK($MPK.data);
+			}
+		}
+
+		/* deleteNote - Deletes the selected note */
+		function deleteNote(noteID) {
+			var indexes = $MPK.gameNotes[noteID].indexes;
+
+			// Mark indexes as 'Free'
+			for(var i = 0, offset; i < indexes.length; i++) {
+				offset = 0x100 + (indexes[i] * 2) + 1;
+				$MPK.data[offset] = 0x03;
+			}
+
+			// Delete from Note Table
+			for(var i = 0; i < 32; i++) {
+				offset = 0x300 + (noteID * 32) + i;
+				$MPK.data[offset] = 0x00;
+			}
+
+			updateMPK($MPK.data);
+		}
+
+		/* exportNote - send the selected Note to user as a download */
+		function exportNote(noteID, event) {
+			var fileOut = [];
+			var indexes = $MPK.gameNotes[noteID].indexes;
+			var gameCode = $MPK.gameNotes[noteID].serial;
+			var noteName = $MPK.gameNotes[noteID].noteName;
+
+			// Get Note Header
+			for(var i = 0; i < 32; i++) {
+				fileOut.push($MPK.data[0x300 + (noteID * 32) + i]);
+			}
+
+			// Add the file magic, so identifying is easier on import
+			fileOut[6] = 0xCA;
+			fileOut[7] = 0xFE;
+
+			// Get Page Data
+			for(var i = 0; i < indexes.length; i++) {
+				var pageAddress = indexes[i] * 0x100;
+				for(var j = 0; j < 0x100; j++) {
+					fileOut.push($MPK.data[pageAddress + j]);
+				}
+			}
+			var filename = (codeDB[gameCode] || gameCode) + "_" + crc32(fileOut) + ".note";
+
+			// if CTRL is held, change the filename and strip the header.
+			if (event.ctrlKey) {
+				filename = noteName.replace(/[\\|\/"<>*?:]/g, "-") + "_" + crc32(fileOut) + "_raw";
+				fileOut = fileOut.splice(32);
+			}
 
 			if($cfg.chromeApp) {
-				$MPK.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
+					ChromeApp.saveAsFile(fileOut, filename);
 			}
-			// Read a maximum of 36928 bytes
-			// DexDrive files are 36 KB, MPK is 32 KB
-			reader.readAsArrayBuffer(files[i].slice(0, 36928));
-		}
-		event.preventDefault();
-	}
+			else {
+				var el = document.createElement("a");
+				el.href = "data:application/octet-stream;base64," +
+					btoa(String.fromCharCode.apply(null, fileOut));
+				el.download = filename;
 
-	// loadData - Load file data, proceeding to parse
-	function loadData(filename, event) {
-		//isNoteFile - detects note file data
-		function isNoteFile(data) {
-			// these are known to be 0
-			var a = 0 === data[0x0A];
-			var b = 0 === data[0x0B];
-			// 0xCAFE is the fileid defined in the export file
-			var c = 0xCAFE === data[0x07] + (data[0x06] << 8);
-			// The size of the pagedata should be a multiple of 256
-			var d = 0 === data.subarray(32).length % 256;
-	
-			return a && b && c && d;
-		}
-
-		// ArrayBuffer to Array - first access to data post-FileReader
-		var data = new Uint8Array(event.target.result);
-
-		if(isNoteFile(data)) {
-			importNote(data);
-		}
-		else {
-			// DexDrive support - Remove DexDrive header
-			if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
-				data = data.subarray(0x1040);
-			}
-			// Copy to fixed-size array
-			// This is to ensure that the data is always 32KiB
-			var data2 = new Uint8Array(32768);
-			for(var i = 0; i < data.length; i++) {
-				data2[i] = data[i];
-			}
-
-			updateMPK(data2, filename);
-		}
-	}
-
-	/* updateMPK - parse/check data then update UI */
-	function updateMPK(data, filename) {
-		var gameNotes = parseMPK(data, filename);
-		
-		if(gameNotes) {
-			$MPK.filename = filename || $MPK.filename;
-			$MPK.data = data;
-			$MPK.gameNotes = gameNotes;
-			updateUI();
-
-			if($cfg.chromeApp && filename) {
-				$MPK.Entry = $MPK.tmpEntry;
-			}
-		}
-		else {
-			console.warn("File is invalid: " + filename);
-		}
-	}
-
-	/* updateUI - produce user-interface */
-	function updateUI() {
-		// Construct Note table
-		var out = document.querySelector("table");
-		while(out.firstChild) {
-			out.removeChild(out.firstChild);
-		}
-
-		document.getElementById("filename").innerHTML = $MPK.filename;
-		document.title = (123 - $MPK.usedPages) + ", " + (16 - $MPK.usedNotes) + ", " + $MPK.filename;
-
-		for(var i = 0; i < 16; i++) {
-			if($MPK.gameNotes[i]) {
-				var gameName = codeDB[$MPK.gameNotes[i].serial] || $MPK.gameNotes[i].serial;
-
-				var tableRow =
-				elem(["tr"],
-					elem(["td", $MPK.gameNotes[i].noteName + "<div>" + gameName + "</div>"]),
-					elem(["td", $MPK.gameNotes[i].indexes.length]),
-					elem(["td"],
-						elem(["span", {onclick: evarg(deleteNote, i), className: "fa fa-trash"}]),
-						elem(["span", {onclick: evarg(exportNote, i), className: "fa fa-download"}])
-					)
-				);
-
-				out.appendChild(tableRow);
+				el.dispatchEvent(new MouseEvent("click"));
 			}
 		}
 
-		if(Object.keys($MPK.gameNotes).length === 0) {
-			out.appendChild(
-				elem(["tr"], elem(["td", {innerHTML: "<div id=emptyFile>"+ $cfg.emptyText +"</div>"}]))
-			);
-		} 
-	}
+		/* saveMPK - send the MPK to user as a download */
+		function saveMPK() {
+			if($cfg.chromeApp) {
+				if($MPK.Entry && !event.ctrlKey) {
+					ChromeApp.saveFile($MPK.data, $MPK.Entry);
+				}
+				else {
+					ChromeApp.saveAsFile($MPK.data, $MPK.filename);
+				}
+			}
+			else {
+				var el = document.createElement("a");
+				var fn = $MPK.filename;
+				var ext = fn.slice(-3).toUpperCase() === "MPK";
+				el.download = fn + (ext ? "" : ".mpk");
+				el.href = "data:application/octet-stream;base64," +
+					btoa(String.fromCharCode.apply(null, $MPK.data));
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+				el.dispatchEvent(new MouseEvent("click"));
+			}
+		}
 
-	/* parseMPK - checks, validates and parses MPK file data */
-	function parseMPK(data) {
+		/* initMPK - generates and returns empty MPK file */
+		function initMPK() {
+			// writeAt: At each offset, it writes 7 bytes of data
+			function writeAt(offset) {
+				var bytes = [1, 1, 0, 1, 1, 254, 241];
+				for(var i = 0; i < 7; i++) {
+					data[offset + i] = bytes[i];
+				}
+			}
+
+			var data = new Uint8Array(32768);
+
+			// This initializes the headers
+			writeAt(57);
+			writeAt(121);
+			writeAt(153);
+			writeAt(217);
+
+			// This initializes the empty IndexTables
+			for(var i = 5; i < 128; i++) {
+				data[256 + i * 2 + 1] = 3;
+				data[512 + i * 2 + 1] = 3;
+			}
+
+			// Store the IndexTable checksums
+			data[257] = 113;
+			data[513] = 113;
+
+			return data;
+		}
+
+		return {
+			deleteNote: deleteNote,
+			saveMPK: saveMPK,
+			exportNote: exportNote,
+			initMPK: initMPK,
+			updateMPK: updateMPK,
+			loadData: loadData
+		};
+	}());
+
+	MPKHandler.parseMPK = function(data) {
+		var NoteTable = {};
+		var NoteKeys = [];
+
+		var n64code = {
+			  0:  "",  15: " ",  16: "0",
+			 17: "1",  18: "2",  19: "3",  20: "4",
+			 21: "5",  22: "6",  23: "7", 24: "8",
+			 25: "9",  26: "A",  27: "B",  28: "C",
+			 29: "D",  30: "E",  31: "F", 32: "G",
+			 33: "H",  34: "I",  35: "J",  36: "K",
+			 37: "L",  38: "M",  39: "N", 40: "O",
+			 41: "P",  42: "Q",  43: "R",  44: "S",
+			 45: "T",  46: "U",  47: "V", 48: "W",
+			 49: "X",  50: "Y",  51: "Z",  52: "!",
+			 53: '"',  54: "#",  55: "'", 56: "*",
+			 57: "+",  58: ",",  59: "-",  60: ".",
+			 61: "/",  62: ":",  63: "=", 64: "?",
+			 65: "@",  66: "。",  67: "゛",  68: "゜",
+			 69: "ァ",  70: "ィ",  71: "ゥ",  72: "ェ",
+			 73: "ォ",  74: "ッ",  75: "ャ",  76: "ュ",
+			 77: "ョ",  78: "ヲ",  79: "ン",  80: "ア",
+			 81: "イ",  82: "ウ",  83: "エ",  84: "オ",
+			 85: "カ",  86: "キ",  87: "ク",  88: "ケ",
+			 89: "コ",  90: "サ",  91: "シ",  92: "ス",
+			 93: "セ",  94: "ソ",  95: "タ",  96: "チ",
+			 97: "ツ",  98: "テ",  99: "ト", 100: "ナ",
+			101: "ニ", 102: "ヌ", 103: "ネ", 104: "ノ",
+			105: "ハ", 106: "ヒ", 107: "フ", 108: "ヘ",
+			109: "ホ", 110: "マ", 111: "ミ", 112: "ム",
+			113: "メ", 114: "モ", 115: "ヤ", 116: "ユ",
+			117: "ヨ", 118: "ラ", 119: "リ", 120: "ル",
+			121: "レ", 122: "ロ", 123: "ワ", 124: "ガ",
+			125: "ギ", 126: "グ", 127: "ゲ", 128: "ゴ",
+			129: "ザ", 130: "ジ", 131: "ズ", 132: "ゼ",
+			133: "ゾ", 134: "ダ", 135: "ヂ", 136: "ヅ",
+			137: "デ", 138: "ド", 139: "バ", 140: "ビ",
+			141: "ブ", 142: "ベ", 143: "ボ", 144: "パ",
+			145: "ピ", 146: "プ", 147: "ペ", 148: "ポ"
+		};
+
 		// validateChecksum - validate and repair checksums
 		// at an offset address (o)
 		function validateChecksum(o) {
@@ -469,134 +683,106 @@
 			return noteIndexes;
 		}
 
-		//This is the N64 Font code.
-		var n64code = {
-			  0:  "",  15: " ",  16: "0",
-			 17: "1",  18: "2",  19: "3",  20: "4",
-			 21: "5",  22: "6",  23: "7", 24: "8",
-			 25: "9",  26: "A",  27: "B",  28: "C",
-			 29: "D",  30: "E",  31: "F", 32: "G",
-			 33: "H",  34: "I",  35: "J",  36: "K",
-			 37: "L",  38: "M",  39: "N", 40: "O",
-			 41: "P",  42: "Q",  43: "R",  44: "S",
-			 45: "T",  46: "U",  47: "V", 48: "W",
-			 49: "X",  50: "Y",  51: "Z",  52: "!",
-			 53: '"',  54: "#",  55: "'", 56: "*",
-			 57: "+",  58: ",",  59: "-",  60: ".",
-			 61: "/",  62: ":",  63: "=", 64: "?",
-			 65: "@",  66: "。",  67: "゛",  68: "゜",
-			 69: "ァ",  70: "ィ",  71: "ゥ",  72: "ェ",
-			 73: "ォ",  74: "ッ",  75: "ャ",  76: "ュ",
-			 77: "ョ",  78: "ヲ",  79: "ン",  80: "ア",
-			 81: "イ",  82: "ウ",  83: "エ",  84: "オ",
-			 85: "カ",  86: "キ",  87: "ク",  88: "ケ",
-			 89: "コ",  90: "サ",  91: "シ",  92: "ス",
-			 93: "セ",  94: "ソ",  95: "タ",  96: "チ",
-			 97: "ツ",  98: "テ",  99: "ト", 100: "ナ",
-			101: "ニ", 102: "ヌ", 103: "ネ", 104: "ノ",
-			105: "ハ", 106: "ヒ", 107: "フ", 108: "ヘ",
-			109: "ホ", 110: "マ", 111: "ミ", 112: "ム",
-			113: "メ", 114: "モ", 115: "ヤ", 116: "ユ",
-			117: "ヨ", 118: "ラ", 119: "リ", 120: "ル",
-			121: "レ", 122: "ロ", 123: "ワ", 124: "ガ",
-			125: "ギ", 126: "グ", 127: "ゲ", 128: "ゴ",
-			129: "ザ", 130: "ジ", 131: "ズ", 132: "ゼ",
-			133: "ゾ", 134: "ダ", 135: "ヂ", 136: "ヅ",
-			137: "デ", 138: "ド", 139: "バ", 140: "ビ",
-			141: "ブ", 142: "ベ", 143: "ボ", 144: "パ",
-			145: "ピ", 146: "プ", 147: "ペ", 148: "ポ"
-		};
+		function readNoteTable() {
+			// Parse NoteTable
+			for(var i = 0x300; i < 0x500; i += 32) {
 
-		// Check Header - Quickly check all locations, saving the last valid one.
-		var lastValidLoc = -1;
-		var loc = [0x20, 0x60, 0x80, 0xC0];
+				var p = data[i + 0x07];
 
-		for(var i = 0, chk; i < loc.length; i++) {
-			chk = validateChecksum(loc[i], data);
-			if(chk) {
-				lastValidLoc = loc[i];
+				// a: check if gamecode and companycode aren't NULL
+				var a = data[i]+data[i+1]+data[i+2]+data[i+3]>0 && data[i+4]+data[i+5]>0;
+
+				// b: checks the initial index
+				var b = data[i + 0x06]===0 && p>=5 && p<=127;
+
+				// c: these offsets are assumed to be 0. TODO: CHECK REAL HARDWARE!
+				var c = (data[i + 0x0A]===0) && (data[i + 0x0B]===0);
+
+				if(a && b && c) {
+					// Repair 0x08:2 bit thing
+					if((data[i + 0x08] & 0x02) === 0) {
+						data[i + 0x08] |= 0x02;
+					}
+
+					// Note filename
+					for(var j = 0, noteName = ""; j < 16; j++) {
+						noteName += n64code[ data[i + 16 + j] ] || "";
+					}
+
+					// Note filename extension
+					if(data[i + 12] !== 0) {
+
+						noteName += "." + n64code[data[i + 12]] || "";
+						noteName += n64code[data[i + 13]] || "";
+						noteName += n64code[data[i + 14]] || "";
+						noteName += n64code[data[i + 15]] || "";
+					}
+
+					// This is used for checkIndexes
+					NoteKeys.push(p);
+
+					// Store Note data
+					NoteTable[(i - 0x300) / 32] = {
+						indexes: p,
+						serial: String.fromCharCode(
+							data[i],
+							data[i + 1],
+							data[i + 2],
+							data[i + 3]
+						).replace(/\0/g, '-'),
+						publisher: String.fromCharCode(
+							data[i + 4],
+							data[i + 5]
+						).replace(/\0/g, '-'),
+						noteName: noteName
+					};
+				}
 			}
+
+			return {
+				NoteTable: NoteTable,
+				NoteKeys: NoteKeys
+			};
 		}
 
-		// Check all locations storing each result.
-		for(var i = 0; i < loc.length; i++) {
-			var currentLoc = loc[i];
-			chk = validateChecksum(currentLoc, data);
+		function checkHeader() {
+			// Check Header - Quickly check all locations, saving the last valid one.
+			var lastValidLoc = -1;
+			var loc = [0x20, 0x60, 0x80, 0xC0];
 
-			// Detect and replace invalid locations
-			if(lastValidLoc > -1 && chk === false) {
-				for(var j = 0; j < 32; j++) {
-					data[currentLoc + j] = data[lastValidLoc + j];
+			for(var i = 0, chk; i < loc.length; i++) {
+				chk = validateChecksum(loc[i], data);
+				if(chk) {
+					lastValidLoc = loc[i];
 				}
+			}
+
+			// Check all locations storing each result.
+			for(var i = 0; i < loc.length; i++) {
+				var currentLoc = loc[i];
 				chk = validateChecksum(currentLoc, data);
+
+				// Detect and replace invalid locations
+				if(lastValidLoc > -1 && chk === false) {
+					for(var j = 0; j < 32; j++) {
+						data[currentLoc + j] = data[lastValidLoc + j];
+					}
+					chk = validateChecksum(currentLoc, data);
+				}
+				loc[i] = chk;
 			}
-			loc[i] = chk;
-		}
 
-		// Check if all checksums are correct
-		if(true !== (loc[0] && loc[1] && loc[2] && loc[3])) {
-			return false;
-		}
-
-		// Parse NoteTable
-		var NoteTable = {};
-		var NoteKeys = [];
-		for(var i = 0x300; i < 0x500; i += 32) {
-
-			var p = data[i + 0x07];
-
-			// a: check if gamecode and companycode aren't NULL
-			var a = data[i]+data[i+1]+data[i+2]+data[i+3]>0 && data[i+4]+data[i+5]>0;
-
-			// b: checks the initial index
-			var b = data[i + 0x06]===0 && p>=5 && p<=127;
-
-			// c: these offsets are assumed to be 0. TODO: CHECK REAL HARDWARE!
-			var c = (data[i + 0x0A]===0) && (data[i + 0x0B]===0);
-
-			if(a && b && c) {
-				// Repair 0x08:2 bit thing
-				if((data[i + 0x08] & 0x02) === 0) {
-					data[i + 0x08] |= 0x02;
-				}
-
-				// Note filename
-				for(var j = 0, noteName = ""; j < 16; j++) {
-					noteName += n64code[ data[i + 16 + j] ] || "";
-				}
-
-				// Note filename extension
-				if(data[i + 12] !== 0) {
-
-					noteName += "." + n64code[data[i + 12]] || "";
-					noteName += n64code[data[i + 13]] || "";
-					noteName += n64code[data[i + 14]] || "";
-					noteName += n64code[data[i + 15]] || "";
-				}
-
-				// This is used for checkIndexes
-				NoteKeys.push(p);
-
-				// Store Note data
-				NoteTable[(i - 0x300) / 32] = {
-					indexes: p,
-					serial: String.fromCharCode(
-						data[i],
-						data[i + 1],
-						data[i + 2],
-						data[i + 3]
-					).replace(/\0/g, '-'),
-					publisher: String.fromCharCode(
-						data[i + 4],
-						data[i + 5]
-					).replace(/\0/g, '-'),
-					noteName: noteName
-				};
+			// Check if all checksums are correct
+			if(true !== (loc[0] && loc[1] && loc[2] && loc[3])) {
+				return false;
 			}
 		}
+
+		checkHeader();
+		readNoteTable();
 
 		// Checks both primary and backup IndexTable
-		// keeps whichever is valid, with 0x100 being pr eferred.
+		// keeps whichever is valid, with 0x100 being preferred.
 		var output = checkIndexes(0x100) || checkIndexes(0x200);
 
 		// if a valid IndexTable was found
@@ -617,185 +803,6 @@
 			return false;
 		}
 	}
-
-	/* importNote - insert note data into MPK */
-	function importNote(data) {
-		var noteData = data.subarray(0, 32);
-		var pageData = data.subarray(32);
-		var pageCount = pageData.length / 256;
-
-		// If there is enough room, go ahead and insert the data
-		if($MPK.usedPages + pageCount <= 123 && $MPK.usedNotes < 16) {
-
-			var freeIndexes = [];
-			// Find free pages to write to
-			for(var i = 0xA; i < 0x100; i += 2) {
-				if(freeIndexes.length === pageCount) {
-					break;
-				}
-				if($MPK.data[0x100 + i + 1] === 3) {
-					freeIndexes.push(i / 2);
-				}
-			}
-
-			noteData[0x06] = 0;
-			noteData[0x07] = freeIndexes[0];
-
-			// Loop over the freeIndexes, writing new data
-			for(var i = 0; i < freeIndexes.length; i++) {
-				var target1 = 0x100 + (2 * freeIndexes[i] + 1);
-				var target2 = 0x100 * freeIndexes[i];
-
-				// Write the new indexes to IndexTable
-				if(i === freeIndexes.length - 1) {
-					$MPK.data[target1] = 0x01;
-				} else {
-					$MPK.data[target1] = freeIndexes[i + 1];
-				}
-
-				// Write the page data
-				for(var j = 0; j < 0x100; j++) {
-					$MPK.data[target2 + j] = pageData[0x100 * i + j];
-				}
-			}
-
-			// Writes the note entry
-			for(var i = 0; i < 16; i++) {
-				if($MPK.gameNotes[i] === undefined) {
-					var target = 0x300 + i * 32;
-					for(var j = 0; j < 32; j++) {
-						$MPK.data[target + j] = noteData[j];
-					}
-					break;
-				}
-			}
-
-			updateMPK($MPK.data);
-		}
-	}
-
-////////////////////////
-
-	/* deleteNote - Deletes the selected note */
-	function deleteNote(noteID) {
-		var indexes = $MPK.gameNotes[noteID].indexes;
-
-		// Mark indexes as 'Free'
-		for(var i = 0, offset; i < indexes.length; i++) {
-			offset = 0x100 + (indexes[i] * 2) + 1;
-			$MPK.data[offset] = 0x03;
-		}
-
-		// Delete from Note Table
-		for(var i = 0; i < 32; i++) {
-			offset = 0x300 + (noteID * 32) + i;
-			$MPK.data[offset] = 0x00;
-		}
-
-		updateMPK($MPK.data);
-	}
-
-	/* exportNote - send the selected Note to user as a download */
-	function exportNote(noteID, event) {
-		var fileOut = [];
-		var indexes = $MPK.gameNotes[noteID].indexes;
-		var gameCode = $MPK.gameNotes[noteID].serial;
-		var noteName = $MPK.gameNotes[noteID].noteName;
-
-		// Get Note Header
-		for(var i = 0; i < 32; i++) {
-			fileOut.push($MPK.data[0x300 + (noteID * 32) + i]);
-		}
-
-		// Add the file magic, so identifying is easier on import
-		fileOut[6] = 0xCA;
-		fileOut[7] = 0xFE;
-
-		// Get Page Data
-		for(var i = 0; i < indexes.length; i++) {
-			var pageAddress = indexes[i] * 0x100;
-			for(var j = 0; j < 0x100; j++) {
-				fileOut.push($MPK.data[pageAddress + j]);
-			}
-		}
-		var filename = (codeDB[gameCode] || gameCode) + "_" + crc32(fileOut) + ".note";
-
-		// if CTRL is held, change the filename and strip the header.
-		if (event.ctrlKey) {
-			filename = noteName.replace(/[\\|\/"<>*?:]/g, "-") + "_" + crc32(fileOut) + "_raw";
-			fileOut = fileOut.splice(32);
-		}
-
-		if($cfg.chromeApp) {
-				ChromeApp.saveAsFile(fileOut, filename);
-		}
-		else {
-			var el = document.createElement("a");
-			el.href = "data:application/octet-stream;base64," +
-				btoa(String.fromCharCode.apply(null, fileOut));
-			el.download = filename;
-	
-			el.dispatchEvent(new MouseEvent("click"));
-		}
-	}
-
-////////////////////////
-
-	/* saveMPK - send the MPK to user as a download */
-	function saveMPK() {
-		if($cfg.chromeApp) {
-			if($MPK.Entry && !event.ctrlKey) {
-				ChromeApp.saveFile($MPK.data, $MPK.Entry);
-			}
-			else {
-				ChromeApp.saveAsFile($MPK.data, $MPK.filename);
-			}
-		}
-		else {
-			var el = document.createElement("a");
-			var fn = $MPK.filename;
-			var ext = fn.slice(-3).toUpperCase() === "MPK";
-			el.download = fn + (ext ? "" : ".mpk");
-			el.href = "data:application/octet-stream;base64," +
-				btoa(String.fromCharCode.apply(null, $MPK.data));
-	
-			el.dispatchEvent(new MouseEvent("click"));
-		}
-	}
-
-	/* initMPK - generates and returns empty MPK file */
-	function initMPK() {
-		// writeAt: At each offset, it writes 7 bytes of data
-		function writeAt(offset) {
-			var bytes = [1, 1, 0, 1, 1, 254, 241];
-			for(var i = 0; i < 7; i++) {
-				data[offset + i] = bytes[i];
-			}
-		}
-
-		var data = new Uint8Array(32768);
-
-		// This initializes the headers
-		writeAt(57);
-		writeAt(121);
-		writeAt(153);
-		writeAt(217);
-
-		// This initializes the empty IndexTables
-		for(var i = 5; i < 128; i++) {
-			data[256 + i * 2 + 1] = 3;
-			data[512 + i * 2 + 1] = 3;
-		}
-
-		// Store the IndexTable checksums
-		data[257] = 113;
-		data[513] = 113;
-
-		return data;
-	}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 
 	var codeDB = {
 		"\x3B\xAD\xD1\xE5": "Cartridge Save (Gameshark, Action Replay)",

@@ -36,12 +36,6 @@ div#dropzone {
     background: rgba(0, 0, 0, 0.3);
 }
 
-.blr {
-	filter: blur(1px); 
-	-webkit-filter: blur(1px); 
-	-moz-filter: blur(1px);
-}
-
 /* ---- TOP TOOLBAR ---- */
 div.topToolbar {
 	display:flex;

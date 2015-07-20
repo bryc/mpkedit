@@ -1,7 +1,9 @@
 <!doctype html>
 <html>
 	<head>
+		<title>MPKEdit</title>
 		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,user-scalable=no">
 		<link rel="stylesheet" href="frontend.css">
 		<link href="fonts/font-awesome.min.css" rel="stylesheet">
 		<script src="mpkedit.js"></script>
@@ -9,10 +11,9 @@
 	
 	<body>
 		<div id="dropzone" style="visibility:hidden;opacity:0"></div>
-		<div id="wrapper">
 		<div class="topToolbar">
 			<div class="grow">
-				<input type="file" id="fileOpen" multiple="true">
+				<input type="file" id="fileOpen" multiple>
 				<span id="loadButton">
 					<span class="fa fa-folder-open"></span><span id="filename">New.mpk</span>
 				</span>
@@ -22,6 +23,5 @@
 			</div>
 		</div>
 		<table></table>
-		</div>
 	</body>
 </html>
