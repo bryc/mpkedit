@@ -57,8 +57,8 @@
 	}
 
 	function arrstr(arr, a, b) {
-	    var y = a+b? arr.subarray(a,b) : arr;
-	    return String.fromCharCode.apply(null, y);
+		var y = a+b? arr.subarray(a,b) : arr;
+		return String.fromCharCode.apply(null, y);
 	}
 
 	function crc32(data) {
@@ -232,6 +232,31 @@
 			event.preventDefault();
 		}
 
+		function buildRow(i) {
+			var gameCode = $MPK.gameNotes[i].serial;
+			var gameName = $cfg.codeDB[gameCode] || gameCode;
+
+			var tableRow =
+			elem(["tr"],
+				elem(["td", $MPK.gameNotes[i].noteName],
+					elem(["div", gameName])
+				),
+				elem(["td", $MPK.gameNotes[i].indexes.length]),
+				elem(["td"],
+					elem(["span", {
+						className: "fa fa-trash",
+						onclick: evarg(MPKHandler.deleteNote, i)
+					}]),
+					elem(["span", {
+						className: "fa fa-download",
+						onclick: evarg(MPKHandler.exportNote, i)
+					}])
+				)
+			);
+
+			return tableRow;
+		}
+
 		function updateUI() {
 			var out = document.querySelector("table");
 			while(out.firstChild) {
@@ -239,34 +264,12 @@
 			}
 
 			document.getElementById("filename").innerHTML = $MPK.filename;
-			
 			document.title = (123-$MPK.usedPages)+", "+(16-$MPK.usedNotes)+
 				", "+$MPK.filename;
 
 			for(var i = 0; i < 16; i++) {
 				if($MPK.gameNotes[i]) {
-
-					var gameCode = $MPK.gameNotes[i].serial;
-					var gameName = $cfg.codeDB[gameCode] || gameCode;
-
-					var tableRow =
-					elem(["tr"],
-						elem(["td", $MPK.gameNotes[i].noteName],
-							elem(["div", gameName])
-						),
-						elem(["td", $MPK.gameNotes[i].indexes.length]),
-						elem(["td"],
-							elem(["span", {
-								className: "fa fa-trash",
-								onclick: evarg(MPKHandler.deleteNote, i)
-							}]),
-							elem(["span", {
-								className: "fa fa-download",
-								onclick: evarg(MPKHandler.exportNote, i)
-							}])
-						)
-					);
-
+					var tableRow = buildRow(i);
 					out.appendChild(tableRow);
 				}
 			}
@@ -428,7 +431,7 @@
 			}
 
 			if($cfg.chromeApp) {
-					ChromeApp.saveAsFile(fileOut, filename);
+				ChromeApp.saveAsFile(fileOut, filename);
 			}
 			else {
 				var el = document.createElement("a");
@@ -630,9 +633,7 @@
 					p2 = data[i];
 
 					if (p2===0 && p===1 || p>=5 && p<=127 && p!==3) {
-						if(p === 1) {
-							indexEnds += 1;
-						}
+						if(p === 1) { indexEnds += 1; }
 						if(p !== 1 && found.values.indexOf(p) > -1) {
 							throw "IndexTable contains duplicate index " +
 								"(p="+p+").";
