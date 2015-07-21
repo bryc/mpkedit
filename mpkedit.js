@@ -56,6 +56,11 @@
 		};
 	}
 
+	function arrstr(arr, a, b) {
+	    var y = a+b? arr.subarray(a,b) : arr;
+	    return String.fromCharCode.apply(null, y);
+	}
+
 	function crc32(data) {
 		var table = [];
 		for (var i = 256, crc; i--;) {
@@ -234,19 +239,31 @@
 			}
 
 			document.getElementById("filename").innerHTML = $MPK.filename;
-			document.title = (123 - $MPK.usedPages) + ", " + (16 - $MPK.usedNotes) + ", " + $MPK.filename;
+			
+			document.title = (123-$MPK.usedPages)+", "+(16-$MPK.usedNotes)+
+				", "+$MPK.filename;
 
 			for(var i = 0; i < 16; i++) {
 				if($MPK.gameNotes[i]) {
-					var gameName = $cfg.codeDB[$MPK.gameNotes[i].serial] || $MPK.gameNotes[i].serial;
+
+					var gameCode = $MPK.gameNotes[i].serial;
+					var gameName = $cfg.codeDB[gameCode] || gameCode;
 
 					var tableRow =
 					elem(["tr"],
-						elem(["td", $MPK.gameNotes[i].noteName + "<div>" + gameName + "</div>"]),
+						elem(["td", $MPK.gameNotes[i].noteName],
+							elem(["div", gameName])
+						),
 						elem(["td", $MPK.gameNotes[i].indexes.length]),
 						elem(["td"],
-							elem(["span", {onclick: evarg(MPKHandler.deleteNote, i), className: "fa fa-trash"}]),
-							elem(["span", {onclick: evarg(MPKHandler.exportNote, i), className: "fa fa-download"}])
+							elem(["span", {
+								className: "fa fa-trash",
+								onclick: evarg(MPKHandler.deleteNote, i)
+							}]),
+							elem(["span", {
+								className: "fa fa-download",
+								onclick: evarg(MPKHandler.exportNote, i)
+							}])
 						)
 					);
 
@@ -255,9 +272,14 @@
 			}
 
 			if(Object.keys($MPK.gameNotes).length === 0) {
-				out.appendChild(
-					elem(["tr"], elem(["td", {innerHTML: "<div id=emptyFile>"+ $cfg.emptyText +"</div>"}]))
+				var empty =
+				elem(["tr"],
+					elem(["td"],elem(["div", {
+						id: "emptyFile",
+						innerHTML: $cfg.emptyText
+					}]))
 				);
+				out.appendChild(empty);
 			} 
 		}
 
@@ -281,7 +303,7 @@
 				importNote(data);
 			}
 			else {
-				if(String.fromCharCode.apply(null, data.subarray(0, 11)) === "123-456-STD") {
+				if(arrstr(data, 0, 11) === "123-456-STD") {
 					data = data.subarray(0x1040);
 				}
 				var data2 = new Uint8Array(32768);
@@ -395,11 +417,14 @@
 					fileOut.push($MPK.data[pageAddress + j]);
 				}
 			}
-			var filename = ($cfg.codeDB[gameCode] || gameCode) + "_" + crc32(fileOut) + ".note";
+
+			var filename = $cfg.codeDB[gameCode] || gameCode;
+			filename = filename + "_" + crc32(fileOut) + ".note";
 
 			if (event.ctrlKey) {
-				filename = noteName.replace(/[\\|\/"<>*?:]/g, "-") + "_" + crc32(fileOut) + "_raw";
-				fileOut = fileOut.splice(32);
+				filename = noteName.replace(/[\\|\/"<>*?:]/g, "-");
+				filename = filename + "_" + crc32(fileOut) + "_raw.note";
+				fileOut = fileOut.slice(32);
 			}
 
 			if($cfg.chromeApp) {
@@ -407,10 +432,8 @@
 			}
 			else {
 				var el = document.createElement("a");
-				el.href = "data:application/octet-stream;base64," +
-					btoa(String.fromCharCode.apply(null, fileOut));
+				el.href = "data:MPK;base64," + btoa(arrstr(fileOut));
 				el.download = filename;
-
 				el.dispatchEvent(new MouseEvent("click"));
 			}
 		}
@@ -429,9 +452,7 @@
 				var fn = $MPK.filename;
 				var ext = fn.slice(-3).toUpperCase() === "MPK";
 				el.download = fn + (ext ? "" : ".mpk");
-				el.href = "data:application/octet-stream;base64," +
-					btoa(String.fromCharCode.apply(null, $MPK.data));
-
+				el.href = "data:MPK;base64," + btoa(arrstr($MPK.data));
 				el.dispatchEvent(new MouseEvent("click"));
 			}
 		}
@@ -588,18 +609,11 @@
 
 					NoteTable[(i - 0x300) / 32] = {
 						indexes: p,
-						serial: String.fromCharCode(
-							data[i],
-							data[i + 1],
-							data[i + 2],
-							data[i + 3]
-						).replace(/\0/g, "-"),
-						publisher: String.fromCharCode(
-							data[i + 4],
-							data[i + 5]
-						).replace(/\0/g, "-"),
+						serial: arrstr(data, i, i+4).replace(/\0/g,"-"),
+						publisher: arrstr(data, i+4, i+6).replace(/\0/g,"-"),
 						noteName: noteName
 					};
+
 				}
 			}
 			return NoteTable;
@@ -615,17 +629,20 @@
 					p = data[i + 1];
 					p2 = data[i];
 
-					if (p2 === 0 && p === 1 || p >= 5 && p <= 127 && p !== 3) {
+					if (p2===0 && p===1 || p>=5 && p<=127 && p!==3) {
 						if(p === 1) {
 							indexEnds += 1;
 						}
 						if(p !== 1 && found.values.indexOf(p) > -1) {
-							throw "IndexTable contains duplicate index (p="+p+").";
+							throw "IndexTable contains duplicate index " +
+								"(p="+p+").";
 						}
 						found.values.push(p);
 						found.keys.push((i - o) / 2);
-					} else if (p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127) {
-						throw "IndexTable contains illegal value (p="+p+", "+p2+").";
+					}
+					else if (p2!==0 || p!==1 && p!==3 && p<5 || p>127) {
+						throw "IndexTable contains illegal value" +
+							"(p="+p+", "+p2+").";
 					}
 				}
 
@@ -633,19 +650,22 @@
 					return found.values.indexOf(n) === -1;
 				});
 
-				if (NoteKeys.length !== keyIndexes.length || NoteKeys.length !== indexEnds) {
+				var nKeysN = NoteKeys.length;
+				var nKeysP = keyIndexes.length;
+				if (nKeysN !== nKeysP || nKeysN !== indexEnds) {
 					throw "Key index totals do not match (" +
-						NoteKeys.length+", "+keyIndexes.length+", "+indexEnds+")";
+						nKeysN+", "+nKeysP+", "+indexEnds+")";
 				}
 
-				for (var i = 0; i < NoteKeys.length; i++) {
+				for (var i = 0; i < nKeysN; i++) {
 					if (NoteKeys.indexOf(keyIndexes[i]) === -1) {
-						throw "A key index doesn't exist in the note table ("+keyIndexes[i]+")";
+						throw "A key index doesn't exist in the note table ("+
+							keyIndexes[i]+")";
 					}
 				}
 
 				var noteIndexes = {};
-				for(var i = 0; i < keyIndexes.length; i++) {
+				for(var i = 0; i < nKeysP; i++) {
 					var indexes = [];
 					p = keyIndexes[i];
 
