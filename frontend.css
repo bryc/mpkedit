@@ -5,9 +5,9 @@
 }
 
 @font-face {
-  font-family: "Lato";
-  font-weight: bold;
-  src: url("fonts/lato-bold.woff2") format("woff2");
+	font-family: "Lato";
+	font-weight: bold;
+	src: url("fonts/lato-bold.woff2") format("woff2");
 }
 
 html, body {
@@ -26,14 +26,14 @@ body {
 }
 
 div#dropzone {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 9999999999;
-    width: 100%;
-    height: 100%;
-    transition: visibility 175ms, opacity 175ms;
-    background: rgba(0, 0, 0, 0.3);
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 9999999999;
+	width: 100%;
+	height: 100%;
+	transition: visibility 175ms, opacity 175ms;
+	background: rgba(0, 0, 0, 0.3);
 }
 
 /* ---- TOP TOOLBAR ---- */
@@ -113,7 +113,7 @@ td:nth-child(3) {
 }
 
 span#loadButton:hover .fa-folder-open {
-		color: #cda692;
+	color: #cda692;
 }
 
 .fa-trash:hover,
