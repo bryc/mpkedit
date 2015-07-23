@@ -1,7 +1,7 @@
 /* jshint -W004, bitwise: false */
 /* global chrome */
 
-(function() {
+var MPKEdit = (function() {
 	"use strict";
 
 	var $cfg = {
@@ -13,51 +13,8 @@
 
 	var $MPK = {};
 
-	window.addEventListener("load", function() {
-		UIHandler.initApp();
-	});
-
-	function elem() {
-		var elmnt;
-		var keys = {};
-		var tagName = arguments[0][0];
-		var prop = arguments[0][1];
-
-		if(typeof tagName === "string") {
-			elmnt = document.createElement(tagName);
-		}
-		else {
-			elmnt = document.createDocumentFragment();
-		}
-		if(typeof prop === "object") {
-			keys = Object.keys(prop);
-		}
-		else if(prop && typeof prop !== "object") {
-			elmnt.innerHTML = prop;
-		}
-		for(var i = 0; i < keys.length; i++) {
-			var key = keys[i];
-			elmnt[key] = prop[key];
-		}
-		if(arguments.length > 1) {
-			for(var i = 1; i < arguments.length; i++) {
-				if(arguments[i].nodeType > 0) {
-					elmnt.appendChild(arguments[i]);
-				}
-			}
-		}
-		return elmnt;
-	}
-
-	function evarg(func) {
-		var args = Array.prototype.slice.call(arguments, 1);
-		return function(event) {
-			func.apply(this, args.concat([event]));
-		};
-	}
-
 	function arrstr(arr, a, b) {
-		var y = a+b? arr.subarray(a,b) : arr;
+		var y = a+b? arr.subarray(a,b):arr;
 		return String.fromCharCode.apply(null, y);
 	}
 
@@ -98,20 +55,20 @@
 				return false;
 			}
 			Entry.createWriter(function(writer) {
-				writer.onwriteend = evarg(writeDone, Entry);
+				writer.onwriteend = writeDone.bind(this, Entry);
 				writer.write(new Blob([new Uint8Array(data)]));
 			});
 		}
 
 		function saveFile(data, Entry) {
-			chrome.fileSystem.getWritableEntry(Entry, evarg(doSave, data));
+			chrome.fileSystem.getWritableEntry(Entry, doSave.bind(this,data));
 		}
 
 		function saveAsFile(data, filename) {
 			chrome.fileSystem.chooseEntry({
 				type:"saveFile",
 				suggestedName: filename
-			}, evarg(doSave, data));
+			}, doSave.bind(this,data));
 		}
 
 		function loadFile() {
@@ -125,7 +82,7 @@
 				Entry.file(function(fl) {
 					var reader = new FileReader();
 					$MPK.tmpEntry = Entry;
-					reader.onload = evarg(MPKHandler.loadData, fl.name);
+					reader.onload = MPKHandler.loadData.bind(this,fl.name);
 					reader.readAsArrayBuffer(fl.slice(0, 36928));
 				});
 			});
@@ -139,6 +96,38 @@
 	}());
 
 	var UIHandler = (function () {
+		function elem() {
+			var elmnt;
+			var keys = {};
+			var tagName = arguments[0][0];
+			var prop = arguments[0][1];
+	
+			if(typeof tagName === "string") {
+				elmnt = document.createElement(tagName);
+			}
+			else {
+				elmnt = document.createDocumentFragment();
+			}
+			if(typeof prop === "object") {
+				keys = Object.keys(prop);
+			}
+			else if(prop && typeof prop !== "object") {
+				elmnt.innerHTML = prop;
+			}
+			for(var i = 0; i < keys.length; i++) {
+				var key = keys[i];
+				elmnt[key] = prop[key];
+			}
+			if(arguments.length > 1) {
+				for(var i = 1; i < arguments.length; i++) {
+					if(arguments[i].nodeType > 0) {
+						elmnt.appendChild(arguments[i]);
+					}
+				}
+			}
+			return elmnt;
+		}
+
 		function doBrowse() {
 			if($cfg.chromeApp) {
 				ChromeApp.loadFile();
@@ -222,7 +211,7 @@
 
 			for(var i = 0; i < files.length; i++) {
 				var reader = new FileReader();
-				reader.onload = evarg(MPKHandler.loadData, files[i].name);
+				reader.onload = MPKHandler.loadData.bind(this,files[i].name);
 
 				if($cfg.chromeApp) {
 					$MPK.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
@@ -245,11 +234,11 @@
 				elem(["td"],
 					elem(["span", {
 						className: "fa fa-trash",
-						onclick: evarg(MPKHandler.deleteNote, i)
+						onclick: MPKHandler.deleteNote.bind(this,i)
 					}]),
 					elem(["span", {
 						className: "fa fa-download",
-						onclick: evarg(MPKHandler.exportNote, i)
+						onclick: MPKHandler.exportNote.bind(this,i)
 					}])
 				)
 			);
@@ -319,8 +308,9 @@
 		}
 
 		function updateMPK(data, filename) {
+			console.log(this, arguments);
 			$MPK.tmpName = filename;
-			var gameNotes = MPKHandler.MPKParser.parseMPK(data);
+			var gameNotes = pub.parse(data);
 
 			if(gameNotes) {
 				$MPK.filename = filename || $MPK.filename;
@@ -486,7 +476,7 @@
 			return data;
 		}
 
-		return {
+		var pub = {
 			deleteNote: deleteNote,
 			saveMPK: saveMPK,
 			exportNote: exportNote,
@@ -494,9 +484,10 @@
 			updateMPK: updateMPK,
 			loadData: loadData
 		};
+		return pub;
 	}());
 
-	MPKHandler.MPKParser = (function() {
+	var MPKHandler = (function(pub) {
 		function validateChecksum(data, o) {
 			var sumA = 0;
 			var sumB = 0xFFF2;
@@ -739,10 +730,14 @@
 			}
 		}
 
-		return {
-			parseMPK: parseMPK
-		};
-	}());
+		console.log(pub.parse, pub);
+		pub.parse = parseMPK;
+
+		return pub;
+		//return parseMPK(data);
+	}(MPKHandler));
+
+	console.log(MPKHandler);
 
 	$cfg.codeDB = {
 		"\x3B\xAD\xD1\xE5": "Cartridge Save (Gameshark, Action Replay)",
@@ -1570,4 +1565,14 @@
 		"NYSP": "Yoshi's Story (U)",
 		"NMZJ": "Zool - Majou Tsukai Densetsu (J)"
 	};
+
+	var pub = {
+		init: UIHandler.initApp
+	};
+	return pub;
 }());
+
+
+	window.addEventListener("load", function() {
+		MPKEdit.init();
+	});
