@@ -52,7 +52,7 @@
 	function evarg(func) {
 		var args = Array.prototype.slice.call(arguments, 1);
 		return function(event) {
-			func.apply(event.target, args.concat([event]));
+			func.apply(this, args.concat([event]));
 		};
 	}
 
