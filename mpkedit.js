@@ -1484,7 +1484,7 @@ cfg.codeDB = {
 		State: State,
 		App: App,
 		fsys: fsys
-	}
+	};
 }());
 
 window.onload = function(){
@@ -1505,7 +1505,7 @@ window.onload = function(){
 		}
 		return false;
 	}
-	window.ondragover = function() {return false};
+	window.ondragover = function() {return false;};
 	window.addEventListener("drop", MPKEdit.App.readFiles);
 
 	document.getElementById("fileOpen").onchange = MPKEdit.App.readFiles;
