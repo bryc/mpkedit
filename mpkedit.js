@@ -103,7 +103,7 @@ var MPKEdit = (function() {
 		var lastValidLoc = -1;
 	
 		for(var i = 0, chk; i < loc.length; i++) {
-			chk = MPKParser.sumIsValid(data, loc[i]);
+			chk = this.sumIsValid(data, loc[i]);
 			if(chk) {
 				lastValidLoc = loc[i];
 			}
@@ -111,13 +111,13 @@ var MPKEdit = (function() {
 	
 		for(var i = 0; i < loc.length; i++) {
 			var currentLoc = loc[i];
-			chk = MPKParser.sumIsValid(data, currentLoc);
+			chk = this.sumIsValid(data, currentLoc);
 	
 			if(lastValidLoc > -1 && chk === false) {
 				for(var j = 0; j < 32; j++) {
 					data[currentLoc + j] = data[lastValidLoc + j];
 				}
-				chk = MPKParser.sumIsValid(data, currentLoc);
+				chk = this.sumIsValid(data, currentLoc);
 			}
 			loc[i] = chk;
 		}
@@ -164,6 +164,23 @@ var MPKEdit = (function() {
 		};
 	
 		var NoteTable = {};
+		var gaplessData = [];
+
+		for(var i = 0x300; i < 0x500; i += 32) {
+			var p = data[i + 0x07];
+			var validIndex = p>=5 && p<=127 && data[i + 0x06]===0;
+	
+			if(validIndex) {
+				for(var j = 0; j < 32; j++) {
+					gaplessData.push(data[i+j]);
+				}
+			}
+		}
+
+		for(var i = 0x300; i < 0x500; i++) {
+			data[i] = gaplessData[i-0x300];
+		}
+
 		for(var i = 0x300; i < 0x500; i += 32) {
 			var p = data[i + 0x07];
 			var validIndex = p>=5 && p<=127 && data[i + 0x06]===0;
@@ -285,7 +302,7 @@ var MPKEdit = (function() {
 		}
 		catch(error) {
 			if(o !== 0x200) {
-				return MPKParser.checkIndexes(data, 0x200, NoteKeys);
+				return this.checkIndexes(data, 0x200, NoteKeys);
 			}
 		}
 	};
@@ -294,13 +311,13 @@ var MPKEdit = (function() {
 		if(arrstr(data, 0, 11) === "123-456-STD") {
 			data = data.subarray(0x1040);
 		}
-		if(!data || MPKParser.checkHeader(data) === false) {
+		if(!data || this.checkHeader(data) === false) {
 			return false;
 		}
 		var NoteKeys = [];
-		var NoteTable = MPKParser.readNotes(data, NoteKeys);
+		var NoteTable = this.readNotes(data, NoteKeys);
 	
-		var output = MPKParser.checkIndexes(data, 0x100, NoteKeys);
+		var output = this.checkIndexes(data, 0x100, NoteKeys);
 
 		if(output) {
 			var usedPages = 0;
@@ -347,7 +364,7 @@ var MPKEdit = (function() {
 		data[257] = 113;
 		data[513] = 113;
 
-		State.update(data, cfg.initName);
+		this.update(data, cfg.initName);
 	};
 
 	State.update = function(data, filename) {
@@ -362,13 +379,13 @@ var MPKEdit = (function() {
 		var Parsed = MPKParser.parse(data);
 
 		if(Parsed) {
-			State.data = fixed(data);
-			State.gameNotes = Parsed.NoteTable;
-			State.filename = filename || State.filename;
-			State.usedPages = Parsed.usedPages;
-			State.usedNotes = Parsed.usedNotes;
+			this.data = fixed(data);
+			this.gameNotes = Parsed.NoteTable;
+			this.filename = filename || this.filename;
+			this.usedPages = Parsed.usedPages;
+			this.usedNotes = Parsed.usedNotes;
 			if(cfg.usefsys && filename) {
-				State.Entry = cfg.tmpEntry;
+				this.Entry = cfg.tmpEntry;
 			}
 			App.updateUI();
 		}
@@ -379,31 +396,31 @@ var MPKEdit = (function() {
 
 	State.save = function() {
 		if(cfg.usefsys) {
-			if(State.Entry && !event.ctrlKey) {
-				fsys.saveFile(State.data, State.Entry);
+			if(this.Entry && !event.ctrlKey) {
+				fsys.saveFile(this.data, this.Entry);
 			}
 			else {
-				fsys.saveFileAs(State.data, State.filename);
+				fsys.saveFileAs(this.data, this.filename);
 			}
 		}
 		else {
 			var el = document.createElement("a");
-			var fn = State.filename;
+			var fn = this.filename;
 			var ext = fn.slice(-3).toUpperCase() === "MPK";
 			el.download = fn + (ext ? "" : ".mpk");
-			el.href = "data:MPK;base64," + btoa(arrstr(State.data));
+			el.href = "data:MPK;base64," + btoa(arrstr(this.data));
 			el.dispatchEvent(new MouseEvent("click"));
 		}
 	};
 
 	State.saveNote = function(noteID, event) {
 		var fileOut = [];
-		var indexes = State.gameNotes[noteID].indexes;
-		var gameCode = State.gameNotes[noteID].serial;
-		var noteName = State.gameNotes[noteID].noteName;
+		var indexes = this.gameNotes[noteID].indexes;
+		var gameCode = this.gameNotes[noteID].serial;
+		var noteName = this.gameNotes[noteID].noteName;
 
 		for(var i = 0; i < 32; i++) {
-			fileOut.push(State.data[0x300 + (noteID * 32) + i]);
+			fileOut.push(this.data[0x300 + (noteID * 32) + i]);
 		}
 
 		fileOut[6] = 0xCA;
@@ -412,7 +429,7 @@ var MPKEdit = (function() {
 		for(var i = 0; i < indexes.length; i++) {
 			var pageAddress = indexes[i] * 0x100;
 			for(var j = 0; j < 0x100; j++) {
-				fileOut.push(State.data[pageAddress + j]);
+				fileOut.push(this.data[pageAddress + j]);
 			}
 		}
 
@@ -437,19 +454,19 @@ var MPKEdit = (function() {
 	};
 
 	State.deleteNote = function(id) {
-		var indexes = State.gameNotes[id].indexes;
+		var indexes = this.gameNotes[id].indexes;
 
 		for(var i = 0, offset; i < indexes.length; i++) {
 			offset = 0x100 + (indexes[i] * 2) + 1;
-			State.data[offset] = 0x03;
+			this.data[offset] = 0x03;
 		}
 
 		for(var i = 0; i < 32; i++) {
 			offset = 0x300 + (id * 32) + i;
-			State.data[offset] = 0x00;
+			this.data[offset] = 0x00;
 		}
 
-		State.update(State.data);
+		this.update(this.data);
 	};
 
 	State.importNote = function(data) {
@@ -457,13 +474,13 @@ var MPKEdit = (function() {
 		var pageData = data.subarray(32);
 		var pageCount = pageData.length / 256;
 	
-		if(State.usedPages + pageCount <= 123 && State.usedNotes < 16) {
+		if(this.usedPages + pageCount <= 123 && this.usedNotes < 16) {
 			var freeIndexes = [];
 			for(var i = 0xA; i < 0x100; i += 2) {
 				if(freeIndexes.length === pageCount) {
 					break;
 				}
-				if(State.data[0x100 + i + 1] === 3) {
+				if(this.data[0x100 + i + 1] === 3) {
 					freeIndexes.push(i / 2);
 				}
 			}
@@ -476,27 +493,27 @@ var MPKEdit = (function() {
 				var target2 = 0x100 * freeIndexes[i];
 	
 				if(i === freeIndexes.length - 1) {
-					State.data[target1] = 0x01;
+					this.data[target1] = 0x01;
 				} else {
-					State.data[target1] = freeIndexes[i + 1];
+					this.data[target1] = freeIndexes[i + 1];
 				}
 	
 				for(var j = 0; j < 0x100; j++) {
-					State.data[target2 + j] = pageData[0x100 * i + j];
+					this.data[target2 + j] = pageData[0x100 * i + j];
 				}
 			}
 	
 			for(var i = 0; i < 16; i++) {
-				if(State.gameNotes[i] === undefined) {
+				if(this.gameNotes[i] === undefined) {
 					var target = 0x300 + i * 32;
 					for(var j = 0; j < 32; j++) {
-						State.data[target + j] = noteData[j];
+						this.data[target + j] = noteData[j];
 					}
 					break;
 				}
 			}
 	
-			State.update(State.data);
+			this.update(this.data);
 		}
 	};
 
@@ -506,7 +523,7 @@ var MPKEdit = (function() {
 		}
 		else {
 			var selectFile = document.getElementById("fileOpen");
-			selectFile.onchange = App.readFiles;
+			selectFile.onchange = this.readFiles;
 			selectFile.click();
 
 			selectFile.parentElement.replaceChild(elem(["input", {
@@ -522,7 +539,7 @@ var MPKEdit = (function() {
 
 		for(var i = 0; i < files.length; i++) {
 			var reader = new FileReader();
-			reader.onload = App.checkFile.bind(this,files[i].name);
+			reader.onload = this.checkFile.bind(this, files[i].name);
 
 			if(cfg.usefsys) {
 				cfg.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
@@ -562,11 +579,11 @@ var MPKEdit = (function() {
 			elem(["td"],
 				elem(["span", {
 					className: "fa fa-trash",
-					onclick: State.deleteNote.bind(this,i)
+					onclick: State.deleteNote.bind(State, i)
 				}]),
 				elem(["span", {
 					className: "fa fa-download",
-					onclick: State.saveNote.bind(this,i)
+					onclick: State.saveNote.bind(State,i)
 				}])
 			)
 		);
@@ -586,7 +603,7 @@ var MPKEdit = (function() {
 
 		for(var i = 0; i < 16; i++) {
 			if(State.gameNotes[i]) {
-				var tableRow = App.buildRow(i);
+				var tableRow = this.buildRow(i);
 				out.appendChild(tableRow);
 			}
 		}
@@ -623,7 +640,7 @@ var MPKEdit = (function() {
 
 	fsys.saveFile = function(data, Entry) {
 		chrome.fileSystem.getWritableEntry(
-			Entry, fsys.doSave.bind(this,data)
+			Entry, this.doSave.bind(this, data)
 		);
 	};
 
@@ -631,7 +648,7 @@ var MPKEdit = (function() {
 		chrome.fileSystem.chooseEntry({
 			type: "saveFile",
 			suggestedName: filename
-		}, fsys.doSave.bind(this, data));
+		}, this.doSave.bind(this, data));
 	};
 
 	fsys.loadFile = function() {
@@ -1510,7 +1527,7 @@ window.onload = function(){
 
 	document.getElementById("fileOpen").onchange = MPKEdit.App.readFiles;
 	document.getElementById("loadButton").onclick = MPKEdit.App.browse;
-	document.getElementById("save").onclick = MPKEdit.State.save;
+	document.getElementById("save").onclick = MPKEdit.State.save.bind(MPKEdit.State);
 
 	MPKEdit.State.init();
 
