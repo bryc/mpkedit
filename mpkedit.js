@@ -1,5 +1,6 @@
 /* jshint -W004, bitwise: false */
 /* global chrome */
+
 var MPKEdit = (function() {
 	function elem(){
 		var elmnt;
@@ -340,7 +341,6 @@ var MPKEdit = (function() {
 		}
 	};
 
-	//------------------
 	State.init = function() {
 		function writeAt(offset) {
 			var bytes = [1, 1, 0, 1, 1, 254, 241];
@@ -515,6 +515,64 @@ var MPKEdit = (function() {
 	
 			this.update(this.data);
 		}
+	};
+	App.init = function() {
+		function changeExportColor(event) {
+			var target = document.querySelectorAll(".fa-download");
+			for(var i = 0; i < target.length; i++) {
+				target[i].style.color = event.ctrlKey ? "#c00" : "";
+			}
+		}
+
+		function dragFX() {
+			function isFile(event) {
+				var dt = event.dataTransfer;
+				for (var i = 0; i < dt.types.length; i++) {
+					if (dt.types[i] === "Files") {
+						return true;
+					}
+				}
+				return false;
+			}
+
+			var dropzone = document.getElementById("dropzone");
+			var lastTarget = null;
+
+			window.addEventListener("dragenter", function (event) {
+				if (isFile(event)) {
+					lastTarget = event.target;
+					dropzone.style.visibility = "";
+					dropzone.style.opacity = 1;
+				}
+			});
+
+			window.addEventListener("dragleave", function (event) {
+				event.preventDefault();
+				if (event.target === lastTarget) {
+					dropzone.style.visibility = "hidden";
+					dropzone.style.opacity = 0;
+				}
+			});
+
+			window.addEventListener("drop", function(event) {
+				dropzone.style.visibility = "hidden";
+				dropzone.style.opacity = 0;
+				event.preventDefault();
+			});
+		}
+
+		MPKEdit.State.init();
+		window.addEventListener("dragover", function(event) {event.preventDefault();});
+		window.addEventListener("drop", App.readFiles.bind(App));
+	
+		document.getElementById("fileOpen").onchange = MPKEdit.App.readFiles;
+		document.getElementById("loadButton").onclick = MPKEdit.App.browse;
+		document.getElementById("save").onclick = MPKEdit.State.save.bind(MPKEdit.State);
+
+		window.addEventListener("keydown", changeExportColor);
+		window.addEventListener("keyup", changeExportColor);
+		window.addEventListener("blur", changeExportColor);
+		dragFX();
 	};
 
 	App.browse = function() {
@@ -1504,59 +1562,4 @@ cfg.codeDB = {
 	};
 }());
 
-window.onload = function(){
-	function changeExportColor(event) {
-		var target = document.querySelectorAll(".fa-download");
-
-		for(var i = 0; i < target.length; i++) {
-			target[i].style.color = event.ctrlKey ? "#c00" : "";
-		}
-	}
-
-	function isFile(event) {
-		var dt = event.dataTransfer;
-		for (var i = 0; i < dt.types.length; i++) {
-			if (dt.types[i] === "Files") {
-				return true;
-			}
-		}
-		return false;
-	}
-	window.ondragover = function() {return false;};
-	window.addEventListener("drop", MPKEdit.App.readFiles);
-
-	document.getElementById("fileOpen").onchange = MPKEdit.App.readFiles;
-	document.getElementById("loadButton").onclick = MPKEdit.App.browse;
-	document.getElementById("save").onclick = MPKEdit.State.save.bind(MPKEdit.State);
-
-	MPKEdit.State.init();
-
-	var lastTarget = null;
-	var dropzone = document.getElementById("dropzone");
-
-	window.addEventListener("dragenter", function (event) {
-		if (isFile(event)) {
-			lastTarget = event.target;
-			dropzone.style.visibility = "";
-			dropzone.style.opacity = 1;
-		}
-	});
-
-	window.addEventListener("dragleave", function (event) {
-		event.preventDefault();
-		if (event.target === lastTarget) {
-			dropzone.style.visibility = "hidden";
-			dropzone.style.opacity = 0;
-		}
-	});
-
-	window.addEventListener("drop", function(event) {
-		dropzone.style.visibility = "hidden";
-		dropzone.style.opacity = 0;
-		event.preventDefault();
-	});
-
-	window.addEventListener("keydown", changeExportColor);
-	window.addEventListener("keyup", changeExportColor);
-	window.addEventListener("blur", changeExportColor);
-};
+MPKEdit.App.init();
