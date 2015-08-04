@@ -1553,7 +1553,6 @@ var MPKEdit = (function() {
 	};
 
 	return {
-		cfg: cfg,
 		MPKParser: MPKParser,
 		State: State,
 		App: App,
