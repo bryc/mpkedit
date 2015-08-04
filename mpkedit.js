@@ -2,11 +2,11 @@
 /* global chrome */
 
 var MPKEdit = (function() {
-	function elem(){
+	function elem(options) {
 		var elmnt;
 		var keys = {};
-		var tagName = arguments[0][0];
-		var prop = arguments[0][1];
+		var tagName = options[0];
+		var prop = options[1];
 	
 		if(typeof tagName === "string") {
 			elmnt = document.createElement(tagName);
@@ -34,7 +34,7 @@ var MPKEdit = (function() {
 		return elmnt;
 	}
 
-	function crc32(data){
+	function crc32(data) {
 		var table = [];
 		for (var i = 256, crc; i--;) {
 			crc = i;
@@ -57,18 +57,17 @@ var MPKEdit = (function() {
 		return ("00000000" + crc).slice(-8);
 	}
 
-	function arrstr(arr, a, b){
+	function arrstr(arr, start, end) {
 		arr = new Uint8Array(arr);
-		var y = a+b? arr.subarray(a,b):arr;
-		return String.fromCharCode.apply(null, y);
+		arr = start+end ? arr.subarray(start, end) : arr;
+		return String.fromCharCode.apply(null, arr);
 	}
 
 	var MPKParser = {};
 	var State = {};
-	var App = {};
 	var fsys = {};
 
-	var cfg = {
+	var App = {
 		"initName": "New.mpk",
 		"emptyText": "~ empty",
 		"codeDB": {},
@@ -208,7 +207,7 @@ var MPKEdit = (function() {
 				NoteTable[(i - 0x300) / 32] = {
 					indexes: p,
 					serial: arrstr(data, i, i+4).replace(/\0/g,"-"),
-					publisher: arrstr(data, i+4, i+6).replace(/\0/g,"-"),
+					publisher: arrstr(data, i+4, i+6).replace(/\0/g, "-"),
 					noteName: noteName
 				};
 	
@@ -299,7 +298,7 @@ var MPKEdit = (function() {
 			for(i = 0; i < 0x100; i++) {
 				data[p + i] = data[o + i];
 			}
-			return noteIndexes; 
+			return noteIndexes;
 		}
 		catch(error) {
 			if(o !== 0x200) {
@@ -364,7 +363,7 @@ var MPKEdit = (function() {
 		data[257] = 113;
 		data[513] = 113;
 
-		this.update(data, cfg.initName);
+		this.update(data, App.initName);
 	};
 
 	State.update = function(data, filename) {
@@ -384,8 +383,8 @@ var MPKEdit = (function() {
 			this.filename = filename || this.filename;
 			this.usedPages = Parsed.usedPages;
 			this.usedNotes = Parsed.usedNotes;
-			if(cfg.usefsys && filename) {
-				this.Entry = cfg.tmpEntry;
+			if(App.usefsys && filename) {
+				this.Entry = App.tmpEntry;
 			}
 			App.updateUI();
 		}
@@ -395,7 +394,7 @@ var MPKEdit = (function() {
 	};
 
 	State.save = function() {
-		if(cfg.usefsys) {
+		if(App.usefsys) {
 			if(this.Entry && !event.ctrlKey) {
 				fsys.saveFile(this.data, this.Entry);
 			}
@@ -413,14 +412,14 @@ var MPKEdit = (function() {
 		}
 	};
 
-	State.saveNote = function(noteID, event) {
+	State.saveNote = function(id, event) {
 		var fileOut = [];
-		var indexes = this.gameNotes[noteID].indexes;
-		var gameCode = this.gameNotes[noteID].serial;
-		var noteName = this.gameNotes[noteID].noteName;
+		var indexes = this.gameNotes[id].indexes;
+		var gameCode = this.gameNotes[id].serial;
+		var noteName = this.gameNotes[id].noteName;
 
 		for(var i = 0; i < 32; i++) {
-			fileOut.push(this.data[0x300 + (noteID * 32) + i]);
+			fileOut.push(this.data[0x300 + (id * 32) + i]);
 		}
 
 		fileOut[6] = 0xCA;
@@ -433,7 +432,7 @@ var MPKEdit = (function() {
 			}
 		}
 
-		var filename = cfg.codeDB[gameCode] || gameCode;
+		var filename = App.codeDB[gameCode] || gameCode;
 		filename = filename + "_" + crc32(fileOut) + ".note";
 
 		if (event && event.ctrlKey) {
@@ -442,7 +441,7 @@ var MPKEdit = (function() {
 			fileOut = fileOut.slice(32);
 		}
 
-		if(cfg.usefsys) {
+		if(App.usefsys) {
 			fsys.saveFileAs(fileOut, filename);
 		}
 		else {
@@ -524,7 +523,7 @@ var MPKEdit = (function() {
 			}
 		}
 
-		function dragFX() {
+		function setDragFX() {
 			function isFile(event) {
 				var dt = event.dataTransfer;
 				for (var i = 0; i < dt.types.length; i++) {
@@ -561,22 +560,22 @@ var MPKEdit = (function() {
 			});
 		}
 
-		MPKEdit.State.init();
+		State.init();
 		window.addEventListener("dragover", function(event) {event.preventDefault();});
-		window.addEventListener("drop", App.readFiles.bind(App));
+		window.addEventListener("drop", this.readFiles.bind(App));
 	
-		document.getElementById("fileOpen").onchange = MPKEdit.App.readFiles;
-		document.getElementById("loadButton").onclick = MPKEdit.App.browse;
-		document.getElementById("save").onclick = MPKEdit.State.save.bind(MPKEdit.State);
+		document.getElementById("fileOpen").onchange = this.readFiles;
+		document.getElementById("loadButton").onclick = this.browse.bind(App);
+		document.getElementById("save").onclick = State.save.bind(State);
 
 		window.addEventListener("keydown", changeExportColor);
 		window.addEventListener("keyup", changeExportColor);
 		window.addEventListener("blur", changeExportColor);
-		dragFX();
+		setDragFX();
 	};
 
 	App.browse = function() {
-		if(cfg.usefsys) {
+		if(this.usefsys) {
 			fsys.loadFile();
 		}
 		else {
@@ -599,8 +598,8 @@ var MPKEdit = (function() {
 			var reader = new FileReader();
 			reader.onload = this.checkFile.bind(this, files[i].name);
 
-			if(cfg.usefsys) {
-				cfg.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
+			if(this.usefsys) {
+				this.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
 			}
 			reader.readAsArrayBuffer(files[i].slice(0, 36928));
 		}
@@ -626,7 +625,7 @@ var MPKEdit = (function() {
 
 	App.buildRow = function(i) {
 		var gameCode = State.gameNotes[i].serial;
-		var gameName = cfg.codeDB[gameCode] || gameCode;
+		var gameName = this.codeDB[gameCode] || gameCode;
 
 		var tableRow =
 		elem(["tr"],
@@ -671,11 +670,11 @@ var MPKEdit = (function() {
 			elem(["tr"],
 				elem(["td"], elem(["div", {
 					id: "emptyFile",
-					innerHTML: cfg.emptyText
+					innerHTML: this.emptyText
 				}]))
 			);
 			out.appendChild(empty);
-		} 
+		}
 	};
 
 	fsys.writeDone = function(Entry, event) {
@@ -686,7 +685,7 @@ var MPKEdit = (function() {
 		}
 	};
 
-	fsys.doSave = function(data, Entry) {
+	fsys.writeFile = function(data, Entry) {
 		if(chrome.runtime.lastError) {
 			return false;
 		}
@@ -698,7 +697,7 @@ var MPKEdit = (function() {
 
 	fsys.saveFile = function(data, Entry) {
 		chrome.fileSystem.getWritableEntry(
-			Entry, this.doSave.bind(this, data)
+			Entry, this.writeFile.bind(this, data)
 		);
 	};
 
@@ -706,7 +705,7 @@ var MPKEdit = (function() {
 		chrome.fileSystem.chooseEntry({
 			type: "saveFile",
 			suggestedName: filename
-		}, this.doSave.bind(this, data));
+		}, this.writeFile.bind(this, data));
 	};
 
 	fsys.loadFile = function() {
@@ -719,14 +718,14 @@ var MPKEdit = (function() {
 
 			Entry.file(function(fl) {
 				var reader = new FileReader();
-				cfg.tmpEntry = Entry;
+				App.tmpEntry = Entry;
 				reader.onload = App.checkFile.bind(this, fl.name);
 				reader.readAsArrayBuffer(fl.slice(0, 36928));
 			});
 		});
 	};
 
-cfg.codeDB = {
+	App.codeDB = {
 		"\x3B\xAD\xD1\xE5": "Cartridge Save (Gameshark, Action Replay)",
 		"\xDE\xAD\xBE\xEF": "Cartridge Save (BlackBag's Memory Manager)",
 		"NO7P": "007 - The World is Not Enough (E)",
