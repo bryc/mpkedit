@@ -1,5 +1,5 @@
-# Mempak - Controller Pak manager
-Allows the user to view the contents of N64 Controller Pak files (.mpk, .n64),
+# MPKEdit - Controller Pak Manager
+Allows the user to view N64 Controller Pak files (.mpk, .n64),
 export/import notes, delete notes, and save the modified MPK file.
 Written in plain Javascript and tested in Chrome and Firefox.
 
