@@ -580,7 +580,7 @@ var MPKEdit = (function() {
 		}
 		else {
 			var selectFile = document.getElementById("fileOpen");
-			selectFile.onchange = this.readFiles;
+			selectFile.onchange = this.readFiles.bind(App);
 			selectFile.click();
 
 			selectFile.parentElement.replaceChild(elem(["input", {
