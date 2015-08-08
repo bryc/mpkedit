@@ -58,9 +58,18 @@ var MPKEdit = (function() {
 	}
 
 	function arrstr(arr, start, end) {
-		arr = new Uint8Array(arr);
-		arr = start+end ? arr.subarray(start, end) : arr;
-		return String.fromCharCode.apply(null, arr);
+    	arr = arr || [];
+    	start = start || 0;
+    	end = end || arr.length;
+	
+    	for(var str = "", i = start; i < end; i++) {
+    	    var p = arr[i];
+    	    if(p === 0) {p = 45;}
+	
+    	    str += String.fromCharCode(p);
+    	}
+	
+    	return str;
 	}
 
 	var MPKParser = {};
@@ -206,8 +215,8 @@ var MPKEdit = (function() {
 	
 				NoteTable[(i - 0x300) / 32] = {
 					indexes: p,
-					serial: arrstr(data, i, i+4).replace(/\0/g,"-"),
-					publisher: arrstr(data, i+4, i+6).replace(/\0/g, "-"),
+					serial: arrstr(data, i, i+4),
+					publisher: arrstr(data, i+4, i+6),
 					noteName: noteName
 				};
 	
