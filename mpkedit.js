@@ -3,35 +3,29 @@
 
 var MPKEdit = (function() {
 	function elem(options) {
-		var elmnt;
-		var keys = {};
-		var tagName = options[0];
+		var el = document.createDocumentFragment();
+		var tag = options[0];
 		var prop = options[1];
 	
-		if(typeof tagName === "string") {
-			elmnt = document.createElement(tagName);
+		if(typeof tag === "string") {
+			el = document.createElement(tag);
 		}
-		else {
-			elmnt = document.createDocumentFragment();
-		}
+	
 		if(typeof prop === "object") {
-			keys = Object.keys(prop);
+			for (var item in prop) {
+				el[item] = prop[item];
+			}
+		} else if(prop) {
+			el.innerHTML = prop;
 		}
-		else if(prop && typeof prop !== "object") {
-			elmnt.innerHTML = prop;
-		}
-		for(var i = 0; i < keys.length; i++) {
-			var key = keys[i];
-			elmnt[key] = prop[key];
-		}
-		if(arguments.length > 1) {
-			for(var i = 1; i < arguments.length; i++) {
-				if(arguments[i].nodeType > 0) {
-					elmnt.appendChild(arguments[i]);
-				}
+	
+		for(var i = 1; i < arguments.length; i++) {
+			if(arguments[i].nodeType > 0) {
+				el.appendChild(arguments[i]);
 			}
 		}
-		return elmnt;
+	
+		return el;
 	}
 
 	function crc32(data) {
