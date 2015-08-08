@@ -28,7 +28,7 @@ var MPKEdit = (function() {
 		return el;
 	}
 
-	function crc32(data) {
+	var crc32 = (function(data) {
 		var table = [];
 		for (var i = 256, crc; i--;) {
 			crc = i;
@@ -42,14 +42,18 @@ var MPKEdit = (function() {
 			}
 			table[i] = crc;
 		}
-		crc = -1;
-		for (var i = 0; i < data.length; i++) {
-			var ptr = crc & 255 ^ data[i];
-			crc = crc >>> 8 ^ table[ptr];
+
+		return function (data) {
+			crc = -1;
+			for (var i = 0; i < data.length; i++) {
+				var ptr = crc & 255 ^ data[i];
+				crc = crc >>> 8 ^ table[ptr];
+			}
+			crc = ((crc ^ -1) >>> 0).toString(16);
+			return ("00000000" + crc).slice(-8);
 		}
-		crc = ((crc ^ -1) >>> 0).toString(16);
-		return ("00000000" + crc).slice(-8);
-	}
+
+	}());
 
 	function arrstr(arr, start, end) {
     	arr = arr || [];
