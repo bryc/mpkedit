@@ -36,9 +36,7 @@ var MPKEdit = (function() {
 				if(crc & 1) {
 					crc = crc >>> 1 ^ 3988292384;
 				}
-				else {
-					crc = crc >>> 1;
-				}
+				else {crc = crc >>> 1;}
 			}
 			table[i] = crc;
 		}
@@ -52,7 +50,6 @@ var MPKEdit = (function() {
 			crc = ((crc ^ -1) >>> 0).toString(16);
 			return ("00000000" + crc).slice(-8);
 		}
-
 	}());
 
 	function arrstr(arr, start, end) {
