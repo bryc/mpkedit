@@ -59,8 +59,6 @@ var MPKEdit = (function() {
 	
     	for(var str = "", i = start; i < end; i++) {
     	    var p = arr[i];
-    	    if(p === 0) {p = 45;}
-	
     	    str += String.fromCharCode(p);
     	}
 	
@@ -210,8 +208,8 @@ var MPKEdit = (function() {
 	
 				NoteTable[(i - 0x300) / 32] = {
 					indexes: p,
-					serial: arrstr(data, i, i+4),
-					publisher: arrstr(data, i+4, i+6),
+					serial: arrstr(data, i, i+4).replace(/\0/g,"-"),
+					publisher: arrstr(data, i+4, i+6).replace(/\0/g,"-"),
 					noteName: noteName
 				};
 	
@@ -312,6 +310,8 @@ var MPKEdit = (function() {
 	};
 
 	MPKParser.parse = function(data) {
+		data = new Uint8Array(data);
+
 		if(arrstr(data, 0, 11) === "123-456-STD") {
 			data = data.subarray(0x1040);
 		}
@@ -336,7 +336,8 @@ var MPKEdit = (function() {
 			return {
 				NoteTable: NoteTable,
 				usedPages: usedPages,
-				usedNotes: usedNotes
+				usedNotes: usedNotes,
+				data: data
 			};
 		}
 		else {
@@ -382,7 +383,7 @@ var MPKEdit = (function() {
 		var Parsed = MPKParser.parse(data);
 
 		if(Parsed) {
-			this.data = fixed(data);
+			this.data = fixed(Parsed.data);
 			this.gameNotes = Parsed.NoteTable;
 			this.filename = filename || this.filename;
 			this.usedPages = Parsed.usedPages;
@@ -457,22 +458,26 @@ var MPKEdit = (function() {
 	};
 
 	State.deleteNote = function(id) {
+		var tmpdata = new Uint8Array(this.data);
+
 		var indexes = this.gameNotes[id].indexes;
 
 		for(var i = 0, offset; i < indexes.length; i++) {
 			offset = 0x100 + (indexes[i] * 2) + 1;
-			this.data[offset] = 0x03;
+			tmpdata[offset] = 0x03;
 		}
 
 		for(var i = 0; i < 32; i++) {
 			offset = 0x300 + (id * 32) + i;
-			this.data[offset] = 0x00;
+			tmpdata[offset] = 0x00;
 		}
 
-		this.update(this.data);
+		this.update(tmpdata);
 	};
 
 	State.importNote = function(data) {
+		var tmpdata = new Uint8Array(this.data);
+
 		var noteData = data.subarray(0, 32);
 		var pageData = data.subarray(32);
 		var pageCount = pageData.length / 256;
@@ -483,7 +488,7 @@ var MPKEdit = (function() {
 				if(freeIndexes.length === pageCount) {
 					break;
 				}
-				if(this.data[0x100 + i + 1] === 3) {
+				if(tmpdata[0x100 + i + 1] === 3) {
 					freeIndexes.push(i / 2);
 				}
 			}
@@ -496,13 +501,13 @@ var MPKEdit = (function() {
 				var target2 = 0x100 * freeIndexes[i];
 	
 				if(i === freeIndexes.length - 1) {
-					this.data[target1] = 0x01;
+					tmpdata[target1] = 0x01;
 				} else {
-					this.data[target1] = freeIndexes[i + 1];
+					tmpdata[target1] = freeIndexes[i + 1];
 				}
 	
 				for(var j = 0; j < 0x100; j++) {
-					this.data[target2 + j] = pageData[0x100 * i + j];
+					tmpdata[target2 + j] = pageData[0x100 * i + j];
 				}
 			}
 	
@@ -510,13 +515,13 @@ var MPKEdit = (function() {
 				if(this.gameNotes[i] === undefined) {
 					var target = 0x300 + i * 32;
 					for(var j = 0; j < 32; j++) {
-						this.data[target + j] = noteData[j];
+						tmpdata[target + j] = noteData[j];
 					}
 					break;
 				}
 			}
 	
-			this.update(this.data);
+			this.update(tmpdata);
 		}
 	};
 	App.init = function() {
