@@ -446,7 +446,13 @@ var MPKEdit = (function() {
 			fileOut = fileOut.slice(32);
 		}
 
-		if(App.usefsys) {
+		if(event.type === "dragstart") {
+			var blobURL = URL.createObjectURL(new Blob([new Uint8Array(fileOut)]));
+ 			event.dataTransfer.setData("DownloadURL",
+ 				"application/octet-stream:"+filename+":"+blobURL
+ 				);
+		}
+		else if(App.usefsys) {
 			fsys.saveFileAs(fileOut, filename);
 		}
 		else {
@@ -575,6 +581,14 @@ var MPKEdit = (function() {
 	
 		document.getElementById("fileOpen").onchange = this.readFiles;
 		document.getElementById("loadButton").onclick = this.browse.bind(App);
+
+		document.getElementById("loadButton").addEventListener("dragstart",function(event) {
+			var blobURL = URL.createObjectURL(new Blob([State.data]));
+ 			event.dataTransfer.setData("DownloadURL",
+ 				"application/octet-stream:"+State.filename+":"+blobURL
+ 			);
+		});
+
 		document.getElementById("save").onclick = State.save.bind(State);
 
 		window.addEventListener("keydown", changeExportColor);
@@ -649,6 +663,8 @@ var MPKEdit = (function() {
 				}]),
 				elem(["span", {
 					className: "fa fa-download",
+					draggable: true,
+					ondragstart: State.saveNote.bind(State,i),
 					onclick: State.saveNote.bind(State,i)
 				}])
 			)
