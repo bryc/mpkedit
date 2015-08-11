@@ -630,7 +630,6 @@ var MPKEdit = (function() {
 		function start(e) {
 			window.getSelection().removeAllRanges()
 			origin = e.target;
-			if(origin.nodeName !== "TR") {return false;}
 			origin.style.background = "#EEE";
 			e.dataTransfer.setData("text","null");
 			var trs = document.querySelectorAll("tr");
