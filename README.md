@@ -10,5 +10,4 @@ Written in plain Javascript and tested in Chrome and Firefox.
 
 [**Try it**](http://rawgit.com/bryc/mempak/master/index.html)
 
-
-<div  style="align:center"><img src="http://i.imgur.com/XPkbSyR.png"></div>
+<div style="align:center"><img src="http://i.imgur.com/XPkbSyR.png"></div>
