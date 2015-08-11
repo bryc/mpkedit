@@ -541,7 +541,7 @@ var MPKEdit = (function() {
 		document.getElementById("fileOpen").onchange = this.readFiles;
 		document.getElementById("loadButton").onclick = this.browse.bind(App);
 
-		document.getElementById("loadButton").addEventListener("dragstart",function(event) {
+		document.getElementById("save").addEventListener("dragstart",function(event) {
 			var blobURL = URL.createObjectURL(new Blob([State.data]));
  			event.dataTransfer.setData("DownloadURL",
  				"application/octet-stream:"+State.filename+":"+blobURL
@@ -609,8 +609,60 @@ var MPKEdit = (function() {
 		var gameCode = State.gameNotes[i].serial;
 		var gameName = this.codeDB[gameCode] || gameCode;
 
+		App.origin;
+		App.out = undefined;
+	
+		function enter(e) {
+			if(!origin || origin.nodeName !== "TR") {return false;}
+			var u = e.target;
+			while(true) {
+				if(u.parentNode.nodeName === "TR") {
+					var dest = u.parentNode;
+					break;
+				} else {u = u.parentNode;}
+			}
+			if(origin.previousSibling === dest) {
+				origin.parentNode.insertBefore(origin, dest);
+			} else  {
+				origin.parentNode.insertBefore(origin, dest.nextSibling);
+			}
+		}
+		function start(e) {
+			window.getSelection().removeAllRanges()
+			origin = e.target;
+			if(origin.nodeName !== "TR") {return false;}
+			origin.style.background = "#EEE";
+			e.dataTransfer.setData("text","null");
+			var trs = document.querySelectorAll("tr");
+			for(var arr=[], i = 0; i<trs.length;i++) {
+				arr.push(trs[i].id);
+			}
+			out = arr;
+		}
+		function end(e) {
+			origin.style.background = "";
+			origin.style.cursor = "";
+			origin = undefined;
+			var trs = document.querySelectorAll("tr");
+			for(var arr=[], i = 0; i<trs.length;i++) {
+				arr.push(trs[i].id);
+			}
+			for (var i = 0,d=0; i < out.length; i++) {
+				if (out[i] === arr[i]) { d++;}
+			}
+			if(out.length === d) {return false;}
+			var tmp = new Uint8Array(State.data);
+			for(var i = 0x300; i < 0x500; i += 32) {
+				var p = 0x300+(32*arr[(i-0x300)/32]);
+				for(var j = 0; j < 32; j++) {
+					tmp[i+j] = State.data[p+j];
+				}
+			}
+			State.update(tmp);
+		}
+
 		var tableRow =
-		elem(["tr"],
+		elem(["tr",{id:i, draggable: true,  ondragenter:enter, ondragstart:start, ondragend:end}],
 			elem(["td", State.gameNotes[i].noteName],
 				elem(["div", gameName])
 			),
