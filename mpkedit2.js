@@ -1,3 +1,5 @@
+// TODO: Look at Patchedit's fileHandler function, see if it is suitable
+
 var MPKEdit = (function MPKEdit() {
 
 	function MPKEdit() {}
