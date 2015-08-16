@@ -1,0 +1,136 @@
+@font-face {
+	font-family: "Lato";
+	font-weight: 400;
+	src: url("fonts/lato-regular.woff") format("woff");
+}
+
+@font-face {
+	font-family: "Lato";
+	font-weight: bold;
+	src: url("fonts/lato-bold.woff") format("woff");
+}
+
+html, body {
+	overflow-y: visible;
+}
+
+body, table {
+	font: bold 16px "Lato", sans-serif;
+}
+
+body {
+	background: #fff;
+	max-width: 768px;
+	margin: 2px auto;
+	color: #5c5c5c;
+}
+
+div#dropzone {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 9999999999;
+	width: 100%;
+	height: 100%;
+	transition: visibility 175ms, opacity 175ms;
+	background: rgba(0, 0, 0, 0.3);
+}
+
+/* ---- TOP TOOLBAR ---- */
+div.topToolbar {
+	display:flex;
+	background: #fdfdfd;
+	padding: 3px 6px;
+	border-bottom: 4px solid #92b9cd;
+	font-size: 28px;
+}
+
+div.grow {
+	flex: 1;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	border-radius: 5px;
+}
+
+span#loadButton {
+	border-radius: 5px;
+	padding: 4px;
+}
+
+span#loadButton:hover {
+	background: #f3f3f3;
+	color: #777;
+	cursor: pointer;
+}
+
+#fileOpen {
+	display: none;
+}
+
+/* ---- MAIN TABLE ---- */
+table {
+	border-collapse: collapse;
+	background: #fdfdfd;
+	border-bottom: 2px solid #ddd;
+	width: 100%;
+}
+
+tr:nth-child(even) {
+	background: #f6f6f6;
+}
+
+td {
+	padding: 6px 12px;
+}
+
+td:nth-child(1) div {
+	font-weight: 400;
+	font-size: 12px;
+	color: #999;
+}
+
+td:nth-child(2) {
+	text-align: right;
+}
+
+td:nth-child(3) {
+	width: 80px;
+	text-align: right;
+}
+
+#emptyFile {
+	font-size: 20px;
+	font-style: italic;
+	text-align: center;
+	padding: 16px;
+}
+
+/* ---- ICON_STUFF ---- */
+.fa, .fa-trash,.fa-download {
+	color: #92b9cd;
+	padding: 6px;
+}
+
+span#loadButton:hover .fa-folder-open {
+	color: #cda692;
+}
+
+.fa-trash:hover,
+.fa-download:hover,
+.fa-floppy-o:hover {
+	cursor: pointer;
+	color: #cda692;
+	background: #eeeeee;
+}
+
+span#loadButton:active .fa-folder-open {
+	color: #b89583;
+}
+
+.fa-trash:active,
+.fa-download:active,
+.fa-floppy-o:active {
+	color: #b89583;
+	background: #dddddd;
+}
