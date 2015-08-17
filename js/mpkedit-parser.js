@@ -1,4 +1,4 @@
-(function MPKParser(MPKEdit) {
+(function MPKParser() {
 	var resize = function(data) {
 		var newdata = new Uint8Array(32768);
 		for(var i = 0; i < data.length; i++) {
@@ -140,6 +140,7 @@
 			var validIndex = p>=5 && p<=127 && data[i + 0x06]===0;
 	
 			if(validIndex) {
+				var id = (i - 0x300) / 32;
 				NoteKeys.push(p);
 	
 				if((data[i + 0x08] & 0x02) === 0) {
@@ -158,7 +159,7 @@
 					noteName += n64code[data[i + 15]] || "";
 				}
 	
-				NoteTable[(i - 0x300) / 32] = {
+				NoteTable[id] = {
 					indexes: p,
 					serial: arrstr(data, i, i+4).replace(/\0/g,"-"),
 					publisher: arrstr(data, i+4, i+6).replace(/\0/g,"-"),
@@ -305,24 +306,22 @@
 			return;
 		}
 		
-		if(this.State.data && isNote(data)) {
-			this.State.insert(data);
+		if(MPKEdit.State.data && isNote(data)) {
+			MPKEdit.State.insert(data);
 		} else if(parse(data)) {
-			this.State.data = result.data !== 32768 ? resize(result.data) : result.data;
-			this.State.NoteTable = result.NoteTable;
-			this.State.usedNotes = result.usedNotes;
-			this.State.usedPages = result.usedPages;
-			this.State.filename = filename || this.State.filename;
+			MPKEdit.State.data = result.data !== 32768 ? resize(result.data) : result.data;
+			MPKEdit.State.NoteTable = result.NoteTable;
+			MPKEdit.State.usedNotes = result.usedNotes;
+			MPKEdit.State.usedPages = result.usedPages;
+			MPKEdit.State.filename = filename ||MPKEdit.State.filename;
 
-			if(this.App.usefsys && filename) {
-				this.State.Entry = this.App.tmpEntry;
+			if(MPKEdit.App.usefsys && filename) {
+				MPKEdit.State.Entry = MPKEdit.App.tmpEntry;
 			}
 
-			this.App.updateUI();
-			//console.log(this.State);
+			MPKEdit.App.updateUI();
 		} else {
-			console.warn("ERROR: Data invalid: " + filename, this.State.$ || "");
+			console.warn("ERROR: Data invalid: " + filename);
 		}
 	};
-	
-}(MPKEdit));
+}());

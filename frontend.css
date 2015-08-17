@@ -45,6 +45,20 @@ div.topToolbar {
 	font-size: 28px;
 }
 
+div#stats {
+	padding: 3px 6px;
+	color:#AAA;
+	background: #fafafa;
+	text-align:center;
+	font-weight:400;
+	font-size:14px;	border-bottom: 1px solid #eee;
+}
+
+span.num {
+	color:#000;
+	font-weight:bold;
+}
+
 div.grow {
 	flex: 1;
 	white-space: nowrap;
