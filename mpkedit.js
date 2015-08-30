@@ -166,9 +166,9 @@ var MPKEdit = (function() {
 				if(data[i + 12] !== 0) {
 					noteName += ".";
 					noteName += this.n64code[data[i + 12]] || "";
-					noteName += this.n64code[data[i + 13]] || "";
-					noteName += this.n64code[data[i + 14]] || "";
-					noteName += this.n64code[data[i + 15]] || "";
+				}
+				if (data[i + 13] | data[i + 14] | data[i + 15]) {
+					console.warn("Reserved bits of extension code should be zero.");
 				}
 	
 				NoteTable[(i - 0x300) / 32] = {
