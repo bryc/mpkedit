@@ -150,7 +150,10 @@
 				for(var j = 0, noteName = ""; j < 16; j++) {
 					noteName += n64code[data[i + 16 + j]] || "";
 				}
-	
+
+				if (data[i + 13] | data[i + 14] | data[i + 15]) {
+					console.warn("Reserved bits of extension code were found.");
+				}
 				if(data[i + 12] !== 0) {
 					noteName += ".";
 					noteName += n64code[data[i + 12]] || "";
