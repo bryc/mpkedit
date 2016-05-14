@@ -1,4 +1,3 @@
-# 4 space indentation
 [*.js]
-indent_style = tab
+indent_style = space
 indent_size = 4

@@ -4,9 +4,7 @@
     "description"      : "Modify Controller Pak files",
     "version"          : "0.3",
     "manifest_version" : 2,
-    "permissions"      : [ { "fileSystem" : ["write"] }, "storage" ],
-    "app"              : {
-        "background" : { "scripts" : ["background.js"] }
-    },
-    "icons": { "128" : "icon.png" }
+    "permissions"      : [{"fileSystem": ["write"]}, "storage"],
+    "app"              : {"background": {"scripts": ["background.js"]}},
+    "icons": {"128": "icon.png"}
 }
