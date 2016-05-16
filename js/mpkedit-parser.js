@@ -114,10 +114,9 @@
 		return loc[0] && loc[1] && loc[2] && loc[3];
 	};
 
-	var NoteKeys, result = {};
-
 	var readNotes = function(data, NoteKeys) {
 		var NoteTable = {};
+		// TODO: Was I going to do something with gaplessData here?
 		var gaplessData = [];
 
 		for(var i = 0x300; i < 0x500; i += 32) {
@@ -151,9 +150,6 @@
 					noteName += n64code[data[i + 16 + j]] || "";
 				}
 
-				if (data[i + 13] | data[i + 14] | data[i + 15]) {
-					console.warn("Reserved bits of extension code were found.");
-				}
 				if(data[i + 12] !== 0) {
 					noteName += ".";
 					noteName += n64code[data[i + 12]] || "";
@@ -161,7 +157,9 @@
 					noteName += n64code[data[i + 14]] || "";
 					noteName += n64code[data[i + 15]] || "";
 				}
-	
+				if (data[i + 13] | data[i + 14] | data[i + 15]) {
+					console.warn("Reserved bits of extension code were found: " + noteName);
+				}
 				NoteTable[id] = {
 					indexes: p,
 					serial: arrstr(data, i, i+4).replace(/\0/g,"-"),
@@ -258,6 +256,7 @@
 			}
 			return noteIndexes;
 		}
+		// TODO: Document what's going on here with the recursive call.
 		catch(error) {
 			if(o !== 0x200) {
 				return checkIndexes(data, 0x200, NoteKeys);
@@ -290,11 +289,12 @@
 				usedNotes++;
 			}
 	
-			result.NoteTable = NoteTable;
-			result.usedPages = usedPages;
-			result.usedNotes = usedNotes;
-			result.data = data;
-			return true;
+			return {
+				NoteTable: NoteTable,
+				usedPages: usedPages,
+				usedNotes: usedNotes,
+				data: data
+			};
 		}
 		else {
 			return false;
@@ -304,6 +304,7 @@
 	console.log("INFO: MPKEdit.Parser ready");
 
 	MPKEdit.Parser = function(data, filename) {
+		// TODO: Figure out what this is for. This is why you comment code.
 		if(typeof data === "string" && typeof filename === "object") {	
 			MPKEdit.Parser(new Uint8Array(filename.target.result), data);
 			return;
@@ -311,7 +312,7 @@
 		
 		if(MPKEdit.State.data && isNote(data)) {
 			MPKEdit.State.insert(data);
-		} else if(parse(data)) {
+		} else if(result = parse(data)) {
 			MPKEdit.State.data = result.data !== 32768 ? resize(result.data) : result.data;
 			MPKEdit.State.NoteTable = result.NoteTable;
 			MPKEdit.State.usedNotes = result.usedNotes;
