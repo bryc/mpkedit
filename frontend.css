@@ -57,6 +57,7 @@ div#stats {
 span.num {
 	color:#000;
 	font-weight:bold;
+	font-size: 16px;
 }
 
 div.grow {

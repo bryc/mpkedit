@@ -196,9 +196,9 @@
 		document.getElementById("filename").innerHTML = MPKEdit.State.filename;
 
 		document.getElementById("stats").innerHTML = 
-		"<span class=num>" +
-		MPKEdit.State.usedPages + "</span> / 123 pages, <span class=num>" + 
-		MPKEdit.State.usedNotes + "</span> / 16 notes";
+		"Used: <span class=num>" +
+		MPKEdit.State.usedPages + "</span>/123 pages - <span class=num>" + 
+		MPKEdit.State.usedNotes + "</span>/16 notes";
 
 		for(var i = 0; i < 16; i++) {
 			if(MPKEdit.State.NoteTable[i]) {
