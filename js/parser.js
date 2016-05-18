@@ -116,7 +116,11 @@
 
 	var readNotes = function(data, NoteKeys) {
 		var NoteTable = {};
-		// TODO: Was I going to do something with gaplessData here?
+
+		// TODO: This re-orders the NoteTable, starting from the top.
+		// Might want to look into an option to retain original order?
+		// For example, only do it upon saving or re-ordering notes.
+		// Perhaps add a mode for ghost channels.
 		var gaplessData = [];
 
 		for(var i = 0x300; i < 0x500; i += 32) {
@@ -301,6 +305,58 @@
 		}
 	};
 
+	var insertNote = function(data) {
+		var tmpdata = new Uint8Array(MPKEdit.State.data);
+
+		var noteData = data.subarray(0, 32);
+		var pageData = data.subarray(32);
+		var pageCount = pageData.length / 256;
+		var newPages = MPKEdit.State.usedPages + pageCount;
+	
+		if(newPages <= 123 && MPKEdit.State.usedNotes < 16){
+			var freeIndexes = [];
+			for(var i = 0xA; i < 0x100; i += 2) {
+				if(freeIndexes.length === pageCount) {
+					break;
+				}
+				if(tmpdata[0x100 + i + 1] === 3) {
+					freeIndexes.push(i / 2);
+				}
+			}
+	
+			noteData[0x06] = 0;
+			noteData[0x07] = freeIndexes[0];
+	
+			for(var i = 0; i < freeIndexes.length; i++) {
+				var target1 = 0x100 + (2 * freeIndexes[i] + 1);
+				var target2 = 0x100 * freeIndexes[i];
+	
+				if(i === freeIndexes.length - 1) {
+					tmpdata[target1] = 0x01;
+				}
+				else {
+					tmpdata[target1] = freeIndexes[i + 1];
+				}
+	
+				for(var j = 0; j < 0x100; j++) {
+					tmpdata[target2 + j] = pageData[0x100 * i + j];
+				}
+			}
+	
+			for(var i = 0; i < 16; i++) {
+				if(MPKEdit.State.NoteTable[i] === undefined) {
+					var target = 0x300 + i * 32;
+					for(var j = 0; j < 32; j++) {
+						tmpdata[target + j] = noteData[j];
+					}
+					break;
+				}
+			}
+	
+			MPKEdit.Parser(tmpdata);
+		}
+	};
+
 	console.log("INFO: MPKEdit.Parser ready");
 
 	MPKEdit.Parser = function(data, filename) {
@@ -311,7 +367,7 @@
 		}
 		
 		if(MPKEdit.State.data && isNote(data)) {
-			MPKEdit.State.insert(data);
+			insertNote(data);
 		} else if(result = parse(data)) {
 			MPKEdit.State.data = result.data !== 32768 ? resize(result.data) : result.data;
 			MPKEdit.State.NoteTable = result.NoteTable;

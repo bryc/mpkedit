@@ -1,6 +1,6 @@
 (function fsys() {
-	var fsys = function() {};
-	MPKEdit.fsys = new fsys();
+	var fsys = {};
+
 
 	var writeDone = function(Entry, event) {
 		if(event.loaded === 32768) {
@@ -19,20 +19,20 @@
 		});
 	};
 
-	fsys.prototype.saveFile = function(data, Entry) {
+	fsys.saveFile = function(data, Entry) {
 		chrome.fileSystem.getWritableEntry(
 			Entry, writeFile.bind(null, data)
 		);
 	};
 
-	fsys.prototype.saveFileAs = function(data, filename) {
+	fsys.saveFileAs = function(data, filename) {
 		chrome.fileSystem.chooseEntry({
 			type: "saveFile",
 			suggestedName: filename
 		}, writeFile.bind(null, data));
 	};
 
-	fsys.prototype.loadFile = function() {
+	fsys.loadFile = function() {
 		chrome.fileSystem.chooseEntry({}, function(Entry) {
 			if(chrome.runtime.lastError) {return false;}
 
@@ -45,5 +45,7 @@
 		});
 	};
 
+	MPKEdit.fsys = fsys;
+	
 	console.log("INFO: MPKEdit.fsys ready");
 }());

@@ -1,7 +1,5 @@
 (function MPKApp() {
-	var MPKApp = function() {};
-	var App = new MPKApp();
-	MPKEdit.App = App;
+	var App = {};
 
 	App.usefsys = location.protocol === "chrome-extension:";
 	App.codeDB = {};
@@ -119,7 +117,7 @@
 		return tableRow;
 	};
 
-	MPKApp.prototype.init = function() {
+	App.init = function() {
 		function changeExportColor(event) {
 			var target = document.querySelectorAll(".fa-download");
 			for(var i = 0; i < target.length; i++) {
@@ -189,7 +187,7 @@
 		setDragFX();
 	};
 
-	MPKApp.prototype.updateUI = function() {
+	App.updateUI = function() {
 		var out = document.querySelector("table");
 		while(out.firstChild) {
 			out.removeChild(out.firstChild);
@@ -220,6 +218,8 @@
 			out.appendChild(empty);
 		}
 	};
+
+	MPKEdit.App = App;
 
 	console.log("INFO: MPKEdit.App ready");
 }());
