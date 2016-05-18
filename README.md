@@ -9,7 +9,7 @@ Makes managing N64 Controller Pak files easy, with support for note import/expor
 * DexDrive (.n64) support (saves as standard .mpk for now)
 * **Game code database** - automatically identifies game name
 
-[**Try it**](http://rawgit.com/bryc/mempak/master/index.html)
+[**Try it**](http://rawgit.com/bryc/mempak/master/index.htm)
 
 ## Instructions
 
