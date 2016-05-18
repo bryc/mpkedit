@@ -354,6 +354,13 @@
 			}
 	
 			MPKEdit.Parser(tmpdata);
+		} else {
+			if(MPKEdit.State.usedNotes >= 16) {
+				console.warn("No note slots available to insert note.");
+			}
+			if(newPages > 123) {
+				console.warn("Not enough pages left to insert note.");
+			}
 		}
 	};
 
