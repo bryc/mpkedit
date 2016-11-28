@@ -20,7 +20,7 @@ var MPKEdit = (function MPKEdit() {
 				var ptr = crc & 255 ^ data[i];
 				crc = crc >>> 8 ^ table[ptr];
 			}
-			crc = ((crc ^ -1) >>> 0).toString(16);
+			crc = ((crc ^ -1) >>> 0).toString(16).toUpperCase();
 			return ("00000000" + crc).slice(-8);
 		}
 	}());

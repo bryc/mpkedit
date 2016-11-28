@@ -288,7 +288,16 @@
 			for(var i = 0; i < Object.keys(NoteTable).length; i++) {
 				var _note = NoteTable[Object.keys(NoteTable)[i]];
 				_note.indexes = output[_note.indexes];
-	
+
+				// Super hacky CRC32 calculation. Seems to work. Might slow things down
+				for(var w = 0, fileOut=[]; w < _note.indexes.length; w++) {
+					var pageAddress = _note.indexes[w] * 0x100;
+					for(var j = 0; j < 0x100; j++) {
+						fileOut.push(data[pageAddress + j]);
+					}
+				}
+				_note.CRC32 = MPKEdit.crc32(fileOut);
+
 				usedPages += _note.indexes.length;
 				usedNotes++;
 			}

@@ -5,18 +5,14 @@
 	App.codeDB = {};
 
 	var elem = MPKEdit.elem;
-	var origin;
-	var out = undefined;
+
+	var origin, out;
 
 	var enter = function(event) {
 		if(!origin || origin.nodeName !== "TR") {return false;}
-		var u = event.target;
-		while(true) {
-			if(u.parentNode.nodeName === "TR") {
-				var dest = u.parentNode;
-				break;
-			} else {u = u.parentNode;}
-		}
+		if(event.target.nodeName !== "TD") {return false;}
+
+		var dest = event.target.parentNode;
 		if(origin.previousSibling === dest) {
 			origin.parentNode.insertBefore(origin, dest);
 		} else  {
@@ -25,21 +21,31 @@
 	}
 
 	var start = function(event) {
-		window.getSelection().removeAllRanges();
-		origin = event.target;
-		origin.style.background = "#EEE";
-		event.dataTransfer.setData("text","null");
-		var trs = document.querySelectorAll("tr");
-		for(var arr = [], i = 0; i < trs.length; i++) {
-			arr.push(trs[i].id);
+		if(event.target.nodeName === "TR") { // only drag tablerows
+			if(event.ctrlKey) {
+				event.dataTransfer.setData("text","null"); //Firefox drag fix
+				window.getSelection().removeAllRanges(); //remove text selection
+				origin = event.target;
+				origin.style.opacity = 0.75;
+				origin.style.outline = "2px solid";
+				// Compare rows at start
+				var trs = document.querySelectorAll("tr");
+				for(var arr = [], i = 0; i < trs.length; i++) {
+					arr.push(trs[i].id);
+				}
+				out = arr;
+			} else {
+				MPKEdit.State.saveNote(event.target.id, event);
+			}
 		}
-		out = arr;
 	}
 
 	var end = function() {
-		origin.style.background = "";
-		origin.style.cursor = "";
+		if(!origin || origin.nodeName !== "TR") {return false;}
+		origin.style.opacity = 1;
+		origin.style.outline = "none";
 		origin = undefined;
+		// Compare rows at end
 		var trs = document.querySelectorAll("tr");
 		for(var arr = [], i = 0; i < trs.length; i++) {
 			arr.push(trs[i].id);
@@ -47,7 +53,12 @@
 		for (var i = 0,d=0; i < out.length; i++) {
 			if (out[i] === arr[i]) { d++;}
 		}
-		if(out.length === d) {return false;}
+		if(out.length === d) {
+			console.log("No changes detected");
+			return false;
+		}
+
+
 		var tmp = new Uint8Array(MPKEdit.State.data);
 		for(var i = 0x300; i < 0x500; i += 32) {
 			var p = 0x300+(32*arr[(i-0x300)/32]);
@@ -93,16 +104,15 @@
 	var buildRow = function(i) {
 		var gameCode = MPKEdit.State.NoteTable[i].serial;
 		var gameName = App.codeDB[gameCode] || gameCode;
-
 		var tableRow =
 		elem(["tr",{id:i, draggable: true,  ondragenter:enter, ondragstart:start, ondragend:end}],
 			elem(["td", MPKEdit.State.NoteTable[i].noteName],
-				elem(["div", gameName])
+				elem(["div", "<code>"+MPKEdit.State.NoteTable[i].CRC32+"</code> - " + gameName])
 			),
 			elem(["td", MPKEdit.State.NoteTable[i].indexes.length]),
 			elem(["td"],
 				elem(["span", {
-					className: "fa fa-trash",
+					className: "fa fa-trash",draggable: true,
 					onclick: MPKEdit.State.erase.bind(null, i)
 				}]),
 				elem(["span", {
@@ -197,7 +207,7 @@
 
 		document.getElementById("stats").innerHTML = 
 		"Used: <span class=num>" +
-		MPKEdit.State.usedPages + "</span>/123 pages - <span class=num>" + 
+		MPKEdit.State.usedPages + "</span>/123 pages, <span class=num>" + 
 		MPKEdit.State.usedNotes + "</span>/16 notes";
 
 		for(var i = 0; i < 16; i++) {
