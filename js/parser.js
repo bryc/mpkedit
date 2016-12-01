@@ -245,7 +245,7 @@
 						found.keys[i];
 				}
 			}
-	
+			// 0x100: inode checksum calculate + update
 			for(var i = o+0xA, sum = 0; i < o+0x100; i++) {
 				sum += data[i];
 			}
