@@ -104,10 +104,12 @@
 	var buildRow = function(i) {
 		var gameCode = MPKEdit.State.NoteTable[i].serial;
 		var gameName = App.codeDB[gameCode] || gameCode;
+		var publishr = App.pubDB[MPKEdit.State.NoteTable[i].publisher] || "{{Unknown: "+MPKEdit.State.NoteTable[i].publisher+"}}";
 		var tableRow =
 		elem(["tr",{id:i, draggable: true,  ondragenter:enter, ondragstart:start, ondragend:end}],
 			elem(["td", MPKEdit.State.NoteTable[i].noteName],
-				elem(["div", "<code>"+MPKEdit.State.NoteTable[i].CRC32+"</code> - " + gameName])
+				elem(["div", "<code>" + parseInt(MPKEdit.State.NoteTable[i].CRC32,16).toString(36).substr(0,4)
+					+ "</code> &mdash; " + gameName + " &mdash; " + publishr])
 			),
 			elem(["td", MPKEdit.State.NoteTable[i].indexes.length]),
 			elem(["td"],
@@ -206,9 +208,10 @@
 		document.getElementById("filename").innerHTML = MPKEdit.State.filename;
 
 		document.getElementById("stats").innerHTML = 
-		"Used: <span class=num>" +
-		MPKEdit.State.usedPages + "</span>/123 pages, <span class=num>" + 
-		MPKEdit.State.usedNotes + "</span>/16 notes";
+
+		"<span class=num>" + (123 - MPKEdit.State.usedPages) + "</span>/123 pages free · <span class=num>" + (16 - MPKEdit.State.usedNotes) + "</span>/16 notes free<br>"
+		+ "<span style='height:4px;display:inline-block;border:1px solid;background:#EEE;width:120px'><span style='height:4px;display:block;background:red;width:"+((MPKEdit.State.usedPages / 123) * 100)+"%'></span></span>"
+		+ "<span style='margin-left:10px;height:4px;display:inline-block;border:1px solid;background:#EEE;width:100px'><span style='height:4px;display:block;background:orange;width:"+((MPKEdit.State.usedNotes / 16) * 100)+"%'></span></span>";
 
 		for(var i = 0; i < 16; i++) {
 			if(MPKEdit.State.NoteTable[i]) {

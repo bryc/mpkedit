@@ -23,6 +23,7 @@ body {
 	max-width: 768px;
 	margin: 2px auto;
 	color: #5c5c5c;
+	line-height:0.8;
 }
 
 div#dropzone {
