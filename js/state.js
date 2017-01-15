@@ -1,6 +1,14 @@
+/* 
+State: functions which manipulate the current State of the opened MPK file, post-parse.
+*/
+
 (function State() {
     var State = {};
 
+    /* -----------------------------------------------
+    function: State.init()
+      generate empty MPK data then immediately load it.
+    */
     State.init = function() {
         function writeAt(offset) {
             for(var i = 0; i < 7; i++) {
@@ -27,6 +35,10 @@
         MPKEdit.Parser(data, "New.mpk");
     };
 
+    /* -----------------------------------------------
+    function: State.erase(id)
+      Erase a note at index/id.
+    */
     State.erase = function(id) {
         var tmpdata = new Uint8Array(State.data);
         var indexes = State.NoteTable[id].indexes;
@@ -44,6 +56,12 @@
         MPKEdit.Parser(tmpdata);
     };
 
+
+    /* -----------------------------------------------
+    function: State.save()
+      Save the full MPK output file (Standard RAW MPK file)
+      Handles browser download, and fsys SaveAs/Save
+    */
     State.save = function() {
         if(MPKEdit.App.usefsys) {
             if(State.Entry && !event.ctrlKey) {
@@ -60,6 +78,11 @@
         }
     };
 
+    /* -----------------------------------------------
+    function: State.saveNote(id, event)
+      Save a note at index/id. Supports holding CTRL for raw save.
+      Handles browser download and fsys saveAs
+    */
     State.saveNote = function(id, event) {
         var fileOut = [];
         var indexes = State.NoteTable[id].indexes;

@@ -11,7 +11,7 @@ trying to create a save file on the Controller Pak where it is easily extractabl
 The research that went into this was vast--I didn't do it, credit goes to FluBBa aka
 Fredrik Olsson. 
 
-Here is my 'Good List' (tm) of verified publisher codes on N64:
+These are verified publisher  codes on N64:
 
     "01": "Nintendo",
     "37": "Human Entertainment", // Questionable--this had a conflict in the original list as Taito/GAGA.
@@ -48,7 +48,7 @@ MPKEdit.App.pubDB = {
     //"--": "",
     //"úÞ": "",
     //"\u00124": ""
-    "-\u0001": "Nintendo...?", // Wave Race 64 Shindou Edition uses this?
+    "-\x01": "Nintendo...?", // Wave Race 64 uses this, perhaps a bug on N's part.
     "01": "Nintendo",
     "02": "Rocket Games (unlicensed?)",
     "03": "Imagineer-Zoom",
@@ -382,6 +382,40 @@ MPKEdit.App.pubDB = {
     "VN": "Valcon Games"
 };
 
+MPKEdit.App.media = {
+    "N" : "Cartridge",
+    "C" : "Cartridge with 64DD support",
+    "D" : "64DD Disk",
+    "E" : "64DD Expansion"
+};
+
+MPKEdit.App.region = {
+    "A" : "All",
+    "B" : "Brazil",
+    "C" : "China",
+    "D" : "Germany",
+    "E" : "North America",
+    "F" : "France",
+    "G" : "Gateway 64 (NTSC)",
+    "H" : "Netherlands",
+    "I" : "Italy",
+    "J" : "Japan",
+    "K" : "South Korea",
+    "L" : "Gateway 64 (PAL)",
+    "N" : "Canada",
+    "P" : "Europe",
+    "S" : "Spain",
+    "U" : "Australia",
+    "V" : "Sweden",
+    "W" : "Scandinavia",
+    "X" : "Alternate",
+    "Y" : "Alternate",
+    "Z" : "Alternate"
+};
+
+/*
+gameCode database.
+*/
 MPKEdit.App.codeDB = {
     "\x3B\xAD\xD1\xE5": "Cart save (Gameshark/Action Replay)",
     "\xDE\xAD\xBE\xEF": "Cart save (BlackBag's Memory Manager)",

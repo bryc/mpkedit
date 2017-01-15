@@ -1,4 +1,12 @@
 (function MPKParser() {
+    // temporary globals
+    var curfile = undefined;
+    var dexnotes = undefined;
+    /* -----------------------------------------------
+    function: resize(data)
+      resize input mpk data to a fixed 32768 bytes.
+      mostly for handling truncated input files.
+    */
     var resize = function(data) {
         var newdata = new Uint8Array(32768);
         for(var i = 0; i < data.length; i++) {
@@ -7,6 +15,11 @@
         return newdata;
     };
 
+    /* -----------------------------------------------
+    function: arrstr(arr, start, end)
+      return a string of ASCII characters from an
+      array of bytes. used for reading ASCII strings.
+    */
     var arrstr = function(arr, start, end) {
         arr = arr || [];
         start = start || 0;
@@ -20,6 +33,11 @@
         return str;
     };
 
+    /* -----------------------------------------------
+    object: n64code{}
+      a translation table for the N64 font code used
+      in note name and note extension.
+    */
     var n64code = {
           0:  "",  15: " ",  16: "0",
          17: "1",  18: "2",  19: "3",  20: "4",
@@ -57,20 +75,40 @@
         145: "ピ", 146: "プ", 147: "ペ", 148: "ポ"
     };
 
+    /* -----------------------------------------------
+    function: isNote(data)
+      determine whether the file loaded is a note file.
+      currently supports simple 0xCAFE dump file format:
+      32byte note-table-entry + raw save data (n*256) with
+      0xCAFE magic number as the starting inode.
+    */
     var isNote = function(data) {
         var a = 0xCAFE === data[0x07] + (data[0x06] << 8);
         var b = 0 === data.subarray(32).length % 256;
         return a && b;
     };
 
+    /* -----------------------------------------------
+    function: sumIsValid(data, o)
+      check the header checksum in label area at specified
+      offset. utility function for checkHeader()
+    */
     var sumIsValid = function(data, o) {
         var sumA = 0;
         var sumB = 0xFFF2;
         var sumX = (data[o + 28] << 8) + data[o + 29];
         var sumY = (data[o + 30] << 8) + data[o + 31];
     
-        if((data[o + 25] & 1) === 0 || (data[o + 26] & 1) === 0) {
-            return false;
+        // Not sure what this bit does, however the game typically sets this
+        // bit back on if it is off and recalculates the checksum.
+        if((data[o + 25] & 1) === 0) {
+            console.warn(o, "Bit 0x19:0 is not set!", curfile);
+        }
+        // The bit at 0x1A:0 must be set or the game will most definitely
+        // throw a 'damaged pak' or 'full pak' error. we can force this bit
+        // on here.
+        if((data[o + 26] & 1) === 0) {
+            console.warn(o, "Bit 0x1A:0 is not set! Game may wipe data!", curfile);
         }
     
         for(var i = 0; i < 28; i += 2) {
@@ -79,6 +117,8 @@
         }
         sumB -= sumA;
     
+        // many checksums in DexDrive files are incorrect.
+        // this detects the problem and attempts to fix.
         if(sumX === sumA && (sumY ^ 0x0C) === sumB) {
             sumY ^= 0xC;
             data[o + 31] ^= 0xC;
@@ -87,6 +127,12 @@
         return (sumX === sumA && sumY === sumB);
     };
 
+    /* -----------------------------------------------
+    function: checkHeader(data)
+      checks all four checksum sections in header.
+      it should also copy first valid section to all
+      others for proper behaviour.
+    */
     var checkHeader = function(data) {
         var loc = [0x20, 0x60, 0x80, 0xC0];
         var lastValidLoc = -1;
@@ -114,6 +160,14 @@
         return loc[0] && loc[1] && loc[2] && loc[3];
     };
 
+    /* -----------------------------------------------
+    function: readNotes(data, NoteKeys)
+      parses the Note Table. note validity is determined by
+      validIndex condition (5 - 127 range for pointers and
+      previous byte must be 0). other methods are inaccurate.
+      pointers are stored in NoteKeys for comparing in indexTable
+      parser.
+    */
     var readNotes = function(data, NoteKeys) {
         var NoteTable = {};
 
@@ -161,14 +215,20 @@
                     noteName += n64code[data[i + 14]] || "";
                     noteName += n64code[data[i + 15]] || "";
                 }
+
                 if (data[i + 13] | data[i + 14] | data[i + 15]) {
                     console.warn("Reserved bits of extension code were found: " + noteName);
                 }
+                var comment = dexnotes ? dexnotes[id] : undefined;
+                var gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
                 NoteTable[id] = {
                     indexes: p,
-                    serial: arrstr(data, i, i+4).replace(/\0/g,"-"),
+                    serial: gameCode,
                     publisher: arrstr(data, i+4, i+6).replace(/\0/g,"-"),
-                    noteName: noteName
+                    noteName: noteName,
+                    region: MPKEdit.App.region[gameCode[3]],
+                    media: MPKEdit.App.media[gameCode[0]],
+                    comment: comment
                 };
     
             }
@@ -176,6 +236,13 @@
         return NoteTable;
     };
 
+    /* -----------------------------------------------
+    function: checkIndexes(data, o, NoteKeys)
+      parse and validate the indexTable. compares
+      with NoteKeys array constructed from noteTable.
+      argument o (offset) is used to specify backup
+      data offset location in single recursive call.
+    */
     var checkIndexes = function(data, o, NoteKeys) {
         try {
             var p, p2;
@@ -262,16 +329,41 @@
         }
         // TODO: Document what's going on here with the recursive call.
         catch(error) {
-            if(o !== 0x200) {
+            if(o !== 0x200) { // allows a single recursive call to checkIndexes to check mirror backup.
                 return checkIndexes(data, 0x200, NoteKeys);
             }
         }
     };
 
+    /* -----------------------------------------------
+    function: getDexComments(data)
+      capture DexDrive note comment strings.
+    */
+    var getDexNotes = function(data) {
+        var strs=[], str="";
+        for(var j=0,i = 0x40; i < 0x1040; i++ ) {
+            // fix arrstr to support this
+            if(data[i] !== 0x00) { str += String.fromCharCode(data[i]); j++ }
+            else {
+                if(str==="") { strs.push(undefined); } else { strs.push(str); }
+                str = "";
+                i -= j;
+                j = 0;
+                i += 255;
+            }
+        }
+        return strs;
+    };
+    /* -----------------------------------------------
+    function: parse(data)
+      master parse function. handle DexDrive data, and
+      performs parsing routine.
+    */
     var parse = function(data) {
         data = new Uint8Array(data);
 
         if(arrstr(data, 0, 11) === "123-456-STD") {
+            dexnotes = getDexNotes(data);
             data = data.subarray(0x1040);
         }
         if(!data || checkHeader(data) === false) {
@@ -289,7 +381,7 @@
                 var _note = NoteTable[Object.keys(NoteTable)[i]];
                 _note.indexes = output[_note.indexes];
 
-                // Super hacky CRC32 calculation. Seems to work. Might slow things down
+                // Super hacky CRC32 calculation. Seems to work. Might slow things down. xxHash is a fast option but less accurate.
                 for(var w = 0, fileOut=[]; w < _note.indexes.length; w++) {
                     var pageAddress = _note.indexes[w] * 0x100;
                     for(var j = 0; j < 0x100; j++) {
@@ -314,6 +406,10 @@
         }
     };
 
+    /* -----------------------------------------------
+    function: insertNote(data)
+      insert note data into currently opened MPK file.
+    */
     var insertNote = function(data) {
         var tmpdata = new Uint8Array(MPKEdit.State.data);
 
@@ -375,13 +471,18 @@
 
     console.log("INFO: MPKEdit.Parser ready");
 
+    /* -----------------------------------------------
+    function: MPKEdit.Parser(data, filename)
+      exposed interface to the parser. data array and
+      filename provided.
+    */
     MPKEdit.Parser = function(data, filename) {
         // TODO: Figure out what this is for. This is why you comment code.
         if(typeof data === "string" && typeof filename === "object") {  
             MPKEdit.Parser(new Uint8Array(filename.target.result), data);
             return;
         }
-        
+        curfile = filename;
         if(MPKEdit.State.data && isNote(data)) {
             insertNote(data);
         } else if(result = parse(data)) {
@@ -397,7 +498,7 @@
 
             MPKEdit.App.updateUI();
         } else {
-            console.warn("ERROR: Data invalid: " + filename);
+            console.warn("ERROR: Data in file provided is not valid: " + filename);
         }
     };
 }());

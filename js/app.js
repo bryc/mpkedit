@@ -111,6 +111,7 @@
 				elem(["div", "<code>" + parseInt(MPKEdit.State.NoteTable[i].CRC32,16).toString(36).substr(0,4)
 					+ "</code> &mdash; " + gameName + " &mdash; " + publishr])
 			),
+			elem(["td", MPKEdit.State.NoteTable[i].region]),
 			elem(["td", MPKEdit.State.NoteTable[i].indexes.length]),
 			elem(["td"],
 				elem(["span", {

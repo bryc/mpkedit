@@ -1,6 +1,11 @@
 var MPKEdit = (function MPKEdit() {
     var MPKEdit = {};
 
+    /* -----------------------------------------------
+    function: MPKEdit.crc32(data)
+      calculate crc32 checksum. the lookup table is
+      precalculated when app starts.
+    */
     MPKEdit.crc32 = (function(data) {
         var table = [];
         for (var i = 256, crc; i--;) {
@@ -25,6 +30,11 @@ var MPKEdit = (function MPKEdit() {
         }
     }());
 
+    /* -----------------------------------------------
+    function: MPKEdit.elem(options)
+      generate a HTMLElement DOM structure from
+      supplied array data.
+    */
     MPKEdit.elem = function(options) {
         var el = document.createDocumentFragment();
         var tag = options[0];
