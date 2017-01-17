@@ -179,8 +179,8 @@
                 }
 
                 if((data[i + 0x08] & 0x02) === 0) {
-                    console.info("The required bit 8:2 is unset: " + noteName);
-                    //data[i + 0x08] |= 0x02;
+                    console.info(id, "Fixing required bit 8:2 in note: " + noteName);
+                    data[i + 0x08] |= 0x02;
                 }
 
                 if (data[i + 13] | data[i + 14] | data[i + 15]) {
@@ -287,6 +287,7 @@
             }
             sum &= 0xFF;
             if (data[o+1] !== sum) {
+                console.info(o, "Fixing INODE checksum.", curfile);
                 data[o+1] = sum;
             }
     
@@ -298,6 +299,7 @@
         }
         catch(error) { // If main INODE table is invalid, check backup:
             if(o !== 0x200) { // allows a single recursive call to checkIndexes to check mirror backup.
+                console.log("WOOPS... checking INODE backup", curfile);
                 return checkIndexes(data, 0x200, NoteKeys);
             }
         }
