@@ -91,7 +91,8 @@
 
 		for(var i = 0; i < files.length; i++) {
 			var reader = new FileReader();
-			reader.onload = MPKEdit.Parser.bind(null, files[i].name);
+			reader._filename = files[i].name;
+			reader.onload = MPKEdit.Parser;
 
 			if(App.usefsys) {
 				App.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
@@ -107,13 +108,16 @@
 		var publishr = App.pubDB[MPKEdit.State.NoteTable[i].publisher] || "{{Unknown: "+MPKEdit.State.NoteTable[i].publisher+"}}";
 		var tableRow =
 		elem(["tr",{id:i, draggable: true,  ondragenter:enter, ondragstart:start, ondragend:end}],
-			elem(["td", MPKEdit.State.NoteTable[i].noteName],
-				elem(["div", "<code>" + parseInt(MPKEdit.State.NoteTable[i].CRC32,16).toString(36).substr(0,4)
-					+ "</code> &mdash; " + gameName + " &mdash; " + publishr])
+			elem(["td", {className:"h4sh"}],
+				elem(["canvas",{width:30,height:30,className:"hash"}])
 			),
-			elem(["td", MPKEdit.State.NoteTable[i].region]),
-			elem(["td", MPKEdit.State.NoteTable[i].indexes.length]),
-			elem(["td"],
+			elem(["td", {className:"name",innerHTML:MPKEdit.State.NoteTable[i].noteName}],
+				elem(["div", gameName + " &mdash; " + publishr])
+			),
+
+			elem(["td", {className:"region",innerHTML:MPKEdit.State.NoteTable[i].region}]),
+			elem(["td", {className:"pgs",innerHTML:MPKEdit.State.NoteTable[i].indexes.length}]),
+			elem(["td", {className:"tool"}],
 				elem(["span", {
 					className: "fa fa-trash",draggable: true,
 					onclick: MPKEdit.State.erase.bind(null, i)
@@ -127,6 +131,7 @@
 			)
 		);
 
+		MPKEdit.jdenticon.update(tableRow.querySelector(".hash"), MPKEdit.State.NoteTable[i].xxhash64)
 		return tableRow;
 	};
 

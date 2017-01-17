@@ -90,6 +90,7 @@ table {
 	background: #fdfdfd;
 	border-bottom: 2px solid #ddd;
 	width: 100%;
+	table-layout:fixed;
 }
 
 tr:nth-child(even) {
@@ -97,25 +98,31 @@ tr:nth-child(even) {
 }
 
 td {
-	padding: 6px 12px;
+	padding: 5px 5px;
 }
 
-td:nth-child(1) div {
+td.name div {
 	font-weight: 400;
 	font-size: 12px;
 	color: #999;
 }
-td:nth-child(2) {
-	text-size:12px;
+td.h4sh {
+	width:32px;
 	text-align:center;
 }
-td:nth-child(3) {
-	text-align: right;
+td.region {
+	width:100px;
+	font-size:14px;
+	text-align:center;
+}
+td.pgs {
+	width:35px;
+	text-align: center;
 }
 
-td:nth-child(4) {
-	width: 80px;
-	text-align: right;
+td.tool {
+	width: 56px;
+	text-align: center;
 }
 
 #emptyFile {
@@ -124,7 +131,6 @@ td:nth-child(4) {
 	text-align: center;
 	padding: 16px;
 }
-
 /* ---- ICON_STUFF ---- */
 .fa, .fa-trash,.fa-download {
 	color: #92b9cd;

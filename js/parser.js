@@ -29,7 +29,6 @@
             var p = arr[i];
             str += String.fromCharCode(p);
         }
-    
         return str;
     };
 
@@ -89,28 +88,15 @@
     };
 
     /* -----------------------------------------------
-    function: sumIsValid(data, o)
+    function: checkBlock(data, o)
       check the header checksum in label area at specified
       offset. utility function for checkHeader()
     */
-    var sumIsValid = function(data, o) {
-        var sumA = 0;
-        var sumB = 0xFFF2;
+    var checkBlock = function(data, o, state) {
         var sumX = (data[o + 28] << 8) + data[o + 29];
         var sumY = (data[o + 30] << 8) + data[o + 31];
-    
-        // Not sure what this bit does, however the game typically sets this
-        // bit back on if it is off and recalculates the checksum.
-        if((data[o + 25] & 1) === 0) {
-            console.warn(o, "Bit 0x19:0 is not set!", curfile);
-        }
-        // The bit at 0x1A:0 must be set or the game will most definitely
-        // throw a 'damaged pak' or 'full pak' error. we can force this bit
-        // on here.
-        if((data[o + 26] & 1) === 0) {
-            console.warn(o, "Bit 0x1A:0 is not set! Game may wipe data!", curfile);
-        }
-    
+
+        var sumA = 0, sumB = 0xFFF2;
         for(var i = 0; i < 28; i += 2) {
             sumA += (data[o + i] << 8) + data[o + i + 1];
             sumA &= 0xFFFF;
@@ -118,46 +104,47 @@
         sumB -= sumA;
     
         // many checksums in DexDrive files are incorrect.
-        // this detects the problem and attempts to fix.
-        if(sumX === sumA && (sumY ^ 0x0C) === sumB) {
-            sumY ^= 0xC;
-            data[o + 31] ^= 0xC;
+        // this detects and fixes the specific issue.
+        state[o] = {};
+        if(sumY !== sumB && (sumY ^ 0x0C) === sumB && sumX === sumA) {
+           sumY ^= 0xC;
+           data[o + 31] ^= 0xC;
+           state[o].dexdriveFix = true;
         }
-    
+        
+        state[o].valid = (sumX === sumA && sumY === sumB);
         return (sumX === sumA && sumY === sumB);
     };
 
     /* -----------------------------------------------
     function: checkHeader(data)
       checks all four checksum sections in header.
-      it should also copy first valid section to all
-      others for proper behaviour.
     */
     var checkHeader = function(data) {
-        var loc = [0x20, 0x60, 0x80, 0xC0];
-        var lastValidLoc = -1;
-    
-        for(var i = 0, chk; i < loc.length; i++) {
-            chk = sumIsValid(data, loc[i]);
-            if(chk) {
-                lastValidLoc = loc[i];
-            }
+        var state = {};
+        var loc   = [0x20, 0x60, 0x80, 0xC0];
+        var firstValid = null;
+
+        // Check all header blocks
+        for(var i = 0; i < 4; i++) {
+            checkBlock(data, loc[i], state);
+            if(state[loc[i]].valid===true && firstValid===null) firstValid = i;
+
+            console.log("Block:", i+1, state[loc[i]].valid);
+            if(state[loc[i]].dexdriveFix) console.log("\tDexDrive checksum repaired");
         }
-    
-        for(var i = 0; i < loc.length; i++) {
-            var currentLoc = loc[i];
-            chk = sumIsValid(data, currentLoc);
-    
-            if(lastValidLoc > -1 && chk === false) {
-                for(var j = 0; j < 32; j++) {
-                    data[currentLoc + j] = data[lastValidLoc + j];
-                }
-                chk = sumIsValid(data, currentLoc);
+        // Check if Main block is valid
+        if(state[0x20].valid === true) return true;
+        // Check if a valid backup was found, copy to Main
+        else if(firstValid !== null) {
+            console.info("Using Backup " + firstValid)
+            for(var i = 0; i < 0x20; i++) {
+                data[loc[0] + i] = data[loc[firstValid] + i];
             }
-            loc[i] = chk;
+            return true;
         }
-    
-        return loc[0] && loc[1] && loc[2] && loc[3];
+
+        return false;
     };
 
     /* -----------------------------------------------
@@ -171,27 +158,6 @@
     var readNotes = function(data, NoteKeys) {
         var NoteTable = {};
 
-        // TODO: This re-orders the NoteTable, starting from the top.
-        // Might want to look into an option to retain original order?
-        // For example, only do it upon saving or re-ordering notes.
-        // Perhaps add a mode for ghost channels.
-        var gaplessData = [];
-
-        for(var i = 0x300; i < 0x500; i += 32) {
-            var p = data[i + 0x07];
-            var validIndex = p>=5 && p<=127 && data[i + 0x06]===0;
-    
-            if(validIndex) {
-                for(var j = 0; j < 32; j++) {
-                    gaplessData.push(data[i+j]);
-                }
-            }
-        }
-
-        for(var i = 0x300; i < 0x500; i++) {
-            data[i] = gaplessData[i-0x300];
-        }
-
         for(var i = 0x300; i < 0x500; i += 32) {
             var p = data[i + 0x07];
             var validIndex = p>=5 && p<=127 && data[i + 0x06]===0;
@@ -199,10 +165,6 @@
             if(validIndex) {
                 var id = (i - 0x300) / 32;
                 NoteKeys.push(p);
-    
-                if((data[i + 0x08] & 0x02) === 0) {
-                    data[i + 0x08] |= 0x02;
-                }
     
                 for(var j = 0, noteName = ""; j < 16; j++) {
                     noteName += n64code[data[i + 16 + j]] || "";
@@ -216,11 +178,18 @@
                     noteName += n64code[data[i + 15]] || "";
                 }
 
-                if (data[i + 13] | data[i + 14] | data[i + 15]) {
-                    console.warn("Reserved bits of extension code were found: " + noteName);
+                if((data[i + 0x08] & 0x02) === 0) {
+                    console.info("The required bit 8:2 is unset: " + noteName);
+                    //data[i + 0x08] |= 0x02;
                 }
+
+                if (data[i + 13] | data[i + 14] | data[i + 15]) {
+                    console.info("Reserved bits of extension code were found: " + noteName);
+                }
+
                 var comment = dexnotes ? dexnotes[id] : undefined;
                 var gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
+
                 NoteTable[id] = {
                     indexes: p,
                     serial: gameCode,
@@ -327,8 +296,7 @@
             }
             return noteIndexes;
         }
-        // TODO: Document what's going on here with the recursive call.
-        catch(error) {
+        catch(error) { // If main INODE table is invalid, check backup:
             if(o !== 0x200) { // allows a single recursive call to checkIndexes to check mirror backup.
                 return checkIndexes(data, 0x200, NoteKeys);
             }
@@ -360,20 +328,22 @@
       performs parsing routine.
     */
     var parse = function(data) {
-        data = new Uint8Array(data);
+        data = new Uint8Array(data); // should create a copy of the data?
 
         if(arrstr(data, 0, 11) === "123-456-STD") {
+            console.info("DexDrive file detected. Saving notes and stripping header.");
             dexnotes = getDexNotes(data);
             data = data.subarray(0x1040);
         }
         if(!data || checkHeader(data) === false) {
+            // cancel if data doesn't exist or header is invalid.
+            // in the future perhaps we can ignore header and check for any valid data anyway.
             return false;
         }
         var NoteKeys = [];
         var NoteTable = readNotes(data, NoteKeys);
     
         var output = checkIndexes(data, 0x100, NoteKeys);
-
         if(output) {
             var usedPages = 0;
             var usedNotes = 0;
@@ -381,7 +351,7 @@
                 var _note = NoteTable[Object.keys(NoteTable)[i]];
                 _note.indexes = output[_note.indexes];
 
-                // Super hacky CRC32 calculation. Seems to work. Might slow things down. xxHash is a fast option but less accurate.
+                // Calculate hash of raw data
                 for(var w = 0, fileOut=[]; w < _note.indexes.length; w++) {
                     var pageAddress = _note.indexes[w] * 0x100;
                     for(var j = 0; j < 0x100; j++) {
@@ -389,6 +359,7 @@
                     }
                 }
                 _note.CRC32 = MPKEdit.crc32(fileOut);
+                _note.xxhash64 = MPKEdit.XXH.h64(fileOut, 96).toString(16);
 
                 usedPages += _note.indexes.length;
                 usedNotes++;
@@ -477,12 +448,13 @@
       filename provided.
     */
     MPKEdit.Parser = function(data, filename) {
-        // TODO: Figure out what this is for. This is why you comment code.
-        if(typeof data === "string" && typeof filename === "object") {  
-            MPKEdit.Parser(new Uint8Array(filename.target.result), data);
-            return;
+        if(!data.length) {
+            filename=data.target._filename, data=new Uint8Array(data.target.result);
         }
+
+        console.log("Loading file %c"+filename+"...", "font-weight:bold");
         curfile = filename;
+
         if(MPKEdit.State.data && isNote(data)) {
             insertNote(data);
         } else if(result = parse(data)) {
@@ -490,7 +462,7 @@
             MPKEdit.State.NoteTable = result.NoteTable;
             MPKEdit.State.usedNotes = result.usedNotes;
             MPKEdit.State.usedPages = result.usedPages;
-            MPKEdit.State.filename = filename ||MPKEdit.State.filename;
+            MPKEdit.State.filename = filename || MPKEdit.State.filename;
 
             if(MPKEdit.App.usefsys && filename) {
                 MPKEdit.State.Entry = MPKEdit.App.tmpEntry;
