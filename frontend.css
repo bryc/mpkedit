@@ -41,7 +41,7 @@ div#dropzone {
 div.topToolbar {
 	display:flex;
 	background: #fdfdfd;
-	padding: 3px 6px;
+	padding: 3px 4px;
 	border-bottom: 4px solid #92b9cd;
 	font-size: 28px;
 }
@@ -90,8 +90,11 @@ table {
 	background: #fdfdfd;
 	border-bottom: 2px solid #ddd;
 	width: 100%;
-	table-layout:fixed;
+	
 }
+tr.note{border:1px solid #EEE;}
+tr:nth-child(1){border-top:none;}
+tr.empty {opacity:0.75;font-size:10px;text-align:center;color:#BBB}
 
 tr:nth-child(even) {
 	background: #f6f6f6;
@@ -100,7 +103,6 @@ tr:nth-child(even) {
 td {
 	padding: 5px 5px;
 }
-
 td.name div {
 	font-weight: 400;
 	font-size: 12px;
@@ -121,7 +123,7 @@ td.pgs {
 }
 
 td.tool {
-	width: 56px;
+	width: 68px;
 	text-align: center;
 }
 
@@ -134,7 +136,7 @@ td.tool {
 /* ---- ICON_STUFF ---- */
 .fa, .fa-trash,.fa-download {
 	color: #92b9cd;
-	padding: 6px;
+	padding: 4px;
 }
 
 span#loadButton:hover .fa-folder-open {
@@ -143,7 +145,7 @@ span#loadButton:hover .fa-folder-open {
 
 .fa-trash:hover,
 .fa-download:hover,
-.fa-floppy-o:hover {
+.fa-floppy-o:hover, .fa-cog:hover, .fa-info-circle:hover {
 	cursor: pointer;
 	color: #cda692;
 	background: #eeeeee;
@@ -159,3 +161,27 @@ span#loadButton:active .fa-folder-open {
 	color: #b89583;
 	background: #dddddd;
 }
+
+/*----- MODAL -----*/
+div#modal {
+	z-index:1;
+	position:fixed;
+	top:0;left:0;
+	width:100%;height:100%;
+	background: rgba(0,0,0,0.5);
+	display:none;
+}
+div.modalContent {
+	line-height:1;
+	margin:10% auto;padding:12px;
+	width:80%;
+	max-width:640px;
+	background:#FFF;
+	border-radius:6px;
+	z-index:24435;
+}
+
+.block {text-align:right;margin-right:15px;display:inline-block;width:125px;}
+.block + span {word-wrap:break-word;font-size:14px;font-weight:normal;}
+
+h1{text-align:center;margin:2px;}

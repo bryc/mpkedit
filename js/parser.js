@@ -361,7 +361,7 @@
                     }
                 }
                 _note.CRC32 = MPKEdit.crc32(fileOut);
-                _note.xxhash64 = MPKEdit.XXH.h64(fileOut, 96).toString(16);
+                _note.xxhash64 = MPKEdit.XXH.h64(fileOut, 96).toString(16).toUpperCase();
 
                 usedPages += _note.indexes.length;
                 usedNotes++;

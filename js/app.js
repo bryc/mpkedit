@@ -6,69 +6,6 @@
 
 	var elem = MPKEdit.elem;
 
-	var origin, out;
-
-	var enter = function(event) {
-		if(!origin || origin.nodeName !== "TR") {return false;}
-		if(event.target.nodeName !== "TD") {return false;}
-
-		var dest = event.target.parentNode;
-		if(origin.previousSibling === dest) {
-			origin.parentNode.insertBefore(origin, dest);
-		} else  {
-			origin.parentNode.insertBefore(origin, dest.nextSibling);
-		}
-	}
-
-	var start = function(event) {
-		if(event.target.nodeName === "TR") { // only drag tablerows
-			if(event.ctrlKey) {
-				event.dataTransfer.setData("text","null"); //Firefox drag fix
-				window.getSelection().removeAllRanges(); //remove text selection
-				origin = event.target;
-				origin.style.opacity = 0.75;
-				origin.style.outline = "2px solid";
-				// Compare rows at start
-				var trs = document.querySelectorAll("tr");
-				for(var arr = [], i = 0; i < trs.length; i++) {
-					arr.push(trs[i].id);
-				}
-				out = arr;
-			} else {
-				MPKEdit.State.saveNote(event.target.id, event);
-			}
-		}
-	}
-
-	var end = function() {
-		if(!origin || origin.nodeName !== "TR") {return false;}
-		origin.style.opacity = 1;
-		origin.style.outline = "none";
-		origin = undefined;
-		// Compare rows at end
-		var trs = document.querySelectorAll("tr");
-		for(var arr = [], i = 0; i < trs.length; i++) {
-			arr.push(trs[i].id);
-		}
-		for (var i = 0,d=0; i < out.length; i++) {
-			if (out[i] === arr[i]) { d++;}
-		}
-		if(out.length === d) {
-			console.log("No changes detected");
-			return false;
-		}
-
-
-		var tmp = new Uint8Array(MPKEdit.State.data);
-		for(var i = 0x300; i < 0x500; i += 32) {
-			var p = 0x300+(32*arr[(i-0x300)/32]);
-			for(var j = 0; j < 32; j++) {
-				tmp[i+j] = MPKEdit.State.data[p+j];
-			}
-		}
-		MPKEdit.Parser(tmp);
-	}
-
 	var browse = function() {
 		if(App.usefsys) {
 			MPKEdit.fsys.loadFile();
@@ -102,22 +39,30 @@
 		event.preventDefault();
 	};
 
+    /* -----------------------------------------------
+    function: buildRow(i)
+      build HTMLElement for note row in MPK
+    */
 	var buildRow = function(i) {
+		if(!MPKEdit.State.NoteTable[i]) { return elem(["tr", {className:"empty"}],elem(["td",{innerHTML:(i+1),"colSpan":5}])); }
 		var gameCode = MPKEdit.State.NoteTable[i].serial;
 		var gameName = App.codeDB[gameCode] || gameCode;
-		var publishr = App.pubDB[MPKEdit.State.NoteTable[i].publisher] || "{{Unknown: "+MPKEdit.State.NoteTable[i].publisher+"}}";
 		var tableRow =
-		elem(["tr",{id:i, draggable: true,  ondragenter:enter, ondragstart:start, ondragend:end}],
+		elem(["tr",{className:"note", id:i}],
 			elem(["td", {className:"h4sh"}],
-				elem(["canvas",{width:30,height:30,className:"hash"}])
+				elem(["canvas",{width:30,height:30,id:"hash"}])
 			),
 			elem(["td", {className:"name",innerHTML:MPKEdit.State.NoteTable[i].noteName}],
-				elem(["div", gameName + " &mdash; " + publishr])
+				elem(["div", gameName])
 			),
 
 			elem(["td", {className:"region",innerHTML:MPKEdit.State.NoteTable[i].region}]),
 			elem(["td", {className:"pgs",innerHTML:MPKEdit.State.NoteTable[i].indexes.length}]),
 			elem(["td", {className:"tool"}],
+				elem(["span", {
+					className: "fa fa-info-circle",
+					onclick: buildModal
+				}]),
 				elem(["span", {
 					className: "fa fa-trash",draggable: true,
 					onclick: MPKEdit.State.erase.bind(null, i)
@@ -131,10 +76,110 @@
 			)
 		);
 
-		MPKEdit.jdenticon.update(tableRow.querySelector(".hash"), MPKEdit.State.NoteTable[i].xxhash64)
+		MPKEdit.jdenticon.update(tableRow.querySelector("#hash"), MPKEdit.State.NoteTable[i].xxhash64)
 		return tableRow;
 	};
 
+
+	var buildModal = function(e) {
+
+		function pad(n, width=2, z=0){return(String(z).repeat(width)+String(n)).slice(String(n).length)}
+
+
+		var modal = document.getElementById("modal");
+		if(e.target.id==="modal") {modal.style.display = "none"; return;}
+
+		else if(e.target.id==="menu"||e.target.className==="fa fa-info-circle") {
+
+		while(modal.firstChild) {modal.removeChild(modal.firstChild);}
+		var content = elem(["div",{className:"modalContent"}]);
+		console.log(1)
+		if(e.target.id === "menu") {
+			var settings = elem([],
+				elem(["h1","Settings"]),
+				elem(["div"],
+					elem(["span", {innerHTML: "Show empty rows", style:"width:200px", className:"block"}]),
+					elem(["input", {type:"checkbox"}])
+					),
+				elem(["div"],
+					elem(["span", {innerHTML: "Show identicons", style:"width:200px", className:"block"}]),
+					elem(["input", {type:"checkbox"}])
+					)
+				);
+			content.appendChild(settings)
+		}
+		if(e.target.className === "fa fa-info-circle") {
+			var i = e.target.parentElement.parentElement.id;
+			var i2 = (i*32)+0x300;
+			var noteData = "<code>";
+			for(var j = i2; j < i2+32; j++) {
+				if((j-i2)===16) { noteData += "<br>"}
+				noteData += pad(MPKEdit.State.data[j].toString(16).toUpperCase()) + " ";
+			} noteData += "</code>"
+			
+			var noteInfo = elem([],
+				elem(["h1","Note details"]),
+				elem(["div"],
+					elem(["span", {innerHTML: "Note Name", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].noteName}])
+					),
+				elem(["div"],
+					elem(["span", {innerHTML: "Game Name", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.App.codeDB[MPKEdit.State.NoteTable[i].serial]}])
+					),
+			elem(["div"],
+					elem(["span", {innerHTML: "Game Code", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].serial}])
+					),
+			elem(["div"],
+					elem(["span", {innerHTML: "Region", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].region}])
+					),
+			elem(["div"],
+					elem(["span", {innerHTML: "Publisher", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.App.pubDB[MPKEdit.State.NoteTable[i].publisher] + " ("+MPKEdit.State.NoteTable[i].publisher+")"}])
+					),
+			elem(["div"],
+					elem(["span", {innerHTML: "Data Hash", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].xxhash64 + " (xxHash64)"}])
+					),
+			elem(["div"],
+					elem(["span", {innerHTML: "Comment", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].comment || ""}])
+					),
+			elem(["div"],
+					elem(["span", {innerHTML: "Note Position", className:"block"}]),
+					elem(["span", {innerHTML:i}])
+					),
+			elem(["div"],
+					elem(["span", {innerHTML: "Used Pages", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].indexes.length + " ("+(MPKEdit.State.NoteTable[i].indexes.length * 256)+" bytes)"}])
+					),
+			elem(["div"],
+					elem(["span", {innerHTML: "Page Nodes", className:"block"}]),
+					elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].indexes}])
+					),
+
+			elem(["h1", "Raw note entry"]),
+			elem(["div", noteData])
+				);
+
+			content.appendChild(noteInfo);
+		}
+		
+
+		modal.appendChild(content);
+		modal.style.display = "block";
+
+	}
+
+	};
+    /* -----------------------------------------------
+    function: App.init()
+      initialize MPKEdit app.
+        - setup events: file drag handlers, GUI and other events
+        - initialize MPK state (empty file)
+    */
 	App.init = function() {
 		function changeExportColor(event) {
 			var target = document.querySelectorAll(".fa-download");
@@ -190,6 +235,10 @@
 		document.getElementById("fileOpen").onchange = readFiles;
 		document.getElementById("loadButton").onclick = browse;
 
+
+		document.getElementById("menu").onclick = buildModal;
+		document.getElementById("modal").onclick = buildModal;
+
 		document.getElementById("save").addEventListener("dragstart", function(event) {
 			var blobURL = URL.createObjectURL(new Blob([MPKEdit.State.data]));
 			event.dataTransfer.setData("DownloadURL",
@@ -205,6 +254,11 @@
 		setDragFX();
 	};
 
+    /* -----------------------------------------------
+    function: App.updateUI()
+      update the MPK data display UI. used when loading new files and
+      when modifications occur.
+    */
 	App.updateUI = function() {
 		var out = document.querySelector("table");
 		while(out.firstChild) {
@@ -220,23 +274,15 @@
 		+ "<span style='margin-left:10px;height:4px;display:inline-block;border:1px solid;background:#EEE;width:100px'><span style='height:4px;display:block;background:orange;width:"+((MPKEdit.State.usedNotes / 16) * 100)+"%'></span></span>";
 
 		for(var i = 0; i < 16; i++) {
-			if(MPKEdit.State.NoteTable[i]) {
+			//if(MPKEdit.State.NoteTable[i]) {
 				var tableRow = buildRow(i);
 				out.appendChild(tableRow);
-			}
-		}
-
-		if(Object.keys(MPKEdit.State.NoteTable).length === 0) {
-			var empty =
-			elem(["tr"],
-				elem(["td"], elem(["div", {
-					id: "emptyFile",
-					innerHTML: "~ empty"
-				}]))
-			);
-			out.appendChild(empty);
+			//}
 		}
 	};
+
+
+
 
 	MPKEdit.App = App;
 
