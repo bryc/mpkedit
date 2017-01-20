@@ -450,10 +450,6 @@
       filename provided.
     */
     MPKEdit.Parser = function(data, filename) {
-        if(!data.length) {
-            filename=data.target._filename, data=new Uint8Array(data.target.result);
-        }
-
         console.log("Loading file %c"+filename+"...", "font-weight:bold");
         curfile = filename;
 

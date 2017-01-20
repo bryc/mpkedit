@@ -1,7 +1,6 @@
 (function fsys() {
     var fsys = {};
 
-
     var writeDone = function(Entry, event) {
         if(event.loaded === 32768) {
             MPKEdit.State.Entry = Entry;
@@ -39,7 +38,9 @@
             Entry.file(function(fl) {
                 MPKEdit.App.tmpEntry = Entry;
                 var reader = new FileReader();
-                reader.onload = MPKEdit.Parser.bind(null, fl.name);
+                reader.onload = function(e) {
+                    MPKEdit.Parser(new Uint8Array(e.target.result), fl.name);
+                }
                 reader.readAsArrayBuffer(fl.slice(0, 36928));
             });
         });

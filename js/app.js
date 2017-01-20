@@ -1,43 +1,7 @@
 (function MPKApp() {
-	var App = {};
-
-	App.usefsys = location.protocol === "chrome-extension:";
-	App.codeDB = {};
-
 	var elem = MPKEdit.elem;
 
-	var browse = function() {
-		if(App.usefsys) {
-			MPKEdit.fsys.loadFile();
-		}
-		else {
-			var selectFile = document.getElementById("fileOpen");
-			selectFile.onchange = readFiles;
-			selectFile.click();
-
-			selectFile.parentElement.replaceChild(elem(["input", {
-				id: "fileOpen",
-				type: "file",
-				multiple: true
-			}]), selectFile);
-		}
-	};
-
-	var readFiles = function(event) {
-		var files = event.target.files || event.dataTransfer.files;
-
-		for(var i = 0; i < files.length; i++) {
-			var reader = new FileReader();
-			reader._filename = files[i].name;
-			reader.onload = MPKEdit.Parser;
-
-			if(App.usefsys) {
-				App.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
-			}
-			reader.readAsArrayBuffer(files[i].slice(0, 36928));
-		}
-		event.preventDefault();
-	};
+	var App = {};
 
     /* -----------------------------------------------
     function: buildRow(i)
@@ -61,7 +25,7 @@
 			elem(["td", {className:"tool"}],
 				elem(["span", {
 					className: "fa fa-info-circle",
-					onclick: buildModal
+					onclick: App.buildModal
 				}]),
 				elem(["span", {
 					className: "fa fa-trash",draggable: true,
@@ -80,11 +44,8 @@
 		return tableRow;
 	};
 
-
-	var buildModal = function(e) {
-
+	App.buildModal = function(e) {
 		function pad(n, width=2, z=0){return(String(z).repeat(width)+String(n)).slice(String(n).length)}
-
 
 		var modal = document.getElementById("modal");
 		if(e.target.id==="modal") {modal.style.display = "none"; return;}
@@ -167,91 +128,10 @@
 			content.appendChild(noteInfo);
 		}
 		
-
 		modal.appendChild(content);
 		modal.style.display = "block";
-
 	}
 
-	};
-    /* -----------------------------------------------
-    function: App.init()
-      initialize MPKEdit app.
-        - setup events: file drag handlers, GUI and other events
-        - initialize MPK state (empty file)
-    */
-	App.init = function() {
-		function changeExportColor(event) {
-			var target = document.querySelectorAll(".fa-download");
-			for(var i = 0; i < target.length; i++) {
-				target[i].style.color = event.ctrlKey ? "#c00" : "";
-			}
-		}
-
-		function setDragFX() {
-			function isFile(event) {
-				var dt = event.dataTransfer;
-				for (var i = 0; i < dt.types.length; i++) {
-					if (dt.types[i] === "Files") {
-						return true;
-					}
-				}
-				return false;
-			}
-
-			var dropzone = document.getElementById("dropzone");
-			var lastTarget = null;
-
-			window.addEventListener("dragenter", function (event) {
-				if (isFile(event)) {
-					lastTarget = event.target;
-					dropzone.style.visibility = "";
-					dropzone.style.opacity = 1;
-				}
-			});
-
-			window.addEventListener("dragleave", function (event) {
-				event.preventDefault();
-				if (event.target === lastTarget) {
-					dropzone.style.visibility = "hidden";
-					dropzone.style.opacity = 0;
-				}
-			});
-
-			window.addEventListener("drop", function(event) {
-				dropzone.style.visibility = "hidden";
-				dropzone.style.opacity = 0;
-				event.preventDefault();
-			});
-		}
-
-		MPKEdit.State.init();
-
-		window.addEventListener("dragover", function(event) {
-			event.preventDefault();
-		});
-		window.addEventListener("drop", readFiles);
-	
-		document.getElementById("fileOpen").onchange = readFiles;
-		document.getElementById("loadButton").onclick = browse;
-
-
-		document.getElementById("menu").onclick = buildModal;
-		document.getElementById("modal").onclick = buildModal;
-
-		document.getElementById("save").addEventListener("dragstart", function(event) {
-			var blobURL = URL.createObjectURL(new Blob([MPKEdit.State.data]));
-			event.dataTransfer.setData("DownloadURL",
-				"application/octet-stream:" + MPKEdit.State.filename + ":" + blobURL
-			);
-		});
-
-		document.getElementById("save").onclick = MPKEdit.State.save;
-
-		window.addEventListener("keydown", changeExportColor);
-		window.addEventListener("keyup", changeExportColor);
-		window.addEventListener("blur", changeExportColor);
-		setDragFX();
 	};
 
     /* -----------------------------------------------
@@ -280,9 +160,6 @@
 			//}
 		}
 	};
-
-
-
 
 	MPKEdit.App = App;
 
