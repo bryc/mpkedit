@@ -93,7 +93,14 @@ window.addEventListener("load", function() {
         }
 
         MPKEdit.App.usefsys = location.protocol === "chrome-extension:";
-        MPKEdit.State.init();
+        if(localStorage.MPKEdit) { 
+            MPKEdit.App.cfg = JSON.parse(localStorage.MPKEdit); 
+        } else {
+            MPKEdit.App.cfg = {
+                "#!version" : 0.1,
+                "identicon" : false
+            };
+        }
         // Load file button
         document.getElementById("fileOpen").onchange = readFiles;
         document.getElementById("loadButton").onclick = browse;
@@ -116,6 +123,8 @@ window.addEventListener("load", function() {
         // Modal
         document.getElementById("menu").onclick = MPKEdit.App.buildModal;
         document.getElementById("modal").onclick = MPKEdit.App.buildModal;
+        
+        MPKEdit.State.init();
     };
 
     init();
