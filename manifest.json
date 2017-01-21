@@ -1,10 +1,11 @@
 {
     "name"             : "Controller Pak Editor",
-    "short_name"       : "mempak",
-    "description"      : "Modify Controller Pak files",
-    "version"          : "0.3",
+    "short_name"       : "MPKEdit",
+    "description"      : "Modify Controller Pak files (github.com/bryc/mempak)",
+    "author"           : "bryc",
+    "version"          : "0.4",
     "manifest_version" : 2,
     "permissions"      : [{"fileSystem": ["write"]}, "storage"],
     "app"              : {"background": {"scripts": ["background.js"]}},
-    "icons": {"128": "icon.png"}
+    "icons"            : {"128": "icon.png"}
 }

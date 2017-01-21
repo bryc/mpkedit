@@ -97,7 +97,7 @@ window.addEventListener("load", function() {
         MPKEdit.App.cfg = {
             "#!version" : 0.1,
             "identicon" : false,
-            "hideRows"  : false
+            "hideRows"  : true
         };
 
         if(MPKEdit.App.usefsys) {
