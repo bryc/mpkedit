@@ -1,187 +1,250 @@
+/*
+    ----------------------------------------
+    FONT
+    ----------------------------------------
+*/
 @font-face {
-	font-family: "Lato";
-	font-weight: 400;
-	src: url("3rdparty/lato-regular.woff") format("woff");
+    font-family: "Lato";
+    font-weight: 400;
+    src: url("3rdparty/lato-regular.woff") format("woff");
 }
 
 @font-face {
-	font-family: "Lato";
-	font-weight: bold;
-	src: url("3rdparty/lato-bold.woff") format("woff");
+    font-family: "Lato";
+    font-weight: bold;
+    src: url("3rdparty/lato-bold.woff") format("woff");
 }
 
-html, body {
-	overflow-y: visible;
-}
-
-body, table {
-	font: bold 16px "Lato", sans-serif;
+/*
+    ----------------------------------------
+    GLOBAL
+    ----------------------------------------
+*/
+html {
+    overflow-y: visible; /* allow scroll in chromeApp */
 }
 
 body {
-	background: #fff;
-	max-width: 768px;
-	margin: 2px auto;
-	color: #5c5c5c;
-	line-height:0.8;
+    max-width: 768px;
+    margin: 2px auto;
+    background: #fff;
+    color: #505050;
+    font: 16px "Lato", "Meiryo", "メイリオ", sans-serif; /*FF needs Meiryo explictly */
 }
 
+h1, h2, h3 {
+    text-align: center;
+    margin: 4px 0 6px 0;
+}
+
+/*
+    ----------------------------------------
+    OVERLAYS: DROPZONE & MODAL
+    ----------------------------------------
+*/
 div#dropzone {
-	position: fixed;
-	top: 0;
-	left: 0;
-	z-index: 9999999999;
-	width: 100%;
-	height: 100%;
-	transition: visibility 175ms, opacity 175ms;
-	background: rgba(0, 0, 0, 0.3);
+    z-index: 1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    transition: visibility 175ms, opacity 175ms;
 }
 
-/* ---- TOP TOOLBAR ---- */
-div.topToolbar {
-	display:flex;
-	background: #fdfdfd;
-	padding: 3px 4px;
-	border-bottom: 4px solid #92b9cd;
-	font-size: 28px;
-}
-
-div#stats {
-	padding: 3px 6px;
-	color:#AAA;
-	background: #fafafa;
-	text-align:center;
-	font-weight:400;
-	font-size:14px;	border-bottom: 1px solid #eee;
-}
-
-span.num {
-	color:#000;
-	font-weight:bold;
-	font-size: 16px;
-}
-
-div.grow {
-	flex: 1;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	overflow: hidden;
-	border-radius: 5px;
-}
-
-span#loadButton {
-	border-radius: 5px;
-	padding: 4px;
-}
-
-span#loadButton:hover {
-	background: #f3f3f3;
-	color: #777;
-	cursor: pointer;
-}
-
-#fileOpen {
-	display: none;
-}
-
-/* ---- MAIN TABLE ---- */
-table {
-	border-collapse: collapse;
-	background: #fdfdfd;
-	border-bottom: 2px solid #ddd;
-	width: 100%;
-	
-}
-tr.note{border:1px solid #EEE;}
-tr:nth-child(1){border-top:none;}
-tr.empty {opacity:0.75;font-size:10px;text-align:center;color:#BBB}
-
-tr:nth-child(even) {
-	background: #f6f6f6;
-}
-
-td {
-	padding: 5px 5px;
-}
-td.name div {
-	font-weight: 400;
-	font-size: 12px;
-	color: #999;
-}
-td.h4sh {
-	width:32px;
-	text-align:center;
-}
-td.region {
-	width:100px;
-	font-size:14px;
-	text-align:center;
-}
-td.pgs {
-	width:35px;
-	text-align: center;
-}
-
-td.tool {
-	width: 68px;
-	text-align: center;
-}
-
-#emptyFile {
-	font-size: 20px;
-	font-style: italic;
-	text-align: center;
-	padding: 16px;
-}
-/* ---- ICON_STUFF ---- */
-.fa, .fa-trash,.fa-download {
-	color: #92b9cd;
-	padding: 4px;
-}
-
-span#loadButton:hover .fa-folder-open {
-	color: #cda692;
-}
-
-.fa-trash:hover,
-.fa-download:hover,
-.fa-floppy-o:hover, .fa-cog:hover, .fa-info-circle:hover {
-	cursor: pointer;
-	color: #cda692;
-	background: #eeeeee;
-}
-
-span#loadButton:active .fa-folder-open {
-	color: #b89583;
-}
-
-.fa-trash:active,
-.fa-download:active,
-.fa-floppy-o:active {
-	color: #b89583;
-	background: #dddddd;
-}
-
-/*----- MODAL -----*/
 div#modal {
-	z-index:1;
-	position:fixed;
-	top:0;left:0;
-	width:100%;height:100%;
-	background: rgba(0,0,0,0.5);
-	display:none;
-}
-div.modalContent {
-	line-height:1;
-	margin:10% auto;padding:12px;
-	width:80%;
-	max-width:640px;
-	background:#FFF;
-	border-radius:6px;
-	z-index:24435;
+    z-index: 1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    transition: visibility 175ms, opacity 175ms;
 }
 
+div.modalContent {
+    margin: 6% auto;
+    padding: 12px;
+    width: 85%;
+    max-width: 700px;
+    background: #FFF;
+    border-radius: 6px;
+}
+
+/* need to revise the block structure first */
 .block {text-align:right;margin-right:15px;display:inline-block;width:125px;}
 .block + span {word-wrap:break-word;font-size:14px;font-weight:normal;}
 
-h1{text-align:center;margin:2px;}
+/*
+    ----------------------------------------
+    TOP TOOLBAR
+    ----------------------------------------
+*/
+div.topToolbar {
+    display: flex;
+    font-size: 28px;
+    padding: 2px 4px; 
+    background: #fdfdfd;
+    border-bottom: 4px solid #92b9cd;
+}
+
+div.grow {
+    flex: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    /*border-radius: 5px;*/
+}
+
+span#loadButton {
+    font-weight: bold;
+    padding:0 6px 3px 0;
+    border-radius: 5px;
+}
+
+span#loadButton:hover {
+    background: #eaeaea;
+    color: #777;
+    cursor: pointer;
+}
+
+#fileOpen {display: none;}
+
+/*
+    ----------------------------------------
+    TOP TOOLBAR (STATUS)
+    ----------------------------------------
+*/
+div#stats {
+    background: #f8f8f8;
+    text-align:center;
+    font-weight:400;
+    font-size:14px; border-bottom: 1px solid #eee;
+}
+
+div#stats .statBox {
+    font-size:12px;
+    width:150px;
+    text-align:center;
+    display:inline-block;
+}
+div#stats .outerBar {
+    margin:1px 3px 6px 2px;
+    box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+    text-align:left;
+    background:#e0e0e0;
+}
+div#stats .innerBar {height: 6px; background: #92b9cd;}
+
+/*
+    ----------------------------------------
+    MAIN TABLE
+    ----------------------------------------
+*/
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fdfdfd;
+    border-bottom: 2px solid #ddd;
+    font-size: 14px;
+}
+
+tr.empty {
+    text-align:center;
+    font-size:10px;
+    color:#aaa;
+}
+
+tr.empty:nth-child(even) {background: #f8f8f8;}
+tr.empty td::before {content: "· •"; margin-right: 8px;}
+tr.empty td::after  {content: "• ·"; margin-left:  8px;}
+
+
+tr.note {
+    background: #f9f9f9;
+    border: 1px solid #ececec;
+}
+
+tr.note:nth-child(even) {background: #f2f2f2;}
+tr.note td:last-child {border-right: 1px solid #ececec;}
+tr:nth-child(1) {border-top: none;}
+
+td {
+    padding: 4px 6px;
+}
+
+td.divider {padding: 0; width: 1px;}
+td.divider div {
+    height: 28px;
+    background: linear-gradient(to bottom,
+        rgba(0,0,0,0) 0%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0) 100%);
+}
+
+td.name {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+td.name div {
+    font-weight: normal;
+    font-size: 12px;
+    color: #999;
+}
+td.hash {
+    width: 5px;
+    padding:4px 2px;
+    text-align: center;
+}
+td.region {
+    width: 32px;
+    text-align: center;
+    font-size: 12px;
+}
+td.pgs {
+    width: 5px;
+    text-align: center;
+    font-weight: bold;
+}
+
+td.tool {
+    width: 32px;
+    padding:4px 3px;
+    text-align: center;
+    white-space:nowrap;
+}
+
+td.empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 16px;
+    font-style: italic;
+}
+
+/*
+    ----------------------------------------
+    ICON STUFF
+    ----------------------------------------
+*/
+.fa {color: #92b9cd; margin:1px 0;padding:2px 4px;border-bottom:2px solid transparent;}
+
+span#loadButton:hover .fa-folder-open {
+    color: #cda692;
+}
+
+span#loadButton:active .fa-folder-open {
+    color: #b89583;
+}
+
+.fa-trash:hover, .fa-cog:hover, .fa-download:hover,
+.fa-floppy-o:hover, .fa-info-circle:hover {
+    cursor: pointer;
+    color: #cda692;
+    border-bottom: 2px solid;
+}
+
+.fa-trash:active, .fa-cog:active, .fa-download:active,
+.fa-floppy-o:active, .fa-info-circle:active {
+    color: #b89583;
+}

@@ -195,7 +195,7 @@
                     serial: gameCode,
                     publisher: arrstr(data, i+4, i+6).replace(/\0/g,"-"),
                     noteName: noteName,
-                    region: MPKEdit.App.region[gameCode[3]],
+                    region: MPKEdit.App.region[gameCode[3]] || "Unknown",
                     media: MPKEdit.App.media[gameCode[0]],
                     comment: comment
                 };

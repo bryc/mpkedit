@@ -84,7 +84,7 @@ window.addEventListener("load", function() {
             }
         }
         function browse() {
-            if(App.usefsys) {MPKEdit.fsys.loadFile();}
+            if(MPKEdit.App.usefsys) {MPKEdit.fsys.loadFile();}
             else {
                 var selectFile = document.getElementById("fileOpen");
                 selectFile.onchange = readFiles;
@@ -93,14 +93,25 @@ window.addEventListener("load", function() {
         }
 
         MPKEdit.App.usefsys = location.protocol === "chrome-extension:";
-        if(localStorage.MPKEdit) { 
+
+        MPKEdit.App.cfg = {
+            "#!version" : 0.1,
+            "identicon" : false,
+            "hideRows"  : false
+        };
+
+        if(MPKEdit.App.usefsys) {
+            chrome.storage.local.get(function(e){
+                if(e.MPKEdit) {
+                    // Annoying ass async API. Must update UI again.
+                    MPKEdit.App.cfg = e.MPKEdit;
+                    MPKEdit.App.updateUI();
+                }
+            });
+        } else if(!MPKEdit.App.usefsys && localStorage.MPKEdit) { 
             MPKEdit.App.cfg = JSON.parse(localStorage.MPKEdit); 
-        } else {
-            MPKEdit.App.cfg = {
-                "#!version" : 0.1,
-                "identicon" : false
-            };
         }
+
         // Load file button
         document.getElementById("fileOpen").onchange = readFiles;
         document.getElementById("loadButton").onclick = browse;
