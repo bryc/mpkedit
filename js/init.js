@@ -87,6 +87,7 @@ window.addEventListener("load", function() {
             if(MPKEdit.App.usefsys) {MPKEdit.fsys.loadFile();}
             else {
                 var selectFile = document.getElementById("fileOpen");
+                if(selectFile.value) selectFile.value = "";
                 selectFile.onchange = readFiles;
                 selectFile.click();
             }

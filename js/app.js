@@ -1,5 +1,6 @@
 (function MPKApp() {
     var App = {};
+    function pad(n, width=2, z=0){return(String(z).repeat(width)+String(n)).slice(String(n).length)}
     /* -----------------------------------------------
     function: buildRow(i)
       build HTMLElement for note row in MPK
@@ -37,7 +38,9 @@
             )
         );
 
-        MPKEdit.jdenticon.update(tableRow.querySelector("#hash"), MPKEdit.State.NoteTable[i].xxhash64);
+        var hash = MPKEdit.State.NoteTable[i].murmur3;
+        var hash2 = ~MPKEdit.State.NoteTable[i].murmur3>>>0;
+        MPKEdit.jdenticon.update(tableRow.querySelector("#hash"), pad(hash.toString(16),8)+pad(hash2.toString(16),8));
         return tableRow;
     };
 
@@ -77,9 +80,11 @@
                         elem(["input", {checked: App.cfg.hideRows, id: "hideRows", onchange: updateSettings, type:"checkbox"}]),
                         elem(["span", {onclick:function(){this.previousSibling.click()}, className: "chkb0x"}])
                     ),
-                    elem(["div", {className: "text", onmousedown:function(e){e.preventDefault();}, innerHTML: "Hide empty rows",
-                    onclick:function(){this.previousSibling.querySelector("input").click()}}]),
+                    elem(["div",{className: "text"}],
+                    elem(["div", {className: "textLabel",onmousedown:function(e){e.preventDefault()}, innerHTML: "Hide empty rows",
+                    onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}}]),
                     elem(["div", {className: "textInfo", innerHTML: "Control whether empty rows are displayed."}])
+                    )
                 ),
 
                 elem(["div", {className: "modalBlock"}],
@@ -87,9 +92,11 @@
                         elem(["input", {checked: App.cfg.identicon, id: "identicon", onchange: updateSettings, type:"checkbox"}]),
                         elem(["span", {onclick:function(){this.previousSibling.click()}, className: "chkb0x"}])
                     ),
-                    elem(["span", {className: "text", onmousedown:function(e){e.preventDefault();},
-                        onclick:function(){this.previousSibling.querySelector("input").click()}, innerHTML: "Show identicons"}]),
+                    elem(["div",{className: "text"}],
+                    elem(["div", {className: "textLabel",onmousedown:function(e){e.preventDefault()},
+                        onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}, innerHTML: "Show identicons"}]),
                     elem(["div", {className: "textInfo", innerHTML: "Control whether identicons are displayed."}])
+                    )
                 )
             );
 
@@ -122,51 +129,48 @@
             var i2 = (i*32)+0x300;
             var noteData = "<code>";
             for(var j = i2; j < i2+32; j++) {
-                if((j-i2)===16) { noteData += "<br>"}
-                noteData += pad(MPKEdit.State.data[j].toString(16).toUpperCase()) + " ";
+                noteData += pad(MPKEdit.State.data[j].toString(16).toUpperCase());
+                if((j-i2)===15) { noteData += "<br>"} else {noteData += " "}
+                
             } noteData += "</code>"
             
             var noteInfo = elem([],
                 elem(["h1","Note details"]),
-                elem(["div"],
+                elem(["div", {className:"modalFlex"}],
                     elem(["span", {innerHTML: "Comment", className:"label"}]),
                     elem(["span", {contentEditable:true,oninput:function(){if(this.innerHTML==="<br>")this.innerHTML="";},className:"content", innerHTML:MPKEdit.State.NoteTable[i].comment || ""}])
                     ),
-                elem(["div"],
-                    elem(["span", {innerHTML: "Note Name", className:"label"}]),
+                elem(["div", {className:"modalFlex"}],
+                    elem(["span", {innerHTML: "Note name", className:"label"}]),
                     elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].noteName}])
                     ),
-                elem(["div"],
-                    elem(["span", {innerHTML: "Game Name", className:"label"}]),
+                elem(["div", {className:"modalFlex"}],
+                    elem(["span", {innerHTML: "Game name", className:"label"}]),
                     elem(["span", {className:"content", innerHTML:MPKEdit.App.codeDB[MPKEdit.State.NoteTable[i].serial]}])
                     ),
-                elem(["div"],
-                    elem(["span", {innerHTML: "Game Code", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].serial}])
+                elem(["div", {className:"modalFlex"}],
+                    elem(["span", {innerHTML: "Game code", className:"label"}]),
+                    elem(["span", {className:"content fixed", innerHTML:MPKEdit.State.NoteTable[i].serial}])
                     ),
-                elem(["div"],
+                elem(["div", {className:"modalFlex"}],
                     elem(["span", {innerHTML: "Region", className:"label"}]),
                     elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].region}])
                     ),
-                elem(["div"],
+                elem(["div", {className:"modalFlex"}],
                     elem(["span", {innerHTML: "Publisher", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:MPKEdit.App.pubDB[MPKEdit.State.NoteTable[i].publisher] + " ("+MPKEdit.State.NoteTable[i].publisher+")"}])
+                    elem(["span", {className:"content", innerHTML:MPKEdit.App.pubDB[MPKEdit.State.NoteTable[i].publisher] + " (<code>"+MPKEdit.State.NoteTable[i].publisher+"</code>)"}])
                     ),
-                elem(["div"],
-                    elem(["span", {innerHTML: "Data Hash", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].xxhash64 + " (xxHash64)"}])
+                elem(["div", {className:"modalFlex"}],
+                    elem(["span", {innerHTML: "Data hash", className:"label"}]),
+                    elem(["span", {className:"content fixed", innerHTML:MPKEdit.State.NoteTable[i].murmur3.toString(16)}])
                     ),
-                elem(["div"],
-                    elem(["span", {innerHTML: "Note Position", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:i}])
-                    ),
-                elem(["div"],
-                    elem(["span", {innerHTML: "Used Pages", className:"label"}]),
+                elem(["div", {className:"modalFlex"}],
+                    elem(["span", {innerHTML: "Used pages", className:"label"}]),
                     elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].indexes.length + " ("+(MPKEdit.State.NoteTable[i].indexes.length * 256)+" bytes)"}])
                     ),
 
                 elem(["h1", "Raw note entry"]),
-                elem(["div", noteData])
+                elem(["div", {style:"text-align:center;font-size:14px;",innerHTML:noteData}])
             );
             noteInfo.querySelector("[contenteditable=true]").setAttribute("placeholder","No comment...")
             content.appendChild(noteInfo);

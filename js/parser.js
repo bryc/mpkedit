@@ -360,7 +360,7 @@
                         fileOut.push(data[pageAddress + j]);
                     }
                 }
-                _note.xxhash64 = MPKEdit.XXH.h64(fileOut, 96).toString(16).toUpperCase();
+                _note.murmur3  = MPKEdit.MurmurHash3(fileOut);
 
                 usedPages += _note.indexes.length;
                 usedNotes++;

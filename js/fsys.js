@@ -32,17 +32,18 @@
     };
 
     fsys.loadFile = function() {
-        chrome.fileSystem.chooseEntry({}, function(Entry) {
+        chrome.fileSystem.chooseEntry({acceptsMultiple: true}, function(Entry) {
             if(chrome.runtime.lastError) {return false;}
-
-            Entry.file(function(fl) {
-                MPKEdit.App.tmpEntry = Entry;
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    MPKEdit.Parser(new Uint8Array(e.target.result), fl.name);
-                }
-                reader.readAsArrayBuffer(fl.slice(0, 36928));
-            });
+            for(var i = 0; i < Entry.length; i++) {
+                Entry[i].file(function(fl) {
+                    MPKEdit.App.tmpEntry = Entry[i];
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        MPKEdit.Parser(new Uint8Array(e.target.result), fl.name);
+                    }
+                    reader.readAsArrayBuffer(fl.slice(0, 36928));
+                });
+            }
         });
     };
 
