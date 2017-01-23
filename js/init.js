@@ -134,7 +134,10 @@ window.addEventListener("load", function() {
         // Modal
         document.getElementById("menu").onclick = MPKEdit.App.buildModal;
         document.getElementById("modal").onclick = MPKEdit.App.buildModal;
-        
+        window.onkeydown = function(e) {
+            if(e.keyCode === 27) { modal.style.opacity = "0";modal.style.visibility = "hidden"; }
+        };
+
         MPKEdit.State.init();
     };
 

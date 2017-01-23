@@ -187,7 +187,7 @@
                     console.info("Reserved bits of extension code were found: " + noteName);
                 }
 
-                var comment = dexnotes ? dexnotes[id] : undefined;
+                var comment = MPKEdit.dexnotes ? MPKEdit.dexnotes[id] : undefined;
                 var gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
 
                 NoteTable[id] = {
@@ -334,7 +334,7 @@
 
         if(arrstr(data, 0, 11) === "123-456-STD") {
             console.info("DexDrive file detected. Saving notes and stripping header.");
-            dexnotes = getDexNotes(data);
+            MPKEdit.dexnotes = getDexNotes(data);
             data = data.subarray(0x1040);
         }
         if(!data || checkHeader(data) === false) {
@@ -360,7 +360,6 @@
                         fileOut.push(data[pageAddress + j]);
                     }
                 }
-                _note.CRC32 = MPKEdit.crc32(fileOut);
                 _note.xxhash64 = MPKEdit.XXH.h64(fileOut, 96).toString(16).toUpperCase();
 
                 usedPages += _note.indexes.length;
@@ -461,6 +460,7 @@
             MPKEdit.State.usedNotes = result.usedNotes;
             MPKEdit.State.usedPages = result.usedPages;
             MPKEdit.State.filename = filename || MPKEdit.State.filename;
+            dexnotes = undefined;
 
             if(MPKEdit.App.usefsys && filename) {
                 MPKEdit.State.Entry = MPKEdit.App.tmpEntry;

@@ -61,25 +61,62 @@
             modal.style.visibility = "hidden";
             return;}
 
+        // wat
         else if(e.target.id==="menu"||e.target.className==="fa fa-info-circle") {
 
         while(modal.firstChild) {modal.removeChild(modal.firstChild);}
         var content = elem(["div",{className:"modalContent"}]);
 
+        // SETTINGS
         if(e.target.id === "menu") {
             var settings = elem([],
-                elem(["h1","Settings"]),
-                elem(["div"],
-                    elem(["span", {innerHTML: "Hide empty rows", style:"width:200px", className:"block"}]),
-                    elem(["input", {checked: App.cfg.hideRows, id:"hideRows", onchange:updateSettings,type:"checkbox"}])
+                elem(["h1", "Settings"]),
+
+                elem(["div", {className: "modalBlock"}],
+                    elem(["span", {className: "state"}],
+                        elem(["input", {checked: App.cfg.hideRows, id: "hideRows", onchange: updateSettings, type:"checkbox"}]),
+                        elem(["span", {onclick:function(){this.previousSibling.click()}, className: "chkb0x"}])
                     ),
-                elem(["div"],
-                    elem(["span", {innerHTML: "Show identicons", style:"width:200px", className:"block"}]),
-                    elem(["input", {checked: App.cfg.identicon, id:"identicon",onchange:updateSettings,type:"checkbox"}])
-                    )
-                );
+                    elem(["div", {className: "text", onmousedown:function(e){e.preventDefault();}, innerHTML: "Hide empty rows",
+                    onclick:function(){this.previousSibling.querySelector("input").click()}}]),
+                    elem(["div", {className: "textInfo", innerHTML: "Control whether empty rows are displayed."}])
+                ),
+
+                elem(["div", {className: "modalBlock"}],
+                    elem(["span", {className: "state"}],
+                        elem(["input", {checked: App.cfg.identicon, id: "identicon", onchange: updateSettings, type:"checkbox"}]),
+                        elem(["span", {onclick:function(){this.previousSibling.click()}, className: "chkb0x"}])
+                    ),
+                    elem(["span", {className: "text", onmousedown:function(e){e.preventDefault();},
+                        onclick:function(){this.previousSibling.querySelector("input").click()}, innerHTML: "Show identicons"}]),
+                    elem(["div", {className: "textInfo", innerHTML: "Control whether identicons are displayed."}])
+                )
+            );
+
+        var x = elem(["div",{className:"pageContainer"}])
+        for(var j = 0; j < 128; j++) {
+            x.appendChild(elem(["span",{className:"b0x"}]))
+            if((j+1)%32===0) {x.appendChild(elem(["br"]))}
+        }
+
+        var x2 = x.querySelectorAll("span.b0x")
+        console.log(x2, x2.length)
+        for(var i = 0; i < 16; i++) {
+            if(MPKEdit.State.NoteTable[i]) {
+                var y = MPKEdit.State.NoteTable[i].indexes;
+                for(var j = 0; j < y.length; j++) {
+                    var page = y[j];
+
+                    x2[page].style.background = "#"+(MPKEdit.crc32([86,i*3])).toString(16).toUpperCase().substr(0,6);
+                    console.log(x2[page]);
+                }
+            }
+        }
+            console.log(x);
+            settings.appendChild(x)
             content.appendChild(settings)
         }
+
         if(e.target.className === "fa fa-info-circle") {
             var i = e.target.parentElement.parentElement.id;
             var i2 = (i*32)+0x300;
@@ -92,54 +129,59 @@
             var noteInfo = elem([],
                 elem(["h1","Note details"]),
                 elem(["div"],
-                    elem(["span", {innerHTML: "Note Name", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].noteName}])
+                    elem(["span", {innerHTML: "Comment", className:"label"}]),
+                    elem(["span", {contentEditable:true,oninput:function(){if(this.innerHTML==="<br>")this.innerHTML="";},className:"content", innerHTML:MPKEdit.State.NoteTable[i].comment || ""}])
                     ),
                 elem(["div"],
-                    elem(["span", {innerHTML: "Game Name", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.App.codeDB[MPKEdit.State.NoteTable[i].serial]}])
+                    elem(["span", {innerHTML: "Note Name", className:"label"}]),
+                    elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].noteName}])
                     ),
-            elem(["div"],
-                    elem(["span", {innerHTML: "Game Code", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].serial}])
+                elem(["div"],
+                    elem(["span", {innerHTML: "Game Name", className:"label"}]),
+                    elem(["span", {className:"content", innerHTML:MPKEdit.App.codeDB[MPKEdit.State.NoteTable[i].serial]}])
                     ),
-            elem(["div"],
-                    elem(["span", {innerHTML: "Region", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].region}])
+                elem(["div"],
+                    elem(["span", {innerHTML: "Game Code", className:"label"}]),
+                    elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].serial}])
                     ),
-            elem(["div"],
-                    elem(["span", {innerHTML: "Publisher", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.App.pubDB[MPKEdit.State.NoteTable[i].publisher] + " ("+MPKEdit.State.NoteTable[i].publisher+")"}])
+                elem(["div"],
+                    elem(["span", {innerHTML: "Region", className:"label"}]),
+                    elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].region}])
                     ),
-            elem(["div"],
-                    elem(["span", {innerHTML: "Data Hash", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].xxhash64 + " (xxHash64)"}])
+                elem(["div"],
+                    elem(["span", {innerHTML: "Publisher", className:"label"}]),
+                    elem(["span", {className:"content", innerHTML:MPKEdit.App.pubDB[MPKEdit.State.NoteTable[i].publisher] + " ("+MPKEdit.State.NoteTable[i].publisher+")"}])
                     ),
-            elem(["div"],
-                    elem(["span", {innerHTML: "Comment", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].comment || ""}])
+                elem(["div"],
+                    elem(["span", {innerHTML: "Data Hash", className:"label"}]),
+                    elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].xxhash64 + " (xxHash64)"}])
                     ),
-            elem(["div"],
-                    elem(["span", {innerHTML: "Note Position", className:"block"}]),
-                    elem(["span", {innerHTML:i}])
+                elem(["div"],
+                    elem(["span", {innerHTML: "Note Position", className:"label"}]),
+                    elem(["span", {className:"content", innerHTML:i}])
                     ),
-            elem(["div"],
-                    elem(["span", {innerHTML: "Used Pages", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].indexes.length + " ("+(MPKEdit.State.NoteTable[i].indexes.length * 256)+" bytes)"}])
-                    ),
-            elem(["div"],
-                    elem(["span", {innerHTML: "Page Nodes", className:"block"}]),
-                    elem(["span", {innerHTML:MPKEdit.State.NoteTable[i].indexes}])
+                elem(["div"],
+                    elem(["span", {innerHTML: "Used Pages", className:"label"}]),
+                    elem(["span", {className:"content", innerHTML:MPKEdit.State.NoteTable[i].indexes.length + " ("+(MPKEdit.State.NoteTable[i].indexes.length * 256)+" bytes)"}])
                     ),
 
-            elem(["h1", "Raw note entry"]),
-            elem(["div", noteData])
-                );
-
+                elem(["h1", "Raw note entry"]),
+                elem(["div", noteData])
+            );
+            noteInfo.querySelector("[contenteditable=true]").setAttribute("placeholder","No comment...")
             content.appendChild(noteInfo);
+                    var x = elem(["div",{className:"pageContainer"}])
+        for(var j = 0; j < 128; j++) {
+            x.appendChild(elem(["span",{className:"b0x",style:(MPKEdit.State.NoteTable[i].indexes.indexOf(j)!==-1?" background:#"+(MPKEdit.crc32([86,i*3])).toString(16).toUpperCase().substr(0,6):"")}]))
+            if((j+1)%32===0) {x.appendChild(elem(["br"]))}
         }
-        
+        content.appendChild(x);
+        }
+
         modal.appendChild(content);
+
+
+
         modal.style.visibility = "";
         modal.style.opacity = "1";
         }

@@ -52,7 +52,7 @@ State: functions which manipulate the current State of the opened MPK file, post
             offset = 0x300 + (id * 32) + i;
             tmpdata[offset] = 0x00;
         }
-
+        if(MPKEdit.dexnotes)MPKEdit.dexnotes[id] = undefined;
         MPKEdit.Parser(tmpdata);
     };
 
