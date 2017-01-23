@@ -1,6 +1,6 @@
 (function MPKApp() {
     var App = {};
-    function pad(n, width=2, z=0){return(String(z).repeat(width)+String(n)).slice(String(n).length)}
+    function pad(a,b,c){return (new Array(b||2).join(c||0)+a).slice(-b)}
     /* -----------------------------------------------
     function: buildRow(i)
       build HTMLElement for note row in MPK
@@ -56,8 +56,6 @@
     };
 
     App.buildModal = function(e) {
-        function pad(n, width=2, z=0){return(String(z).repeat(width)+String(n)).slice(String(n).length)}
-
         var modal = document.getElementById("modal");
         if(e.target.id==="modal") {
             modal.style.opacity = "0";
