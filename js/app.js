@@ -127,7 +127,7 @@
             var i2 = (i*32)+0x300;
             var noteData = "<code>";
             for(var j = i2; j < i2+32; j++) {
-                noteData += pad(MPKEdit.State.data[j].toString(16).toUpperCase());
+                noteData += pad(MPKEdit.State.data[j].toString(16).toUpperCase(),2);
                 if((j-i2)===15) { noteData += "<br>"} else {noteData += " "}
                 
             } noteData += "</code>"
