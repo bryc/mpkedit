@@ -2,6 +2,7 @@
     // temporary globals
     var curfile = undefined;
     var dexnotes = undefined;
+
     /* -----------------------------------------------
     function: resize(data)
       resize input mpk data to a fixed 32768 bytes.
@@ -88,7 +89,7 @@
     };
 
     /* -----------------------------------------------
-    function: checkBlock(data, o)
+    function: checkBlock(data, o, state)
       check the header checksum in label area at specified
       offset. utility function for checkHeader()
     */

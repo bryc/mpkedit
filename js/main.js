@@ -30,6 +30,10 @@ var MPKEdit = (function MPKEdit() {
         }
     }());
 
+    /* -----------------------------------------------
+    function: MPKEdit.MurmurHash3(data, seed)
+      calculate murmurhash3.
+    */
     MPKEdit.MurmurHash3 = function(data, seed) {
         function mul32(m, n) {
             var nlo = n & 0xffff;

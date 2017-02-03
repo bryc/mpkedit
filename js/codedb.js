@@ -1,4 +1,37 @@
+MPKEdit.App.media = {
+    "N" : "Cartridge",
+    "C" : "Cartridge with 64DD support",
+    "D" : "64DD Disk",
+    "E" : "64DD Expansion"
+};
+
+MPKEdit.App.region = {
+    "A" : "All",
+    "B" : "Brazil",
+    "C" : "China",
+    "D" : "Germany",
+    "E" : "North America",
+    "F" : "France",
+    "G" : "Gateway 64 (NTSC)",
+    "H" : "Netherlands",
+    "I" : "Italy",
+    "J" : "Japan",
+    "K" : "South Korea",
+    "L" : "Gateway 64 (PAL)",
+    "N" : "Canada",
+    "P" : "Europe",
+    "S" : "Spain",
+    "U" : "Australia",
+    "V" : "Sweden",
+    "W" : "Scandinavia",
+    "X" : "Alternate", // Are these ALL europe?
+    "Y" : "Alternate",
+    "Z" : "Alternate"
+};
+
 /*
+Publisher DB
+
 Keep in mind these publisher codes below may not be 100% accurate as they are based
 on GB/GBA/NES/SNES/GC sources. Sometimes they even contradict themselves, but from
 what I could verify, they have been correct 29 out of 30 times (and I've fixed some
@@ -380,37 +413,6 @@ MPKEdit.App.pubDB = {
     "NK": "Diffusion",
     "TK": "Tasuke/Works",
     "VN": "Valcon Games"
-};
-
-MPKEdit.App.media = {
-    "N" : "Cartridge",
-    "C" : "Cartridge with 64DD support",
-    "D" : "64DD Disk",
-    "E" : "64DD Expansion"
-};
-
-MPKEdit.App.region = {
-    "A" : "All",
-    "B" : "Brazil",
-    "C" : "China",
-    "D" : "Germany",
-    "E" : "North America",
-    "F" : "France",
-    "G" : "Gateway 64 (NTSC)",
-    "H" : "Netherlands",
-    "I" : "Italy",
-    "J" : "Japan",
-    "K" : "South Korea",
-    "L" : "Gateway 64 (PAL)",
-    "N" : "Canada",
-    "P" : "Europe",
-    "S" : "Spain",
-    "U" : "Australia",
-    "V" : "Sweden",
-    "W" : "Scandinavia",
-    "X" : "Alternate",
-    "Y" : "Alternate",
-    "Z" : "Alternate"
 };
 
 /*
