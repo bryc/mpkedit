@@ -38,8 +38,8 @@
             )
         );
 
-        var hash = MPKEdit.State.NoteTable[i].murmur3;
-        var hash2 = ~MPKEdit.State.NoteTable[i].murmur3>>>0;
+        var hash = MPKEdit.State.NoteTable[i].cyrb32;
+        var hash2 = ~MPKEdit.State.NoteTable[i].cyrb32>>>0;
         MPKEdit.jdenticon.update(tableRow.querySelector("#hash"), pad(hash.toString(16),8)+pad(hash2.toString(16),8));
         return tableRow;
     };
@@ -67,6 +67,8 @@
 
         while(modal.firstChild) {modal.removeChild(modal.firstChild);}
         var content = elem(["div",{className:"modalContent"}]);
+        var col = ["#F3E3B2","#CEF696","#8EA4F7","#F2F680","#E8A9CA","#B2968A","#CCA0E7","#E1C89F",
+           "#ABE6C7","#92C9C0","#ED6BB2","#A9E49A","#B9B9DA","#91A5D7","#F4AD9B","#A8C7F7"];
 
         // SETTINGS
         if(e.target.id === "menu") {
@@ -105,14 +107,15 @@
         }
 
         var x2 = x.querySelectorAll("span.b0x")
-        console.log(x2, x2.length)
+
         for(var i = 0; i < 16; i++) {
             if(MPKEdit.State.NoteTable[i]) {
                 var y = MPKEdit.State.NoteTable[i].indexes;
                 for(var j = 0; j < y.length; j++) {
                     var page = y[j];
 
-                    x2[page].style.background = "#"+(MPKEdit.crc32([86,i*3])).toString(16).toUpperCase().substr(0,6);
+                    x2[page].style.background = col[i];
+;
                     console.log(x2[page]);
                 }
             }
@@ -160,7 +163,7 @@
                     ),
                 elem(["div", {className:"modalFlex"}],
                     elem(["span", {innerHTML: "Data hash", className:"label"}]),
-                    elem(["span", {className:"content fixed", innerHTML:MPKEdit.State.NoteTable[i].murmur3.toString(16)}])
+                    elem(["span", {className:"content fixed", innerHTML:pad(MPKEdit.State.NoteTable[i].cyrb32.toString(16),8)}])
                     ),
                 elem(["div", {className:"modalFlex"}],
                     elem(["span", {innerHTML: "Used pages", className:"label"}]),
@@ -174,7 +177,7 @@
             content.appendChild(noteInfo);
                     var x = elem(["div",{className:"pageContainer"}])
         for(var j = 0; j < 128; j++) {
-            x.appendChild(elem(["span",{className:"b0x",style:(MPKEdit.State.NoteTable[i].indexes.indexOf(j)!==-1?" background:#"+(MPKEdit.crc32([86,i*3])).toString(16).toUpperCase().substr(0,6):"")}]))
+            x.appendChild(elem(["span",{className:"b0x",style:(MPKEdit.State.NoteTable[i].indexes.indexOf(j)!==-1?" background:"+col[i]:"")}]))
             if((j+1)%32===0) {x.appendChild(elem(["br"]))}
         }
         content.appendChild(x);

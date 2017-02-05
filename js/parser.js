@@ -361,7 +361,7 @@
                         fileOut.push(data[pageAddress + j]);
                     }
                 }
-                _note.murmur3  = MPKEdit.MurmurHash3(fileOut);
+                _note.cyrb32  = MPKEdit.cyrb32(fileOut);
 
                 usedPages += _note.indexes.length;
                 usedNotes++;

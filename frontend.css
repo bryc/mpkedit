@@ -112,6 +112,7 @@ input[type=checkbox]:checked +  .chkb0x::after {content: "✔"}
     font-size: 14px;
     color:#777;
     width:100%;
+    padding-top:2px;
 }
 .modalFlex{display: flex;}
 [contenteditable=true] {

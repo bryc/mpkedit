@@ -103,13 +103,13 @@ State: functions which manipulate the current State of the opened MPK file, post
             }
         }
 
-        var CRC = MPKEdit.crc32(fileOut);
+        var cksm = State.NoteTable[id].cyrb32.toString(36);
         var filename = MPKEdit.App.codeDB[gameCode] || gameCode;
-        filename = filename + "_" + CRC + ".note";
+        filename = filename + "_" + cksm + ".note";
 
         if (event && event.ctrlKey) {
             filename = noteName.replace(/[\\|\/"<>*?:]/g, "-");
-            filename = filename + "_" + CRC + "_raw.note";
+            filename = filename + "_" + cksm + "_raw.note";
             fileOut = fileOut.slice(32);
         }
 
