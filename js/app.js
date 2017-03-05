@@ -6,6 +6,16 @@
       build HTMLElement for note row in MPK
     */
     var buildRow = function(i) {
+        function gen(q, canvas) {
+            var ctx = canvas.getContext("2d");
+            var r = q & 0xFF;
+            var g = (q & 0xFF00) >> 8;
+            var b = (q & 0xFF0000) >> 16;
+            ctx.beginPath();
+            ctx.fillStyle="#"+pad(r.toString(16),2)+pad(g.toString(16),2)+pad(b.toString(16),2);
+            ctx.rect(0, 0, canvas.width, canvas.height);
+            ctx.fill();    
+        }
         // Handle empty rows
         if(!MPKEdit.State.NoteTable[i]) {
             var tableRow = elem(["tr", {className: "empty"}], elem(["td", {innerHTML: (i+1),"colSpan": 16}]));
@@ -38,9 +48,10 @@
             )
         );
 
-        var hash = MPKEdit.State.NoteTable[i].cyrb32;
-        var hash2 = ~MPKEdit.State.NoteTable[i].cyrb32>>>0;
-        MPKEdit.jdenticon.update(tableRow.querySelector("#hash"), pad(hash.toString(16),8)+pad(hash2.toString(16),8));
+        if(App.cfg.identicon) {
+            var hash = MPKEdit.State.NoteTable[i].cyrb32;
+            gen(hash, tableRow.querySelector("#hash"));
+        }
         return tableRow;
     };
 

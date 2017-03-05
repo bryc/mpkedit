@@ -11,8 +11,14 @@ var MPKEdit = (function MPKEdit() {
         for(var i = 0; i < len; i++) {
             sum += (sum << 1) + data[i];
         }
-        sum ^= sum << 9;
-        sum ^= sum << 16;
+        var tmp = sum >>> 0;
+        while(tmp > 0) {
+            if(tmp & 1) {
+                sum += tmp;
+                sum ^= sum << 1;
+            }
+            tmp >>= 1;
+        }
         return sum >>> 0;
     };
 
