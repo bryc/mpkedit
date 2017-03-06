@@ -1,20 +1,38 @@
 (function MPKApp() {
     var App = {};
-    function pad(a,b,c){return (new Array(b||2).join(c||0)+a).slice(-b)}
+    function pad(a,b,c){return (new Array(b||2).join(c||0)+a).slice(-(b||2))}
     /* -----------------------------------------------
     function: buildRow(i)
       build HTMLElement for note row in MPK
     */
     var buildRow = function(i) {
-        function gen(q, canvas) {
+        function pixicon(q, canvas) {
+            function rnd() {
+                do {var n = 1e4 * Math.sin(q++);
+                    n -= Math.floor(n)
+                } while (.15 > n || n > .9);
+                return 1 * (n - .15) / .75;
+            }
+            function HSL(col, sat, lit) {
+                function round(i){return Math.round(i)}
+                var H = round(col* (360/96) % 360);
+                var S = round(20 + (sat/255 * 80 % 80));
+                var L = round(25 + (lit/255 * 26 % 26));
+                return "hsl("+H+","+S+"%,"+L+"%)";
+            }
+            var s = 8, sc = canvas.width/s, n = s*s;
             var ctx = canvas.getContext("2d");
-            var r = q & 0xFF;
-            var g = (q & 0xFF00) >> 8;
-            var b = (q & 0xFF0000) >> 16;
-            ctx.beginPath();
-            ctx.fillStyle="#"+pad(r.toString(16),2)+pad(g.toString(16),2)+pad(b.toString(16),2);
-            ctx.rect(0, 0, canvas.width, canvas.height);
-            ctx.fill();    
+            ctx.fillStyle = HSL(rnd()*255,rnd()*255,rnd()*255);
+            if(rnd()>=0.5) ctx.rotate(90 * Math.PI / 180), ctx.translate(0, -canvas.width);
+
+            for(var seq = [], i = 0; i < n/2; i++) {seq[i] = rnd() > .5;}
+            seq = seq.concat(seq.slice().reverse());
+
+            for(var x=y=i=0; i<n; i++,x=i%s) {
+                if(i !== 0 && x === 0) y++;
+                if(i === (n/2)) ctx.fillStyle = HSL(rnd()*255,rnd()*255,rnd()*255);
+                if(seq[i]) ctx.fillRect(x*sc, y*sc, sc, sc);
+            }
         }
         // Handle empty rows
         if(!MPKEdit.State.NoteTable[i]) {
@@ -26,7 +44,7 @@
         elem(["tr", {className: "note", id: i}],
             App.cfg.identicon ?
             elem([],elem(["td", {className: "hash"}],
-                elem(["canvas", {width: 30, height: 30, id: "hash"}])
+                elem(["canvas", {width: 32, height: 32, id: "hash"}])
             ),MPKEdit.elem(["td",{className:"divider",innerHTML:"<div></div>"}])) : "",
             elem(["td", {className: "name", innerHTML: MPKEdit.State.NoteTable[i].noteName}],
                 elem(["div", App.codeDB[MPKEdit.State.NoteTable[i].serial]||MPKEdit.State.NoteTable[i].serial])
@@ -50,7 +68,7 @@
 
         if(App.cfg.identicon) {
             var hash = MPKEdit.State.NoteTable[i].cyrb32;
-            gen(hash, tableRow.querySelector("#hash"));
+            pixicon(hash, tableRow.querySelector("#hash"));
         }
         return tableRow;
     };
@@ -105,8 +123,8 @@
                     ),
                     elem(["div",{className: "text"}],
                     elem(["div", {className: "textLabel",onmousedown:function(e){e.preventDefault()},
-                        onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}, innerHTML: "Show identicons"}]),
-                    elem(["div", {className: "textInfo", innerHTML: "Control whether identicons are displayed."}])
+                        onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}, innerHTML: "Show icons"}]),
+                    elem(["div", {className: "textInfo", innerHTML: "Identify unique saves with icons."}])
                     )
                 )
             );
@@ -173,7 +191,7 @@
                     elem(["span", {className:"content", innerHTML:MPKEdit.App.pubDB[MPKEdit.State.NoteTable[i].publisher] + " (<code>"+MPKEdit.State.NoteTable[i].publisher+"</code>)"}])
                     ),
                 elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Data hash", className:"label"}]),
+                    elem(["span", {innerHTML: "Hash code", className:"label"}]),
                     elem(["span", {className:"content fixed", innerHTML:pad(MPKEdit.State.NoteTable[i].cyrb32.toString(16),8)}])
                     ),
                 elem(["div", {className:"modalFlex"}],

@@ -6,20 +6,18 @@ var MPKEdit = (function MPKEdit() {
       checksum algo. this is not final.
     */
     MPKEdit.cyrb32 = function cyrb32(data) {
-        var len = data.length;
-        var sum = 0xcadb07c5;
-        for(var i = 0; i < len; i++) {
-            sum += (sum << 1) + data[i];
+        function csh(a,b) {return(a<<b|a>>>(32-b))}
+        var i, tmp, sum = 0xcadb07c5;
+        for(i = 0; i < data.length; i++) {
+            sum = sum ^ data[i];
+            sum = sum + csh(sum, (sum & 7) | 1);
         }
-        var tmp = sum >>> 0;
-        while(tmp > 0) {
+        for(tmp = sum>>>0; tmp > 0; tmp >>>= 1) {
             if(tmp & 1) {
-                sum += tmp;
-                sum ^= sum << 1;
+                sum = (sum + tmp) ^ csh(sum, (sum & 3) | 1);
             }
-            tmp >>= 1;
         }
-        return sum >>> 0;
+        return sum>>>0;
     };
 
     /* -----------------------------------------------
