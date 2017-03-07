@@ -8,8 +8,11 @@ var MPKEdit = (function MPKEdit() {
     MPKEdit.cyrb32 = function cyrb32(data) {
         var i, tmp, sum = 1337, len = data.length;
         for(i = 0; i < len; i++) {
+            sum = sum + data[i];
+            sum = sum + (sum << (sum & 7));
         } 
         for(tmp = sum >>> 0; tmp > 0; tmp >>>= 1) {
+            if(tmp & 1) sum = sum + (sum << (sum & 7)) + tmp;
         }
         return sum >>> 0;
     };
