@@ -7,11 +7,10 @@
     */
     var buildRow = function(i) {
         function pixicon(q, canvas) {
+            var state = q || 1;
             function rnd() {
-                do {var n = 1e4 * Math.sin(q++);
-                    n -= Math.floor(n)
-                } while (.15 > n || n > .9);
-                return 1 * (n - .15) / .75;
+                state = state * 48271 % 2147483647;
+                return state / 2147483648;
             }
             function HSL(col, sat, lit) {
                 function round(i){return Math.round(i)}
