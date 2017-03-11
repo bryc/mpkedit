@@ -12,7 +12,7 @@ var MPKEdit = (function MPKEdit() {
             sum = sum + (sum << ((sum & 7)+1));
         } 
         for(tmp = sum >>> 0; tmp > 0; tmp >>>= 1) {
-            if(tmp & 1) sum = sum + (sum << (sum & 7)) + tmp;
+            if(tmp & 1) sum = sum + (sum << ((sum & 7)+1)) + tmp;
         }
         return sum >>> 0;
     };
