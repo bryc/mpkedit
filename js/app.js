@@ -6,31 +6,30 @@
       build HTMLElement for note row in MPK
     */
     var buildRow = function(i) {
-        function pixicon(q, canvas) {
-            var state = q || 1;
-            function rnd() {
-                state = state * 48271 % 2147483647;
-                return state / 2147483648;
+        function pixicon(canvas, seed) {
+            function rand() {
+                rstate = rstate * 48271 % 2147483647;
+                return rstate / 2147483648;
             }
-            function HSL(col, sat, lit) {
-                function round(i){return Math.round(i)}
-                var H = round(col* (360/96) % 360);
-                var S = round(20 + (sat/255 * 80 % 80));
-                var L = round(25 + (lit/255 * 26 % 26));
+            function HSL(h, s, l) {
+                function rnd(i){return Math.round(i)}
+                var H=rnd(h*255*360/96%360), S=rnd(25+s*60%60), L=rnd(30+l*26%26);
                 return "hsl("+H+","+S+"%,"+L+"%)";
             }
-            var s = 8, sc = canvas.width/s, n = s*s;
+            var rstate = seed||Math.random()*2147483647;
+            var s=8, n=s*s, sc=canvas.width/s;
             var ctx = canvas.getContext("2d");
-            ctx.fillStyle = HSL(rnd()*255,rnd()*255,rnd()*255);
-            if(rnd()>=0.5) ctx.rotate(90 * Math.PI / 180), ctx.translate(0, -canvas.width);
-
-            for(var seq = [], i = 0; i < n/2; i++) {seq[i] = rnd() > .5;}
+            ctx.setTransform(1,0,0,1,0,0); //reset rotation
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = HSL(rand(),rand(),rand());
+            if(rand()>.5) ctx.rotate(0.5*Math.PI), ctx.translate(0,-canvas.width);
+            for(var seq=[],i=0; i<n/2; i++) seq[i] = rand()>.5;
             seq = seq.concat(seq.slice().reverse());
 
             for(var x=y=i=0; i<n; i++,x=i%s) {
-                if(i !== 0 && x === 0) y++;
-                if(i === (n/2)) ctx.fillStyle = HSL(rnd()*255,rnd()*255,rnd()*255);
-                if(seq[i]) ctx.fillRect(x*sc, y*sc, sc, sc);
+                if(i && !x) y++;
+                if(i == (0|n/2)) ctx.fillStyle = HSL(rand(),rand(),rand());
+                if(seq[i]) ctx.fillRect(sc*x, sc*y, sc, sc);
             }
         }
         // Handle empty rows
@@ -67,7 +66,7 @@
 
         if(App.cfg.identicon) {
             var hash = MPKEdit.State.NoteTable[i].cyrb32;
-            pixicon(hash, tableRow.querySelector("#hash"));
+            pixicon(tableRow.querySelector("#hash"), hash);
         }
         return tableRow;
     };
