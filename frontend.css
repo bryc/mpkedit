@@ -188,7 +188,8 @@ div#stats {
     background: #f8f8f8;
     text-align:center;
     font-weight:400;
-    font-size:14px; border-bottom: 1px solid #eee;
+    font-size:14px;
+    border-bottom: 1px solid #eee;
 }
 
 div#stats .statBox {
@@ -215,6 +216,8 @@ table {
     border-collapse: collapse;
     background: #fdfdfd;
     border-bottom: 2px solid #ddd;
+    border-left: 1px solid #fdfdfd;
+    border-right: 1px solid #fdfdfd;
     font-size: 14px;
 }
 
@@ -232,6 +235,7 @@ tr.empty td::after  {content: "• ·"; margin-left:  8px;}
 tr.note {
     background: #f9f9f9;
     border: 1px solid #ececec;
+    height:45px;
 }
 
 tr.note:nth-child(even) {background: #f2f2f2;}
@@ -263,6 +267,9 @@ td.hash {
     width: 5px;
     padding:4px 2px;
     text-align: center;
+}
+canvas#hash {
+    margin:0 4px;
 }
 td.region {
     width: 32px;
