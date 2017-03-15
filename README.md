@@ -1,4 +1,4 @@
-#MPKEdit - Controller Pak Manager
+# MPKEdit - Controller Pak Manager
 
 Manage N64 Controller Pak files easily, with support for note import/export and delete. It is written in plain JavaScript and works in most modern browsers (Chrome, Firefox, Opera, etc.). Includes **native file system support** when installed as a Chrome extension.
 
