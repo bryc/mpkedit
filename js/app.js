@@ -44,7 +44,7 @@
             elem([],elem(["td", {className: "hash"}],
                 elem(["canvas", {width: 32, height: 32, id: "hash"}])
             ),MPKEdit.elem(["td",{className:"divider",innerHTML:"<div></div>"}])) : "",
-            elem(["td", {className: "name", innerHTML: MPKEdit.State.NoteTable[i].noteName}],
+            elem(["td", {className: "name", innerHTML: MPKEdit.State.NoteTable[i].noteName+(MPKEdit.State.NoteTable[i].comment?"<span title='"+MPKEdit.State.NoteTable[i].comment.replace("'","&apos;")+"' class='fa fa-comment'></span>":"")}],
                 elem(["div", App.codeDB[MPKEdit.State.NoteTable[i].serial]||MPKEdit.State.NoteTable[i].serial])
             ),
             elem(["td",{className:"divider",innerHTML:"<div></div>"}]),
@@ -165,8 +165,13 @@
             var noteInfo = elem([],
                 elem(["h1","Note details"]),
                 elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Comment", className:"label"}]),
-                    elem(["span", {contentEditable:true,oninput:function(){if(this.innerHTML==="<br>")this.innerHTML="";},className:"content", innerHTML:MPKEdit.State.NoteTable[i].comment || ""}])
+                    elem(["span", {innerHTML: "Comment<br>("+(256-(MPKEdit.State.NoteTable[i].comment||"").length)+" chars)", className:"label"}]),
+                    elem(["textarea", {maxLength:256, placeholder:"No comment...", oninput: function() {
+                        console.log(this.value);
+                        this.previousSibling.innerHTML = "Comment<br>("+(256-this.value.length)+" chars)";
+                        MPKEdit.State.NoteTable[i].comment = this.value;
+                        App.updateUI();
+                    }, className:"content", value: MPKEdit.State.NoteTable[i].comment || ""}])
                     ),
                 elem(["div", {className:"modalFlex"}],
                     elem(["span", {innerHTML: "Note name", className:"label"}]),
@@ -200,7 +205,6 @@
                 elem(["h1", "Raw note entry"]),
                 elem(["div", {style:"text-align:center;font-size:14px;",innerHTML:noteData}])
             );
-            noteInfo.querySelector("[contenteditable=true]").setAttribute("placeholder","No comment...")
             content.appendChild(noteInfo);
                     var x = elem(["div",{className:"pageContainer"}])
         for(var j = 0; j < 128; j++) {

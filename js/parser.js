@@ -1,7 +1,7 @@
 (function MPKParser() {
     // temporary globals
     var curfile = undefined;
-    var dexnotes = undefined;
+    var tmpComments = [], isExtended;
 
     /* -----------------------------------------------
     function: resize(data)
@@ -85,7 +85,9 @@
     var isNote = function(data) {
         var a = 0xCAFE === data[0x07] + (data[0x06] << 8);
         var b = 0 === data.subarray(32).length % 256;
-        return a && b;
+        var c = arrstr(data, 1, 8) === "MPKNote";
+        isExtended = c;
+        return c || a && b;
     };
 
     /* -----------------------------------------------
@@ -188,9 +190,14 @@
                     console.info("Reserved bits of extension code were found: " + noteName);
                 }
 
-                var comment = MPKEdit.dexnotes ? MPKEdit.dexnotes[id] : undefined;
                 var gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
 
+                var comment = undefined;
+                if(tmpComments[id]) {
+                    comment = tmpComments[id] || undefined;
+                } else if(!curfile) {
+                    comment = (MPKEdit.State.NoteTable[id]||{}).comment || undefined;
+                }
                 NoteTable[id] = {
                     indexes: p,
                     serial: gameCode,
@@ -203,6 +210,7 @@
     
             }
         }
+        tmpComments = [];
         return NoteTable;
     };
 
@@ -335,7 +343,7 @@
 
         if(arrstr(data, 0, 11) === "123-456-STD") {
             console.info("DexDrive file detected. Saving notes and stripping header.");
-            MPKEdit.dexnotes = getDexNotes(data);
+            tmpComments = getDexNotes(data);
             data = data.subarray(0x1040);
         }
         if(!data || checkHeader(data) === false) {
@@ -384,6 +392,14 @@
       insert note data into currently opened MPK file.
     */
     var insertNote = function(data) {
+        if(isExtended) {
+            for(var cmt="",i=16; i<272; i++) {
+                if(data[i]===0) break;
+                cmt += String.fromCharCode(data[i]);
+            }
+            data = data.subarray(272);
+            isExtended = undefined;
+        }
         var tmpdata = new Uint8Array(MPKEdit.State.data);
 
         var noteData = data.subarray(0, 32);
@@ -423,6 +439,7 @@
     
             for(var i = 0; i < 16; i++) {
                 if(MPKEdit.State.NoteTable[i] === undefined) {
+                    if(cmt) tmpComments[i] = cmt;
                     var target = 0x300 + i * 32;
                     for(var j = 0; j < 32; j++) {
                         tmpdata[target + j] = noteData[j];
@@ -461,7 +478,6 @@
             MPKEdit.State.usedNotes = result.usedNotes;
             MPKEdit.State.usedPages = result.usedPages;
             MPKEdit.State.filename = filename || MPKEdit.State.filename;
-            dexnotes = undefined;
 
             if(MPKEdit.App.usefsys && filename) {
                 MPKEdit.State.Entry = MPKEdit.App.tmpEntry;

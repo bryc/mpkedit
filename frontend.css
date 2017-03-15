@@ -115,30 +115,14 @@ input[type=checkbox]:checked +  .chkb0x::after {content: "✔"}
     padding-top:2px;
 }
 .modalFlex{display: flex;}
-[contenteditable=true] {
+textarea {
     outline:none;
     width:100%;
     border: 1px solid #AAA;
     padding: 4px 8px;
     margin:2px 0;
-    opacity:0.8;
-}
-[contenteditable=true]:empty:before {
-    content: attr(placeholder);
-    color:#777;
-    display: block; /* For Firefox */
-}
-[contenteditable=true]:empty {
-    border:1px dashed #CCC;
-    opacity:0.5;
-}
-[contenteditable=true]:empty:focus {
-    border:1px dashed #BBB;
-    opacity:0.7;
-}
-[contenteditable=true]:focus {
-    border:1px solid #AAA;
-    opacity:1;
+    height: 51px;
+    resize: none;
 }
 .b0x:nth-child(-n+5) {visibility:hidden;}
 .pageContainer {text-align:center;margin-top:32px;line-height:0.3;}
@@ -321,4 +305,8 @@ span#loadButton:active .fa-folder-open {
 .fa-trash:active, .fa-cog:active, .fa-download:active,
 .fa-floppy-o:active, .fa-info-circle:active {
     color: #b89583;
+}
+.name .fa {
+    float: right;
+    cursor: help;
 }

@@ -52,7 +52,6 @@ State: functions which manipulate the current State of the opened MPK file, post
             offset = 0x300 + (id * 32) + i;
             tmpdata[offset] = 0x00;
         }
-        if(MPKEdit.dexnotes)MPKEdit.dexnotes[id] = undefined;
         MPKEdit.Parser(tmpdata);
     };
 
@@ -84,6 +83,10 @@ State: functions which manipulate the current State of the opened MPK file, post
       Handles browser download and fsys saveAs
     */
     State.saveNote = function(id, event) {
+        var header = [0, 77, 80, 75, 78, 111, 116, 101,0,0,0,0,0,0,0,0];
+        for(var cmt=[],i=0; i<256; i++) {
+            cmt[i] = (State.NoteTable[id].comment||"").charCodeAt(i) || 0;
+        }
         var fileOut = [];
         var indexes = State.NoteTable[id].indexes;
         var gameCode = State.NoteTable[id].serial;
@@ -111,6 +114,8 @@ State: functions which manipulate the current State of the opened MPK file, post
             filename = noteName.replace(/[\\|\/"<>*?:]/g, "-");
             filename = filename + "_" + cksm + "_raw.note";
             fileOut = fileOut.slice(32);
+        } else if(State.NoteTable[id].comment) {
+            fileOut = header.concat(cmt, fileOut);
         }
 
         fileOut = new Uint8Array(fileOut);
