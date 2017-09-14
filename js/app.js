@@ -165,12 +165,16 @@
             var noteInfo = elem([],
                 elem(["h1","Note details"]),
                 elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Comment<br>("+(256-(MPKEdit.State.NoteTable[i].comment||"").length)+" chars)", className:"label"}]),
-                    elem(["textarea", {maxLength:256, placeholder:"No comment...", oninput: function() {
-                        console.log(this.value);
-                        this.previousSibling.innerHTML = "Comment<br>("+(256-this.value.length)+" chars)";
-                        MPKEdit.State.NoteTable[i].comment = this.value;
-                        App.updateUI();
+                    elem(["span", {innerHTML: "Comment", className:"label"}]),
+                    elem(["textarea", {maxLength: 1024, placeholder: "No comment...", oninput: function() {
+                        var cmp = pako.deflate(this.value);
+                        var sizeOK = cmp.length <= 512;
+                        var disp = sizeOK ? Math.round((cmp.length / 512 * 100)) + "% full" : "<span style='color:red'>OVER LIMIT!</span>";
+                        this.previousSibling.innerHTML = "Comment<br>(" + disp + ")";
+                        if(sizeOK) {
+                            MPKEdit.State.NoteTable[i].comment = this.value;
+                            App.updateUI();
+                        }                        
                     }, className:"content", value: MPKEdit.State.NoteTable[i].comment || ""}])
                     ),
                 elem(["div", {className:"modalFlex"}],

@@ -393,11 +393,16 @@
     */
     var insertNote = function(data) {
         if(isExtended) {
-            for(var cmt="",i=16; i<272; i++) {
-                if(data[i]===0) break;
-                cmt += String.fromCharCode(data[i]);
+            var cmt = "";
+            var ver = data[0];
+            var len = ver ? 528 : 272;
+            if(ver === 0) {
+                var end = data.subarray(16, len).indexOf(0);
+                cmt = String.fromCharCode.apply(null, data.subarray(16, end));
+            } if(ver === 1) {
+                cmt = pako.inflate(data.subarray(16, len), {to: "string"});
             }
-            data = data.subarray(272);
+            data = data.subarray(len);
             isExtended = undefined;
         }
         var tmpdata = new Uint8Array(MPKEdit.State.data);

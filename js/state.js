@@ -83,10 +83,6 @@ State: functions which manipulate the current State of the opened MPK file, post
       Handles browser download and fsys saveAs
     */
     State.saveNote = function(id, event) {
-        var header = [0, 77, 80, 75, 78, 111, 116, 101,0,0,0,0,0,0,0,0];
-        for(var cmt=[],i=0; i<256; i++) {
-            cmt[i] = (State.NoteTable[id].comment||"").charCodeAt(i) || 0;
-        }
         var fileOut = [];
         var indexes = State.NoteTable[id].indexes;
         var gameCode = State.NoteTable[id].serial;
@@ -115,7 +111,10 @@ State: functions which manipulate the current State of the opened MPK file, post
             filename = filename + "_" + cksm + "_raw.note";
             fileOut = fileOut.slice(32);
         } else if(State.NoteTable[id].comment) {
-            fileOut = header.concat(cmt, fileOut);
+            var header = [1, 77, 80, 75, 78, 111, 116, 101,0,0,0,0,0,0,0,0];
+            var cmt = new Uint8Array(512);
+            cmt.set(pako.deflate(State.NoteTable[id].comment));
+            fileOut = header.concat(Array.from(cmt), fileOut);
         }
 
         fileOut = new Uint8Array(fileOut);
