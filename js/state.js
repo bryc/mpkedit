@@ -113,9 +113,9 @@ State: functions which manipulate the current State of the opened MPK file, post
         } else if(State.NoteTable[id].comment) {
             var header = [1, 77, 80, 75, 78, 111, 116, 101, 0,0,0,0,0,0,0,0];
             var utfdata = new TextEncoder("utf-8").encode(State.NoteTable[id].comment);
-            var size = 16 - (utfdata.length % 16) + utfdata.length;
-            header[15] = size / 16;
-            var cmt = new Uint8Array(size);
+            var size = Math.ceil(utfdata.length / 16);
+            header[15] = size;
+            var cmt = new Uint8Array(size * 16);
             cmt.set(utfdata);
             fileOut = header.concat(Array.from(cmt), fileOut);
         }
