@@ -111,9 +111,12 @@ State: functions which manipulate the current State of the opened MPK file, post
             filename = filename + "_" + cksm + "_raw.note";
             fileOut = fileOut.slice(32);
         } else if(State.NoteTable[id].comment) {
-            var header = [1, 77, 80, 75, 78, 111, 116, 101,0,0,0,0,0,0,0,0];
-            var cmt = new Uint8Array(512);
-            cmt.set(pako.deflate(State.NoteTable[id].comment));
+            var header = [1, 77, 80, 75, 78, 111, 116, 101, 0,0,0,0,0,0,0,0];
+            var utfdata = new TextEncoder("utf-8").encode(State.NoteTable[id].comment);
+            var size = 16 - (utfdata.length % 16) + utfdata.length;
+            header[15] = size / 16;
+            var cmt = new Uint8Array(size);
+            cmt.set(utfdata);
             fileOut = header.concat(Array.from(cmt), fileOut);
         }
 

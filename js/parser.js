@@ -393,17 +393,27 @@
     */
     var insertNote = function(data) {
         if(isExtended) {
+            isExtended = undefined;
             var cmt = "";
             var ver = data[0];
-            var len = ver ? 528 : 272;
+            var cmtlen = data[15];
+
             if(ver === 0) {
+                var len = 272;
                 var end = data.subarray(16, len).indexOf(0);
-                cmt = String.fromCharCode.apply(null, data.subarray(16, end));
-            } if(ver === 1) {
-                cmt = pako.inflate(data.subarray(16, len), {to: "string"});
+                end = end > -1 ? (16 + end) : len;
+                cmt = new TextDecoder("iso-8859-1").decode(data.subarray(16, end));
             }
+            else if(ver === 1) {
+                var len = 16 + (cmtlen * 16);
+                var end = data.subarray(16, 16 + len).indexOf(0);
+                end = end > -1 ? (16 + end) : (16 + len);
+                cmt = new TextDecoder("utf-8").decode(data.subarray(16, end));
+            }
+
             data = data.subarray(len);
-            isExtended = undefined;
+            // recheck note data, commentlength can't be 0 in ver 1.
+            if(!isNote(data) || (ver===1 && cmtlen === 0)) {return false;}
         }
         var tmpdata = new Uint8Array(MPKEdit.State.data);
 

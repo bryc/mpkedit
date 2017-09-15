@@ -44,7 +44,7 @@
             elem([],elem(["td", {className: "hash"}],
                 elem(["canvas", {width: 32, height: 32, id: "hash"}])
             ),MPKEdit.elem(["td",{className:"divider",innerHTML:"<div></div>"}])) : "",
-            elem(["td", {className: "name", innerHTML: MPKEdit.State.NoteTable[i].noteName+(MPKEdit.State.NoteTable[i].comment?"<span title='"+MPKEdit.State.NoteTable[i].comment.replace("'","&apos;")+"' class='fa fa-comment'></span>":"")}],
+            elem(["td", {className: "name", innerHTML: MPKEdit.State.NoteTable[i].noteName+(MPKEdit.State.NoteTable[i].comment?"<span title='"+MPKEdit.State.NoteTable[i].comment.replace("&","&amp;").replace('"',"&quot;").replace('<',"&lt;").replace('>',"&gt;").replace("'","&apos;") + "' class='fa fa-comment'></span>":"")}],
                 elem(["div", App.codeDB[MPKEdit.State.NoteTable[i].serial]||MPKEdit.State.NoteTable[i].serial])
             ),
             elem(["td",{className:"divider",innerHTML:"<div></div>"}]),
@@ -166,12 +166,9 @@
                 elem(["h1","Note details"]),
                 elem(["div", {className:"modalFlex"}],
                     elem(["span", {innerHTML: "Comment", className:"label"}]),
-                    elem(["textarea", {maxLength: 1024, placeholder: "No comment...", oninput: function() {
-                        var cmp = pako.deflate(this.value);
-                        var sizeOK = cmp.length <= 512;
-                        var disp = sizeOK ? Math.round((cmp.length / 512 * 100)) + "% full" : "<span style='color:red'>OVER LIMIT!</span>";
-                        this.previousSibling.innerHTML = "Comment<br>(" + disp + ")";
-                        if(sizeOK) {
+                    elem(["textarea", {maxLength: 2048, placeholder: "No comment...", oninput: function() {
+                        var encoded = new TextEncoder("utf-8").encode(this.value);
+                        if(encoded.length <= 4096) {
                             MPKEdit.State.NoteTable[i].comment = this.value;
                             App.updateUI();
                         }                        
