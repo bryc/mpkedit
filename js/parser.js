@@ -83,11 +83,18 @@
       0xCAFE magic number as the starting inode.
     */
     var isNote = function(data) {
-        var a = 0xCAFE === data[0x07] + (data[0x06] << 8);
-        var b = 0 === data.subarray(32).length % 256;
-        var c = arrstr(data, 1, 8) === "MPKNote";
-        isExtended = c;
-        return c || a && b;
+        isExtended = arrstr(data, 1, 8) === "MPKNote";
+        var noteOfs = 0;
+        if(isExtended) {
+            var ver = data[0];
+            var len = data[15];
+            noteOfs = (ver === 1) ? (16+16*len) : 16+256;
+        }
+        // Rely on noteOfs to find 0xCAFE in extended files.
+        var magicCheck = 0xCAFE === data[noteOfs + 0x07] + (data[noteOfs + 0x06] << 8);
+        var pageCheck = 0 === data.subarray(noteOfs + 32).length % 256;
+        console.log("isNote", isExtended, magicCheck, pageCheck);
+        return magicCheck && pageCheck;
     };
 
     /* -----------------------------------------------
@@ -394,26 +401,25 @@
     var insertNote = function(data) {
         if(isExtended) {
             isExtended = undefined;
+            var len = 16;
             var cmt = "";
             var ver = data[0];
             var cmtlen = data[15];
 
             if(ver === 0) {
-                var len = 272;
+                len += 256;
                 var end = data.subarray(16, len).indexOf(0);
                 end = end > -1 ? (16 + end) : len;
                 cmt = new TextDecoder("iso-8859-1").decode(data.subarray(16, end));
             }
-            else if(ver === 1) {
-                var len = 16 + (cmtlen * 16);
-                var end = data.subarray(16, 16 + len).indexOf(0);
-                end = end > -1 ? (16 + end) : (16 + len);
+            else if(ver === 1 && cmtlen > 0) {
+                len += cmtlen * 16;
+                var end = data.subarray(16, len).indexOf(0);
+                end = end > -1 ? (16 + end) : len;
                 cmt = new TextDecoder("utf-8").decode(data.subarray(16, end));
             }
 
             data = data.subarray(len);
-            // recheck note data, commentlength can't be 0 in ver 1.
-            if(!isNote(data) || (ver===1 && cmtlen === 0)) {return false;}
         }
         var tmpdata = new Uint8Array(MPKEdit.State.data);
 

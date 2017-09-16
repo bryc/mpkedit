@@ -168,10 +168,11 @@
                     elem(["span", {innerHTML: "Comment", className:"label"}]),
                     elem(["textarea", {maxLength: 2048, placeholder: "No comment...", oninput: function() {
                         var encoded = new TextEncoder("utf-8").encode(this.value);
-                        if(encoded.length <= 4096) {
+                        if(encoded.length <= 4080) {
+                            this.style.color = "";
                             MPKEdit.State.NoteTable[i].comment = this.value;
                             App.updateUI();
-                        }                        
+                        } else {this.style.color = "red";}                        
                     }, className:"content", value: MPKEdit.State.NoteTable[i].comment || ""}])
                     ),
                 elem(["div", {className:"modalFlex"}],
