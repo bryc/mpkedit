@@ -16,7 +16,9 @@ window.addEventListener("load", function() {
             if(MPKEdit.App.usefsys) {
                 MPKEdit.App.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
             }
-            reader.readAsArrayBuffer(files[i].slice(0, 36928));
+            // Read bytes from file with upper size limit
+            // RawMPK=32768, DexDrive=36928, MaxMPKCmt=98144
+            reader.readAsArrayBuffer(files[i].slice(0, 98144));
         }
 
         // Support both <input type=file> AND drag and drop
@@ -96,9 +98,9 @@ window.addEventListener("load", function() {
         MPKEdit.App.usefsys = location.protocol === "chrome-extension:";
 
         MPKEdit.App.cfg = {
-            "#!version" : 0.1,
-            "identicon" : false,
-            "hideRows"  : true
+            "#!version" : 0.1,    // app config version (increase when introducing incompatibile changes)
+            "identicon" : false,  // display identicons for notes
+            "hideRows"  : true    // hide empty rows 
         };
 
         if(MPKEdit.App.usefsys) {
@@ -123,12 +125,7 @@ window.addEventListener("load", function() {
         // Save file
         document.getElementById("save").onclick = MPKEdit.State.save;
         // Allows dragging the save icon to save
-        document.getElementById("save").addEventListener("dragstart", function(event) {
-            var blobURL = URL.createObjectURL(new Blob([MPKEdit.State.data]));
-            event.dataTransfer.setData("DownloadURL",
-                "application/octet-stream:" + MPKEdit.State.filename + ":" + blobURL
-            );
-        });
+        document.getElementById("save").ondragstart = MPKEdit.State.save;
         window.addEventListener("keydown", changeExportColor);
         window.addEventListener("keyup", changeExportColor);
         window.addEventListener("blur", changeExportColor);

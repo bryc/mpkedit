@@ -62,18 +62,55 @@ State: functions which manipulate the current State of the opened MPK file, post
       Handles browser download, and fsys SaveAs/Save
     */
     State.save = function() {
-        if(MPKEdit.App.usefsys) {
+        var outputData = State.data;
+
+        var s = Object.keys(MPKEdit.State.NoteTable);
+        var cmtBl0c = new Uint8Array([0,77,80,75,67,109,116,115,0,0,0,0,0,0,0,0]);
+        var hasCmts = false;
+        var numCmts = 0;
+
+        for(var i = 0; i < s.length; i++) {
+            if(State.NoteTable[s[i]].comment) {
+                hasCmts = true;
+                numCmts++;
+                var addr = (0x300 + (s[i] * 32));
+
+                var idx = State.data[addr + 7];
+                var crc = MPKEdit.crc8(State.data.subarray(addr, addr+8));
+                var utfdata = new TextEncoder("utf-8").encode(State.NoteTable[s[i]].comment);
+                var hiSize = utfdata.length >> 8;
+                var loSize = utfdata.length & 0xFF;
+
+                cmtBl0c = MPKEdit.Uint8Concat(cmtBl0c, [0xA5, idx, crc, hiSize, loSize], utfdata);
+                console.log(State.NoteTable[s[i]], idx, State.data.subarray(addr, addr+8) );
+            }
+        }
+
+        if(hasCmts) {
+            // add number of comments to header
+            cmtBl0c[15] = numCmts;
+            cmtBl0c[0] = MPKEdit.crc8(cmtBl0c.subarray(1));
+            outputData = MPKEdit.Uint8Concat(State.data, cmtBl0c);
+        }
+        
+        if(event.type === "dragstart") {
+            var blobURL = URL.createObjectURL(new Blob([outputData]));
+            event.dataTransfer.setData("DownloadURL",
+                "application/octet-stream:" + State.filename + ":" + blobURL
+            );
+        }
+        else if(MPKEdit.App.usefsys) {
             if(State.Entry && !event.ctrlKey) {
-                MPKEdit.fsys.saveFile(State.data, State.Entry);
+                MPKEdit.fsys.saveFile(outputData, State.Entry);
             }
             else {
-                MPKEdit.fsys.saveFileAs(State.data, State.filename);
+                MPKEdit.fsys.saveFileAs(outputData, State.filename);
             }
         }
         else {
             var ext = State.filename.slice(-3).toUpperCase() !== "MPK";
             var fn = State.filename + (ext ? ".mpk" : "");
-            MPKEdit.saveAs(new Blob([State.data]), fn);
+            MPKEdit.saveAs(new Blob([outputData]), fn);
         }
     };
 

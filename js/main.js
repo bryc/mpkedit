@@ -2,8 +2,26 @@ var MPKEdit = (function MPKEdit() {
     var MPKEdit = {};
 
     /* -----------------------------------------------
+    function: MPKEdit.Uint8Concat(arrays)
+      Concat Uint8Arrays
+    */
+    MPKEdit.Uint8Concat = function(...arrs) {
+        var totalLength = 0;
+        for (var arr of arrs) {
+            totalLength += arr.length;
+        }
+        var result = new Uint8Array(totalLength);
+        var offset = 0;
+        for (var arr of arrs) {
+            result.set(arr, offset);
+            offset += arr.length;
+        }
+        return result;
+    };
+
+    /* -----------------------------------------------
     function: MPKEdit.cyrb32(data)
-      checksum algo. this is not final.
+      CYRB-32 checksum algo.
     */
     MPKEdit.cyrb32 = function cyrb32(data) {
         var i, tmp, sum = 0x9CB85729, len = data.length;
@@ -16,6 +34,24 @@ var MPKEdit = (function MPKEdit() {
         }
         return sum >>> 0;
     };
+
+    /* -----------------------------------------------
+    function: MPKEdit.crc8(data)
+      CRC-8 checksum algo.
+      POLY=0x5A, INIT=0, REFIN=false, REFOUT=false, XOROUT=0
+    */
+    MPKEdit.crc8 = function(data) {
+        for(var i=256, tbl=[], crc, j; i--; tbl[i] = crc&0xFF) {
+            j=8; for(crc=i; j--;) {
+                crc = crc&128 ? (crc<<1)^0x5A : crc<<1;
+            }
+        }
+        return function(data) {
+            for(var i=0, crc=0; i<data.length; ++i)
+                crc = tbl[(crc^data[i])%256];
+            return crc;
+        }
+    }();
 
     /* -----------------------------------------------
     function: MPKEdit.elem(options)

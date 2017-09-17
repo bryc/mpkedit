@@ -200,9 +200,11 @@
                 var gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
 
                 var comment = undefined;
+                // Load any temporary comments (DexDrive or insertNote)
                 if(tmpComments[id]) {
                     comment = tmpComments[id] || undefined;
                 } else if(!curfile) {
+                    // Salvage pre-existing comments in NoteTable.
                     comment = (MPKEdit.State.NoteTable[id]||{}).comment || undefined;
                 }
                 NoteTable[id] = {
@@ -322,7 +324,7 @@
     };
 
     /* -----------------------------------------------
-    function: getDexComments(data)
+    function: getDexNotes(data)
       capture DexDrive note comment strings.
     */
     var getDexNotes = function(data) {
@@ -460,6 +462,8 @@
     
             for(var i = 0; i < 16; i++) {
                 if(MPKEdit.State.NoteTable[i] === undefined) {
+                    // tmpComments must be used here because saving directly to MPKEdit.State
+                    // will cause comments to be lost when MPK data is re-parsed.
                     if(cmt) tmpComments[i] = cmt;
                     var target = 0x300 + i * 32;
                     for(var j = 0; j < 32; j++) {
@@ -494,6 +498,63 @@
         if(MPKEdit.State.data && isNote(data)) {
             insertNote(data);
         } else if(result = parse(data)) {
+            if(result.data.length > 32768) {
+                var bl0c = result.data.subarray(32768);
+                var hasCmts = arrstr(bl0c, 1, 8) === "MPKCmts";
+                var cmtCount = bl0c[15];
+                var crc8_1 = bl0c[0];
+                var crc8_2 = MPKEdit.crc8(result.data.subarray(32769));
+                var isValid = hasCmts && (crc8_1===crc8_2);
+                console.log(crc8_1, crc8_2, result.data.subarray(32768+0));
+
+                if(isValid) {
+                    console.log(`MPKCmts block found, attempting to parse ${cmtCount} comment(s)...`);
+                    var foundCount = 0;
+                    // parsing the cmt block
+                    for(var ptr = 16, i = 0; i < cmtCount; i++) {
+                        var magic  = bl0c[ptr + 0];
+                        if(magic !== 0xA5) {
+                            console.error(`MPKCmts Error: Can't find 0xA5 magic (${magic}). Aborting load.`);
+                            break;
+                        }
+                        foundCount++;
+                        var node   = bl0c[ptr + 1];
+                        var crc8   = bl0c[ptr + 2];
+                        var cmtLen = (bl0c[ptr + 3] << 8) + bl0c[ptr+4];
+                        if(cmtLen > 4080 || cmtLen === 0) {
+                            console.error(`MPKCmts Error: Invalid comment length (${cmtLen}). Aborting load.`);
+                            break;
+                        }
+                        var cmtStr = new TextDecoder("utf-8").decode(bl0c.subarray(ptr + 5, ptr + 5 + cmtLen));
+                        ptr += 5 + cmtLen;
+
+                        // Check if comment's specified node exists, and if the CRC-8 is valid.
+                        var nodeFound = false, noteOfs;
+                        for(var j = 0; j < 16; j++) {
+                            var addr = 0x300 + j*32;
+                            var node2 = result.data[addr+7];
+                            var crc8arr = MPKEdit.crc8(result.data.subarray(addr, addr+8));
+                            if(node === node2 && crc8 === crc8arr) {
+                                nodeFound = true; noteOfs = j;
+                                break;
+                            }
+                        }
+                        if(nodeFound) {
+                            console.log(`Comment ${i} points to save note ${noteOfs} (index ${node})`);
+                            result.NoteTable[noteOfs].comment = cmtStr;
+                        } else {
+                            console.warn(`Hmm, Comment ${i} exists, but has no associated Node.`);
+                        }
+                    }
+                    if(foundCount !== cmtCount) {
+                        console.error(`MPKCmts Error: The number of found comments doesn't match stored amount value. (${foundCount} vs ${cmtCount})`);
+                    }
+                }
+                else if(hasCmts) {
+                    console.error(`MPKCmts Error: MPKCmts block is invalid or has wrong size.`);
+                }
+            }
+
             MPKEdit.State.data = result.data !== 32768 ? resize(result.data) : result.data;
             MPKEdit.State.NoteTable = result.NoteTable;
             MPKEdit.State.usedNotes = result.usedNotes;
