@@ -503,9 +503,8 @@
                 var hasCmts = arrstr(bl0c, 1, 8) === "MPKCmts";
                 var cmtCount = bl0c[15];
                 var crc8_1 = bl0c[0];
-                var crc8_2 = MPKEdit.crc8(result.data.subarray(32769));
+                var crc8_2 = MPKEdit.crc8(result.data.subarray(32768+1));
                 var isValid = hasCmts && (crc8_1===crc8_2);
-                console.log(crc8_1, crc8_2, result.data.subarray(32768+0));
 
                 if(isValid) {
                     console.log(`MPKCmts block found, attempting to parse ${cmtCount} comment(s)...`);
