@@ -193,8 +193,11 @@
                     data[i + 0x08] |= 0x02;
                 }
 
+                if (data[i + 10] | data[i + 11]) {
+                    console.info("Unused bytes (0x0A-0x0B) are not empty:" + noteName);
+                }
                 if (data[i + 13] | data[i + 14] | data[i + 15]) {
-                    console.info("Reserved bits of extension code were found: " + noteName);
+                    console.info("Note Extension contains data in reserved characters: " + noteName);
                 }
 
                 var gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
