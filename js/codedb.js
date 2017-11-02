@@ -120,6 +120,7 @@ MPKEdit.App.pubDB = {
     "1G": "SMDE",
     "1J": "Daikokudenki",
     "1P": "Creatures Inc.",
+    "1L": "ASCII Something Good Co. (i4)", // bryc: New company code (AI Shogi 3).
     "1Q": "TDK Deep Impresion",
     "20": "Destination Software",
     "21": "Sunsoft/Tokai Engineering??",
@@ -129,7 +130,7 @@ MPKEdit.App.pubDB = {
     "26": "Enix",
     "27": "Loriciel/Electro Brain",
     "28": "Kemco Japan",
-    "29": "Seta",
+    "29": "SETA",
     "2A": "Culture Brain",
     "2C": "Palsoft",
     "2D": "Visit Co.,Ltd.",
