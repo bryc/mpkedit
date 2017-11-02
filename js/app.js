@@ -246,7 +246,7 @@
         status = status.replace("{text1}", 123 - MPKEdit.State.usedPages);
         status = status.replace("{text2}", 16 - MPKEdit.State.usedNotes);
         status = status.replace("{w1}", "width:"+w1+"%;" + _W[0]+_W[1]);
-        status = status.replace("{w2}", "width:"+w2+"%;" + _W[2]+_W[2]);
+        status = status.replace("{w2}", "width:"+w2+"%;" + _W[2]+_W[3]);
         document.getElementById("stats").innerHTML = status;
         
         var out = document.querySelector("table");
