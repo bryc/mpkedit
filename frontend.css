@@ -253,6 +253,7 @@ td.hash {
     text-align: center;
 }
 canvas#hash {
+    image-rendering: pixelated;
     margin:0 4px;
 }
 td.region {
