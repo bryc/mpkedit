@@ -1,0 +1,271 @@
+<style>
+    body {
+        background:#bba;
+        padding-top:56px;
+    }
+    body, table {
+        font:14px PT Sans, Segoe UI, Verdana, sans-serif;
+        color:#999;
+    }
+    #byc-table, div#p, div.menu {
+        background:#fff;
+        margin: auto;
+        width:768px;
+        min-width:768px;
+        margin-bottom:32px;
+    }
+    #byc-table th, div.menu {
+        font-size: 16px;
+        padding: 8px 6px;
+    }
+    #byc-table {
+        border-collapse: collapse;
+    }
+    #byc-table td, div#p div {
+       
+        color:#555;
+        padding: 8px 8px;
+        border-bottom: 1px solid #eaeaea;
+        border-right:1px solid #eaeaea;
+    }
+    #col th:last-child,
+    #byc-table td:last-child
+    {border-right:none}
+    .m { font-family: Liberation Mono, Consolas, monospace; } 
+    #col { 
+        text-align: left;
+        border-top:1px solid #666;
+    }
+    #col th {
+        border-right:1px solid #555;
+    font-size:14px;
+    background:#444;
+        font-weight: normal;
+    }
+    #byc-table tbody tr:hover td {
+        background:#f5f5f5;
+        color: #000;
+    }
+    table {
+        width: 100%;
+    }
+    th { background:#222;color:#fff; }
+    th.med {
+        width: 80px;
+    }
+    th.small {
+        width: 40px;
+    }
+    td.flags {
+        white-space:pre
+    }
+    div.menu
+    {
+    text-align:center;
+    position:fixed;
+    left:0px;top:0px;
+    width:100%;
+    z-index:5;background:#fff;
+    }
+    
+a:link, a:visited { font-style:italic;text-decoration:underline; color:#aaa; }
+a:hover{ text-decoration:none;color:#bbb}
+code{color:#777;}
+:target {
+    display: block;    
+    position: relative;     
+    top: -60px;
+    visibility: hidden;
+}
+p{       padding: 8px 8px;margin:0px}
+h1{color:#000;margin:0;padding:0}
+div.pg
+{       margin: auto;
+        padding-top:16px;
+        padding-bottom:16px;
+        width:800px;
+        background:#ccb;
+}
+div#fk
+{   position:fixed;top:0;left:0;z-index:100;
+        font-size: 16px;
+        padding: 8px 6px;
+}
+</style>
+<div id=fk>
+<b>mpkedit_doc</b> v01 - 2017 bryc
+</div>
+
+
+<div class=menu></div>
+
+<div pn="Overview" style="display:none" class=pg>
+
+<div id=p>
+<p>
+The <b>Controller Pak</b> uses a 32-kilobyte SRAM chip on the PCB (battery-backed).
+It contains a filesystem which divides the memory into 256-byte chunks which are known as <i>pages</i>. 
+This allows for 32768 / 256 = 128 pages. The first five pages are reserved for filesystem use, and the remaining 123 pages are free to be used by any game.
+</p>
+</div>
+
+<table id="byc-table">
+    <thead>
+        <tr>
+            <th colspan="4">Filesystem structure (32,768 bytes)</th>
+        </tr>
+        <tr id="col">
+            <th class="med">Start offset</th>
+            <th class="med">End offset</th>
+            <th class="small">Size</th>
+            <th>Short description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="m">0x0000</td>
+            <td class="m">0x00FF</td>
+            <td class="m">0x100</td>
+          <td>Header (contains pak ID/checksummed blocks)</td>
+        </tr>
+        <tr>
+            <td class="m">0x0100</td>
+            <td class="m">0x01FF</td>
+            <td class="m">0x100</td>
+          <td>Index table/INODE table, primary</td>
+        </tr>
+        <tr>
+            <td class="m">0x0200</td>
+            <td class="m">0x02FF</td>
+            <td class="m">0x100</td>
+          <td>Index table/INODE table, 1:1 backup of primary</td>
+        </tr>
+        <tr>
+            <td class="m">0x0300</td>
+            <td class="m">0x04FF</td>
+            <td class="m">0x200</td>
+          <td>Note table/File table (contains 16 note entries)</td>
+        </tr>
+        <tr>
+            <td class="m">0x0500</td>
+            <td class="m">0x7FFF</td>
+            <td class="m">0x7B00</td>
+          <td>Remaining 123 pages reserved for game save use</td>
+        </tr>
+    </tbody>
+</table>
+
+</div>
+
+
+<div pn="Header" style="display:none" class=pg>
+
+<div id=p>
+<p>
+The <b>Header</b> contains four checksum blocks which are used to validate the filesystem. There is also a randomly generated 32-bit integer used to represent the Pak ID. This is to differentiate between two different Controller Paks.
+
+There is also a undefined label area that libultra seemingly writes <code>0x81</code> to in the first byte. 
+</p>
+</div>
+
+<table id="byc-table">
+    <thead>
+        <tr>
+            <th colspan=4>Header block</th>
+        </tr>
+        <tr id=col>
+            <th class=med>Start offset</th>
+            <th class=med>End offset</th>
+            <th class=small>Size</th>
+            <th>Short description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="m">0x0000</td>
+            <td class="m">0x001F</td>
+            <td class="m">0x20</td>
+            <td>Label area (?). First byte usually set to 0x81 by libultra when repairing. Not required.</td>
+        </tr>
+        <tr>
+            <td class="m">0x0020</td>
+            <td class="m">0x003F</td>
+            <td class="m">0x20</td>
+            <td>Checksummed area #1</td>
+        </tr>
+        <tr>
+            <td class="m">0x0040</td>
+            <td class="m">0x005F</td>
+            <td class="m">0x20</td>
+            <td>EMPTY - possibly related to ID area.</td>
+        </tr>
+        <tr>
+            <td class="m">0x0060</td>
+            <td class="m">0x007F</td>
+            <td class="m">0x20</td>
+            <td>Checksummed area #2</td>
+        </tr>
+        <tr>
+            <td class="m">0x0080</td>
+            <td class="m">0x009F</td>
+            <td class="m">0x20</td>
+            <td>Checksummed area #3</td>
+        </tr>
+        <tr>
+            <td class="m">0x00A0</td>
+            <td class="m">0x00BF</td>
+            <td class="m">0x20</td>
+            <td>EMPTY - possibly related to ID area.</td>
+        </tr>
+        <tr>
+            <td class="m">0x00C0</td>
+            <td class="m">0x00DF</td>
+            <td class="m">0x20</td>
+            <td>Checksummed area #4</td>
+        </tr>
+        <tr>
+            <td class="m">0x00E0</td>
+            <td class="m">0x00FF</td>
+            <td class="m">0x20</td>
+            <td>EMPTY - possibly related to ID area.</td>
+        </tr>
+    </tbody>
+</table>
+
+</div>
+
+
+<div pn="Index table" style="display:none" class=pg>
+
+</div>
+
+<!------------------------------------------>
+
+<div pn="Note table" style="display:none" class=pg>
+
+</div>
+
+<script>
+window.onload = function()
+{
+    var t = document.querySelectorAll("div.pg");
+    
+    for(var i = 0; i < t.length; i++)
+    {
+        var L = document.querySelector("div.menu");
+        L.innerHTML += "<a href='?pg="+i+"'>"+ t[i].getAttribute('pn')+"</a>";
+        if(i < t.length-1){L.innerHTML += " | "}
+    }
+    
+    var nav = window.location.search.substr(1);
+    var nv2 = nav.split("=");
+    if(nv2[0]=="pg")
+    {
+        document.querySelectorAll('div.pg')[nv2[1]].style.cssText="";
+    }
+    else
+    {
+        document.querySelectorAll('div.pg')[0].style.cssText="";
+    }
+}
+</script>
