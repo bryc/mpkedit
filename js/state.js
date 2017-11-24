@@ -10,27 +10,46 @@ State: functions which manipulate the current State of the opened MPK file, post
       generate empty MPK data then immediately load it.
     */
     State.init = function() {
-        function writeAt(offset) {
-            for(var i = 0; i < 7; i++) {
-                data[offset + i] = bytes[i];
-            }
+        var data = new Uint8Array(32768), block = new Uint8Array(32);
+        data[0] = 0x81;
+        
+        // generate checksummed blocks
+        block[0]=0xFF;
+        block[1]=0xFF;
+        block[2]=0xFF;
+        block[3]=0xFF;
+        block[4]=Math.floor(Math.random()*256);
+        block[5]=Math.floor(Math.random()*256);
+        block[6]=Math.floor(Math.random()*256);
+        block[7]=block[4]^block[5]^block[6]^0xFF;
+        block[25]=0x01;
+        block[26]=0x01;
+
+        var sumA = 0, sumB = 0xFFF2;
+        for(var i = 0; i < 28; i += 2) {
+            sumA += (block[i] << 8) + block[i + 1];
+            sumA &= 0xFFFF;
         }
+        sumB -= sumA;
 
-        var data = new Uint8Array(32768);
+        block[28]=sumA >> 8;
+        block[29]=sumA & 0xFF;
+        block[30]=sumB >> 8;
+        block[31]=sumB & 0xFF;
 
-        var bytes = [1, 1, 0, 1, 1, 254, 241];  
-        writeAt(57);
-        writeAt(121);
-        writeAt(153);
-        writeAt(217);
+        function writeAt(ofs) {for(var i=0; i<32; i++) data[ofs+i] = block[i];}
+        writeAt(32);
+        writeAt(96);
+        writeAt(128);
+        writeAt(192);
 
+        // init IndexTable and backup (plus checksums)
         for(var i = 5; i < 128; i++) {
-            data[256 + i * 2 + 1] = 3;
-            data[512 + i * 2 + 1] = 3;
+            data[256 + (i * 2) + 1] = 3;
+            data[512 + (i * 2) + 1] = 3;
         }
-
-        data[257] = 113;
-        data[513] = 113;
+        data[257] = 0x71;
+        data[513] = 0x71;
 
         MPKEdit.Parser(data, "New.mpk");
     };
