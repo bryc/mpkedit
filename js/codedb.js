@@ -422,6 +422,7 @@ gameCode database.
 MPKEdit.App.codeDB = {
     "\x3B\xAD\xD1\xE5": "Cart save (Gameshark/Action Replay)",
     "\xDE\xAD\xBE\xEF": "Cart save (BlackBag's Memory Manager)",
+    "N4WX": "40 Winks (E)",
     "NO7P": "007 - The World is Not Enough (E)",
     "NO7E": "007 - The World is Not Enough (U)",
     "NTEP": "1080 Snowboarding (E)",
