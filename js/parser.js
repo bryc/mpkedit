@@ -500,7 +500,13 @@
 
         if(MPKEdit.State.data && isNote(data)) {
             insertNote(data);
-        } else if(result = parse(data)) {
+        } else {
+            var result = parse(data);
+            if(!result) {
+                console.warn("ERROR: Data in file provided is not valid: " + filename);
+                return false;
+            }
+            // This is all Comments?
             if(result.data.length > 32768) {
                 var bl0c = result.data.subarray(32768);
                 var hasCmts = arrstr(bl0c, 1, 8) === "MPKCmts";
@@ -568,8 +574,6 @@
             }
 
             MPKEdit.App.updateUI();
-        } else {
-            console.warn("ERROR: Data in file provided is not valid: " + filename);
         }
     };
 }());
