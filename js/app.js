@@ -38,7 +38,7 @@
             elem([],elem(["td", {className: "hash"}],
                 elem(["canvas", {width: 32, height: 32, id: "hash"}])
             ),MPKEdit.elem(["td",{className:"divider",innerHTML:"<div></div>"}])) : "",
-            elem(["td", {className: "name", innerHTML: MPKEdit.State.NoteTable[i].noteName+(MPKEdit.State.NoteTable[i].comment?"<span title='"+MPKEdit.State.NoteTable[i].comment.replace("&","&amp;").replace('"',"&quot;").replace('<',"&lt;").replace('>',"&gt;").replace("'","&apos;") + "' class='fa fa-comment'></span>":"")}],
+            elem(["td", {className: "name", innerHTML: MPKEdit.State.NoteTable[i].noteName+(MPKEdit.State.NoteTable[i].comment?"<span title='"+MPKEdit.State.NoteTable[i].comment.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/'/g,"&apos;") + "' class='fa fa-comment'></span>":"")}],
                 elem(["div", App.codeDB[MPKEdit.State.NoteTable[i].serial]||MPKEdit.State.NoteTable[i].serial])
             ),
             elem(["td",{className:"divider",innerHTML:"<div></div>"}]),
