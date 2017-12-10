@@ -152,7 +152,6 @@
                     var page = y[j];
 
                     x2[page].style.background = col[i];
-;
                     console.log(x2[page]);
                 }
             }
