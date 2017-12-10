@@ -4,6 +4,7 @@
     var writeDone = function(Entry,  event) {
         if(event.loaded === event.currentTarget.position) {
             event.currentTarget.truncate(event.currentTarget.position); // truncate data to correct size.
+            
             MPKEdit.State.Entry = Entry;
             MPKEdit.State.filename = Entry.name;
             MPKEdit.App.updateUI();
@@ -42,6 +43,7 @@
                     if("MPK" === fl.name.split('.').pop().toUpperCase()) {
                         MPKEdit.App.tmpEntry = Entry[i];
                     }
+
                     var reader = new FileReader();
                     reader.onload = function(e) {
                         MPKEdit.Parser(new Uint8Array(e.target.result), fl.name);
