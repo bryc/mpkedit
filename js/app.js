@@ -6,26 +6,42 @@
       build HTMLElement for note row in MPK
     */
     var buildRow = function(i) {
-        function pixicon(t,e) {
-            function n(t,e,n,i=0){
-                var r=[[999*t%360,24+80*e%40,26+70*n%40],[999*t%360,9*e%10,15+36*n%50],[999*t%360,14*e%40,37+36*n%40]];
-                return"hsl("+~~r[i][0]+","+~~r[i][1]+"%,"+~~r[i][2]+"%)"
+        function pixicon(t, r) {
+            function i(t, r, e, i=0) { // HSL color generator.
+                var set = [[999*t%360,24+80*r%40,26+70*e%40],[999*t%360,9*r%10,15+36*e%50],[999*t%360,14*r%40,37+36*e%40]];
+                return "hsl("+~~set[i][0]+","+~~set[i][1]+"%,"+~~set[i][2]+"%)";
             }
-            var i=[],r=new function(){this.next=function(){return(this.r=48271*this.r%2147483647)/2147483648},this.r=e},
-            a=t.getContext("2d");
-            30!==t.width&&(t.width=t.height=30,t.style.imageRendering="-moz-crisp-edges",t.style.imageRendering="pixelated"),
-            a.setTransform(1,0,0,1,0,0),a.clearRect(0,0,t.width,t.height);
-            var h=n(r.next(),r.next(),r.next(),r.next()>=.9?1:0),
-                l=n(r.next(),r.next(),r.next(),r.next()>=.8?2:0);
-                a.fillStyle=h,r.next()>.5&&(a.rotate(.5*Math.PI),a.translate(0,-t.width));
-            for(var x=0|.125*(2*(e=r.next())*100+8*e+100),s=0;s<x;s++)i[s]=1;
-            for(var o,s=50;s;)o=0|r.next()*s--,[i[s],i[o]]=[i[o],i[s]];
-            i=i.concat(i.slice().reverse());
-            for(var c=t.width/10,f=y=s=0;s<100;s++,f=s%10)
-                50===s&&(a.fillStyle=l),
-                s&&!f&&y++,
-                i[s]&&a.fillRect(c*f,c*y,c,c)
+            function LCG(seed) { // LCG pseudorandom number generator.
+                function lcg(a) {return a * 48271 % 2147483647}
+                seed = seed ? lcg(seed) : lcg(Math.random());
+                return function() {return (seed = lcg(seed)) / 2147483648}
+            }
+            var n = 10, q = n*3, l = n*n, a = [], rng = LCG(r), c = t.getContext("2d");
+            // Set canvas dimensions if not already set (performance boost).
+            if(t.width !== q) {
+                t.width = t.height = q, t.style.imageRendering = "-moz-crisp-edges", t.style.imageRendering = "pixelated";
+            }
+            c.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation.
+            c.clearRect(0, 0, t.width, t.height); // Erase previous context.
+            // Set fill color for pixels.
+            var color1 = i(rng(), rng(), rng(), rng()>=.9 ? 1:0);
+            var color2 = i(rng(), rng(), rng(), rng()>=.8 ? 2:0);
+            c.fillStyle = color1;
+            rng() > .5 && c.rotate(Math.PI * .5)|c.translate(0, -t.width); // Rotate canvas 90 degrees.
+            // Generate pixel array
+            var r = rng(), u = 0|(2*r*l+8*r+l)*.125;
+            for(var s = 0; s < u; s++) a[s] = 1;
+            // Shuffle pixel array (Fisher–Yates). NOTE: |0 prevents infinite loop.
+            for(var v, s = 0|l/2; s;) v = 0|rng() * s--, [a[s], a[v]] = [a[v], a[s]];
+            a = a.concat(a.slice().reverse()); // Append reversed pixel array.
+            // Paint canvas.
+            for(var o = t.width/n, d=y=s= 0; s < l; s++, d = s%n)
+                // Change color at halfway point. NOTE: |0 required for odd sizes.
+                (s === (0|l/2)) && ( c.fillStyle = color2),
+                (s && !d) && y++, // Increment y axis.
+                (a[s]) && c.fillRect(o*d, o*y, o, o) // If pixel exists, fill square on canvas (x, y, w, h).
         }
+
         // Handle empty rows
         if(!MPKEdit.State.NoteTable[i]) {
             var tableRow = elem(["tr", {className: "empty"}], elem(["td", {innerHTML: (i+1),"colSpan": 16}]));
