@@ -1,4 +1,5 @@
 window.addEventListener("load", function() {
+    
     /* -----------------------------------------------
     function: readFiles(event)
       read files from a drop event or a browse file input, and proceeds to
@@ -13,21 +14,18 @@ window.addEventListener("load", function() {
             reader.onload = function(e) {
                 MPKEdit.Parser(new Uint8Array(e.target.result), files[i].name)
             };
+            // fsys: Load DnD FileEntry to tmpEntry
             if(MPKEdit.App.usefsys) {
                 MPKEdit.App.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
             }
             // Read bytes from file with upper size limit
             // RawMPK=32768, DexDrive=36928, MaxMPKCmt=98144
             reader.readAsArrayBuffer(files[i].slice(0, 98144));
-        }
-
+        };
         // Support both <input type=file> AND drag and drop
         var files = event.target.files || event.dataTransfer.files;
         // Do the loop.
-        for(var i = 0; i < files.length; i++) {
-            readFile(i);
-        }
-
+        for(var i = 0; i < files.length; i++) readFile(i);
         event.preventDefault();
     };
 
@@ -37,40 +35,30 @@ window.addEventListener("load", function() {
     */
     var setDragEffects = function setDragEffects() {
         function isFile(event) {
-            var dt = event.dataTransfer;
-            for (var i = 0; i < dt.types.length; i++) {
-                if (dt.types[i] === "Files") {
-                    return true;
-                }
+            for (var dt = event.dataTransfer, i = 0; i < dt.types.length; i++) {
+                if (dt.types[i] === "Files") return true;
             }
             return false;
         }
 
-        var dropzone = document.getElementById("dropzone");
-        var lastTarget = null;
-
+        var lastTarget = null, dropzone = document.getElementById("dropzone");
         window.addEventListener("dragenter", function (event) {
             if (isFile(event)) {
                 lastTarget = event.target;
-                dropzone.style.visibility = "";
-                dropzone.style.opacity = 1;
+                dropzone.style.opacity = 1, dropzone.style.visibility = "";
             }
         });
-
         window.addEventListener("dragleave", function (event) {
-            event.preventDefault();
             if (event.target === lastTarget) {
-                dropzone.style.visibility = "hidden";
-                dropzone.style.opacity = 0;
+                dropzone.style.opacity = 0, dropzone.style.visibility = "hidden";
             }
-        });
-
-        window.addEventListener("drop", function(event) {
-            dropzone.style.visibility = "hidden";
-            dropzone.style.opacity = 0;
             event.preventDefault();
         });
-    }
+        window.addEventListener("drop", function(event) {
+            dropzone.style.opacity = 0, dropzone.style.visibility = "hidden";
+            event.preventDefault();
+        });
+    };
 
     /* -----------------------------------------------
     function: init()
@@ -80,33 +68,34 @@ window.addEventListener("load", function() {
     */
     var init = function() {
         function changeExportColor(event) {
-            var target = document.querySelectorAll(".fa-download");
-            for(var i = 0; i < target.length; i++) {
-                target[i].style.color = event.ctrlKey ? "#c00" : "";
+            for(var trg = document.querySelectorAll(".fa-download"), i = 0; i < trg.length; i++) {
+                trg[i].style.color = event.ctrlKey ? "#c00" : "";
             }
         }
         function browse() {
-            if(MPKEdit.App.usefsys) {MPKEdit.fsys.loadFile();}
+            if(MPKEdit.App.usefsys) MPKEdit.fsys.loadFile();
             else {
                 var selectFile = document.getElementById("fileOpen");
                 if(selectFile.value) selectFile.value = "";
-                selectFile.onchange = readFiles;
-                selectFile.click();
+                selectFile.onchange = readFiles, selectFile.click();
             }
         }
 
+        // Detect running as chrome app.
         MPKEdit.App.usefsys = location.protocol === "chrome-extension:";
 
+        // Init Local Storage config
         MPKEdit.App.cfg = {
-            "#!version" : 0.1,    // app config version (increase when introducing incompatibile changes)
-            "identicon" : false,  // display identicons for notes
-            "hideRows"  : true    // hide empty rows 
+            "#!version" : 0.1,    // app config version (increase when introducing config changes)
+            "identicon" : false,  // true = display identicons for notes
+            "hideRows"  : true    // true = hide empty rows 
         };
 
+        // Load config from storage
         if(MPKEdit.App.usefsys) {
             chrome.storage.local.get(function(e){
                 if(e.MPKEdit) {
-                    // Annoying ass async API. Must update UI again.
+                    // Annoying ass async API for fsys. Must update UI again.
                     MPKEdit.App.cfg = e.MPKEdit;
                     MPKEdit.App.updateUI();
                 }
@@ -115,6 +104,7 @@ window.addEventListener("load", function() {
             MPKEdit.App.cfg = JSON.parse(localStorage.MPKEdit); 
         }
 
+        // #### Assign event handlers ####
         // Load file button
         document.getElementById("fileOpen").onchange = readFiles;
         document.getElementById("loadButton").onclick = browse;
@@ -132,8 +122,10 @@ window.addEventListener("load", function() {
         // Modal
         document.getElementById("menu").onclick = MPKEdit.App.buildModal;
         document.getElementById("modal").onclick = MPKEdit.App.buildModal;
+
+        // Hide modal when pressing ESC key.
         window.onkeydown = function(e) {
-            if(e.keyCode === 27) { modal.style.opacity = "0";modal.style.visibility = "hidden"; }
+            if(e.keyCode === 27) modal.style.opacity = 0, modal.style.visibility = "hidden";
         };
 
         MPKEdit.State.init();
