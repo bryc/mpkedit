@@ -49,7 +49,7 @@ window.addEventListener("load", function() {
             }
         });
         window.addEventListener("dragleave", function (event) {
-            if (event.target === lastTarget) {
+            if (event.target === lastTarget || event.target === document) {
                 dropzone.style.opacity = 0, dropzone.style.visibility = "hidden";
             }
             event.preventDefault();
@@ -126,6 +126,10 @@ window.addEventListener("load", function() {
         // Hide modal when pressing ESC key.
         window.onkeydown = function(e) {
             if(e.keyCode === 27) modal.style.opacity = 0, modal.style.visibility = "hidden";
+        };
+        // Hide dropzone when clicking it (in case it ever persists)
+        document.getElementById("dropzone").onclick = function(e) {
+            dropzone.style.opacity = 0, dropzone.style.visibility = "hidden";
         };
 
         MPKEdit.State.init();

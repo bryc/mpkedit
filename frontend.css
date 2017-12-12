@@ -124,9 +124,9 @@ textarea {
     height: 51px;
     resize: none;
 }
-.b0x:nth-child(-n+5) {visibility:hidden;}
+.b0x:nth-child(-n+5) {opacity:0.75;border:1px dotted #CCC;}
 .pageContainer {text-align:center;margin-top:32px;line-height:0.3;}
-.b0x{line-height:1;display:inline-block;border:1px solid #777;height:8px;width:8px;margin:0.5px;}
+.b0x{line-height:1;display:inline-block;border:1px solid #CCC;height:8px;width:8px;margin:0.5px;}
 
 /*
     ----------------------------------------

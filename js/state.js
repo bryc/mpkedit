@@ -58,6 +58,7 @@
       Erase a note at index/id. Note: This does not erase actual save data, just the pointer.
     */
     State.erase = function(id) {
+        if(!State.NoteTable[id]) return; // cancel if id doesn't exist in NoteTable
         var tmpData = new Uint8Array(State.data); // operate on tmp copy to run thru parser later
         var indexes = State.NoteTable[id].indexes; // get note's indexes sequence to overwrite with 0x03
         // Erase all indexes in IndexTable
