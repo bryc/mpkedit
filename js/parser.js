@@ -104,7 +104,7 @@
             sumA &= 0xFFFF;
         }
         sumB -= sumA;
-    
+
         // many checksums in DexDrive files are incorrect.
         // this detects and fixes the specific issue.
         state[o] = {};
@@ -113,7 +113,7 @@
            data[o + 31] ^= 0xC;
            state[o].dexdriveFix = true;
         }
-        
+
         state[o].valid = (sumX === sumA && sumY === sumB);
         return (sumX === sumA && sumY === sumB); // this return statement is not used.
     };
@@ -160,11 +160,11 @@
         for(var i = 0x300; i < 0x500; i += 32) { // iterate over NoteTable
             var p = data[i + 0x07];
             var validIndex = data[i + 0x06] === 0 && p >= 5 && p <= 127; // firstIndex validation
-    
+
             if(validIndex) {
                 var id = (i - 0x300) / 32;
                 NoteKeys.push(p);
-    
+
                 for(var j = 0, noteName = ""; j < 16; j++) {
                     noteName += n64code[data[i + 16 + j]] || "";
                 }
@@ -224,11 +224,11 @@
             var p, p2;
             var indexEnds = 0;
             var found = {parsed: [], keys: [], values: []};
-    
+
             // Iterate over the IndexTable, checking each index.
             for(var i = o + 0xA; i < o + 0x100; i += 2) {
                 p = data[i + 1], p2 = data[i];
-    
+
                 if (p2 === 0 && p === 1 || p >= 5 && p <= 127 && p !== 3) { // TODO: Make this condition more readable with brackets?
                     if(p === 1) indexEnds++; // count the number of seq ending markers (0x01).
                     if(p !== 1 && found.values.indexOf(p) > -1) { // There shouldn't be any duplicate indexes.
@@ -291,7 +291,7 @@
                 console.info(o, "Fixing INODE checksum.", curfile);
                 data[o+1] = sum;
             }
-    
+
             // copy IndexTable to the backup slot (OR copy backup to main, depending on `o`)
             p = (o === 0x100) ? 0x200 : 0x100;
             for(i = 0; i < 0x100; i++) {
@@ -345,7 +345,7 @@
         }
         var NoteKeys = []; // shared NoteKeys array. Produced by readNotes, used in checkIndexes.
         var NoteTable = readNotes(data, NoteKeys);
-    
+
         var output = checkIndexes(data, 0x100, NoteKeys);
         if(output) {
             var usedPages = 0;
@@ -367,7 +367,7 @@
                 usedPages += _note.indexes.length;
                 usedNotes++;
             }
-    
+
             return {
                 NoteTable: NoteTable,
                 usedPages: usedPages,
@@ -414,7 +414,7 @@
         var pageData = data.subarray(32);
         var pageCount = pageData.length / 256;
         var newPages = MPKEdit.State.usedPages + pageCount; // Pre-calc used page count before import (to make sure it fits)
-    
+
         if(newPages <= 123 && MPKEdit.State.usedNotes < 16) { // if there's enough space..
             var freeIndexes = [];
             for(var i = 0xA; i < 0x100; i += 2) {
@@ -422,29 +422,29 @@
                     break;
                 }
                 if(tmpdata[0x100 + i + 1] === 3) { // allocate list of free indexes for import destination.
-                    freeIndexes.push(i / 2); 
+                    freeIndexes.push(i / 2);
                 }
             }
-    
+
             noteData[0x06] = 0; // replace 0xCAFE with first free index.
             noteData[0x07] = freeIndexes[0];
-    
+
             for(var i = 0; i < freeIndexes.length; i++) {
                 var target1 = 0x100 + (2 * freeIndexes[i] + 1);
                 var target2 = 0x100 * freeIndexes[i];
-    
+
                 if(i === freeIndexes.length - 1) { // 0x01 for last index in sequence.
-                    tmpdata[target1] = 0x01; 
+                    tmpdata[target1] = 0x01;
                 }
                 else {
                     tmpdata[target1] = freeIndexes[i + 1]; // write the index sequence in IndexTable
                 }
-    
+
                 for(var j = 0; j < 0x100; j++) {
                     tmpdata[target2 + j] = pageData[0x100 * i + j]; // write the page data sequence.
                 }
             }
-    
+
             for(var i = 0; i < 16; i++) { // Write 32-byte NoteEntry to NoteTable.
                 if(MPKEdit.State.NoteTable[i] === undefined) {
                     // tmpComments must be used here because saving directly to MPKEdit.State
@@ -457,7 +457,7 @@
                     break;
                 }
             }
-    
+
             MPKEdit.Parser(tmpdata);
         } else {
             if(MPKEdit.State.usedNotes >= 16) {
@@ -489,11 +489,11 @@
                 return false;
             }
             // This is all MPKCmts stuff? -- TODO: Add comments (should this even be here? seperate function?)
-            if(result.data.length > 32768) {
+            if(result.data.length > 32768) { // Only check for MPKCmts if size > 32KB
                 var bl0c = result.data.subarray(32768);
                 var hasCmts = arrstr(bl0c, 1, 8) === "MPKCmts";
-                var cmtCount = bl0c[15];
-                var crc8_1 = bl0c[0];
+                var cmtCount = bl0c[15]; // header: stored number of comments
+                var crc8_1 = bl0c[0]; // header: stored crc
                 var crc8_2 = MPKEdit.crc8(result.data.subarray(32768+1));
                 var isValid = hasCmts && (crc8_1===crc8_2);
 
@@ -503,14 +503,14 @@
                     // parsing the cmt block
                     for(var ptr = 16, i = 0; i < cmtCount; i++) {
                         var magic  = bl0c[ptr + 0];
-                        if(magic !== 0xA5) {
+                        if(magic !== 0xA5) { // comment entry indicator
                             console.error(`MPKCmts Error: Can't find 0xA5 magic (${magic}). Aborting load.`);
                             break;
                         }
                         foundCount++;
-                        var node   = bl0c[ptr + 1];
-                        var crc8   = bl0c[ptr + 2];
-                        var cmtLen = (bl0c[ptr + 3] << 8) + bl0c[ptr+4];
+                        var node   = bl0c[ptr + 1]; // associated startIndex
+                        var crc8   = bl0c[ptr + 2]; // CRC of NoteEntry first 8 bytes
+                        var cmtLen = (bl0c[ptr + 3] << 8) + bl0c[ptr+4]; // comment length in bytes
                         if(cmtLen > 4080 || cmtLen === 0) {
                             console.error(`MPKCmts Error: Invalid comment length (${cmtLen}). Aborting load.`);
                             break;
@@ -518,14 +518,14 @@
                         var cmtStr = new TextDecoder("utf-8").decode(bl0c.subarray(ptr + 5, ptr + 5 + cmtLen));
                         ptr += 5 + cmtLen;
 
-                        // Check if comment's specified node exists, and if the CRC-8 is valid.
+                        // Check if comment's specified startIndex/entryPoint exists, and if the CRC-8 is valid.
                         var nodeFound = false, noteOfs;
                         for(var j = 0; j < 16; j++) {
                             var addr = 0x300 + j*32;
                             var node2 = result.data[addr+7];
                             var crc8arr = MPKEdit.crc8(result.data.subarray(addr, addr+8));
                             if(node === node2 && crc8 === crc8arr) {
-                                nodeFound = true; noteOfs = j;
+                                nodeFound = true; noteOfs = j; // if the test passes, do this
                                 break;
                             }
                         }
