@@ -1,6 +1,6 @@
 (function MPKApp() {
     var App = {};
-    function pad(a,b,c){return (new Array(b||2).join(c||0)+a).slice(-(b||2))}
+    function pad(i,x=2,y=0){return(''+y).repeat(x-(''+i).length)+i;}
 
     /* -----------------------------------------------
     function: pixicon(t, r)
@@ -59,7 +59,7 @@
             return str;
         }
         // Handle empty rows
-        if(!State.NoteTable[i]) { 
+        if(!State.NoteTable[i]) {
             var tableRow = elem(["tr",{className:"empty"}],elem(["td",{innerHTML:i+1,"colSpan":16}]));
             return tableRow;
         }
@@ -68,7 +68,7 @@
         var displayName = State.NoteTable[i].noteName + cmtIcon;
 
         var tableRow =
-        elem(["tr", {className: "note", id: i}],
+        elem(["tr",{className:"note",id:i}],
             // start pixicon display
             App.cfg.identicon ?
             elem([],
@@ -107,145 +107,144 @@
       build a multi-purpose Modal popup window.
     */
     App.buildModal = function(e) {
-        var modal = document.getElementById("modal");
-        if(e.target.id==="modal") {
-            modal.style.opacity = "0";
-            modal.style.visibility = "hidden";
-            return;}
-
-        // wat
-        else if(e.target.id==="menu"||e.target.className==="fa fa-info-circle") {
-
-        while(modal.firstChild) {modal.removeChild(modal.firstChild);}
+        //if(e.target.id!=="menu"||e.target.className!=="fa fa-info-circle") return; // only allow execution from specific clickies
         var content = elem(["div",{className:"modalContent"}]);
-        var col = ["#713257", "#D9C173", "#5B4DA4", "#3A991B", "#1B696A", "#69532F", "#A52626", "#92C9C0", "#1F4F75", "#D6664D", "#F4AD9B", "#BBF637", "#777564", "#497BA5", "#ED6BB2", "#3D4142"];
 
-        // SETTINGS
+        var col = ["#713257", "#D9C173", "#5B4DA4", "#3A991B", "#1B696A", "#69532F", "#A52626", "#92C9C0",
+                   "#1F4F75", "#D6664D", "#F4AD9B", "#BBF637", "#777564", "#497BA5", "#ED6BB2", "#3D4142"];
+
+        // ################ Modal: Settings ################
         if(e.target.id === "menu") {
-            var settings = elem([],
-                elem(["h1", "Settings"]),
-
-                elem(["div", {className: "modalBlock"}],
-                    elem(["span", {className: "state"}],
-                        elem(["input", {checked: App.cfg.hideRows, id: "hideRows", onchange: updateSettings, type:"checkbox"}]),
-                        elem(["span", {onclick:function(){this.previousSibling.click()}, className: "chkb0x"}])
+            var settings =
+            elem([],
+                elem(["h1","Settings"]),
+                // SETTING 1: Hide Rows
+                elem(["div",{className:"modalBlock"}],
+                    elem(["span",{className:"state"}],
+                        elem(["input",{checked: App.cfg.hideRows,id:"hideRows",onchange:updateSettings,type:"checkbox"}]),
+                        elem(["span",{onclick:function(){this.previousSibling.click()},className:"chkb0x"}])
                     ),
-                    elem(["div",{className: "text"}],
-                    elem(["div", {className: "textLabel",onmousedown:function(e){e.preventDefault()}, innerHTML: "Hide empty rows",
-                    onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}}]),
-                    elem(["div", {className: "textInfo", innerHTML: "Control whether empty rows are displayed."}])
+                    elem(["div",{className:"text"}],
+                    elem(["div",{className:"textLabel",onmousedown:function(e){e.preventDefault()},innerHTML:"Hide empty rows",
+                        onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}}]),
+                    elem(["div",{className:"textInfo",innerHTML:"Control whether empty rows are displayed."}])
                     )
                 ),
-
-                elem(["div", {className: "modalBlock"}],
-                    elem(["span", {className: "state"}],
-                        elem(["input", {checked: App.cfg.identicon, id: "identicon", onchange: updateSettings, type:"checkbox"}]),
-                        elem(["span", {onclick:function(){this.previousSibling.click()}, className: "chkb0x"}])
+                // SETTING 2: Pixicons
+                elem(["div",{className:"modalBlock"}],
+                    elem(["span",{className:"state"}],
+                        elem(["input",{checked:App.cfg.identicon,id:"identicon",onchange:updateSettings,type:"checkbox"}]),
+                        elem(["span",{onclick:function(){this.previousSibling.click()},className:"chkb0x"}])
                     ),
-                    elem(["div",{className: "text"}],
-                    elem(["div", {className: "textLabel",onmousedown:function(e){e.preventDefault()},
-                        onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}, innerHTML: "Show icons"}]),
-                    elem(["div", {className: "textInfo", innerHTML: "Identify unique saves with icons."}])
+                    elem(["div",{className:"text"}],
+                    elem(["div",{className:"textLabel",onmousedown:function(e){e.preventDefault()},innerHTML:"Show icons",
+                        onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}}]),
+                    elem(["div",{className:"textInfo",innerHTML:"Identify unique saves with icons."}])
                     )
                 )
             );
-
-        var x = elem(["div",{className:"pageContainer"}])
-        for(var j = 0; j < 128; j++) {
-            x.appendChild(elem(["span",{className:"b0x"}]))
-            if((j+1)%32===0) {x.appendChild(elem(["br"]))}
-        }
-
-        var x2 = x.querySelectorAll("span.b0x")
-
-        for(var i = 0; i < 16; i++) {
-            if(State.NoteTable[i]) {
-                var y = State.NoteTable[i].indexes;
-                for(var j = 0; j < y.length; j++) {
-                    var page = y[j];
-
-                    x2[page].style.background = col[i]+"C0";
-                    x2[page].style.borderColor = col[i]; 
-                    console.log(x2[page]);
+            // Generate the IndexTable visualizer display
+            var x = elem(["div",{className:"pageContainer"}])
+            for(var j = 1; j <= 128; j++) {
+                x.appendChild(elem(["span",{className:"b0x"}]))
+                if(j%32===0) x.appendChild(elem(["br"]));
+            }
+            // Populate squares of display based on NoteTable data.
+            var x2 = x.querySelectorAll("span.b0x");
+            for(var page,y,i = 0; i < 16; i++) {
+                if(State.NoteTable[i]) {
+                    y = State.NoteTable[i].indexes;
+                    for(var j = 0; j < y.length; j++) {
+                        page = y[j];
+                        x2[page].style.borderColor = col[i];
+                        x2[page].style.background = col[i]+"C0";
+                    }
                 }
             }
-        }
-            console.log(x);
-            settings.appendChild(x)
-            content.appendChild(settings)
+
+            // Append IndexTable display to settings.
+            settings.appendChild(x);
+            // Append Settings to Content
+            content.appendChild(settings);
         }
 
+        // ################ Modal: Note Info ################
         if(e.target.className === "fa fa-info-circle") {
+            // Get ID of the selected Note and its memory address.
             var i = e.target.parentElement.parentElement.id;
-            var i2 = (i*32)+0x300;
-            var noteData = "<code>";
-            for(var j = i2; j < i2+32; j++) {
+            var i2 = 0x300 + (32*i);
+
+            // Print raw bytes of NoteEntry
+            for(var noteData = "<code>", j = i2; j < i2+32; j++) {
                 noteData += pad(State.data[j].toString(16).toUpperCase(),2);
-                if((j-i2)===15) { noteData += "<br>"} else {noteData += " "}
-                
-            } noteData += "</code>"
-            
-            var noteInfo = elem([],
+                if(j-i2===15) noteData += "<br>"; else noteData += " ";
+            } noteData += "</code>";
+
+            var noteInfo =
+            elem([],
                 elem(["h1","Note details"]),
-                elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Comment", className:"label"}]),
-                    elem(["textarea", {maxLength: 2048, placeholder: "No comment...", oninput: function() {
+                elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Comment",className:"label"}]),
+                    elem(["textarea",{maxLength:2048,placeholder:"No comment...",oninput:function() {
                         var encoded = new TextEncoder("utf-8").encode(this.value);
                         if(encoded.length <= 4080) {
-                            this.style.color = "";
-                            State.NoteTable[i].comment = this.value;
+                            this.style.color = "", State.NoteTable[i].comment = this.value;
                             App.updateUI();
-                        } else {this.style.color = "red";}                        
-                    }, className:"content", value: State.NoteTable[i].comment || ""}])
+                        } else this.style.color = "red";
+                    },className:"content",value:State.NoteTable[i].comment || ""}])
                     ),
-                elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Note name", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:State.NoteTable[i].noteName}])
-                    ),
-                elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Game name", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:MPKEdit.App.codeDB[State.NoteTable[i].serial]}])
-                    ),
-                elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Game code", className:"label"}]),
-                    elem(["span", {className:"content fixed", innerHTML:State.NoteTable[i].serial}])
-                    ),
-                elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Region", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:State.NoteTable[i].region}])
-                    ),
-                elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Publisher", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:MPKEdit.App.pubDB[State.NoteTable[i].publisher] + " (<code>"+State.NoteTable[i].publisher+"</code>)"}])
-                    ),
-                elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Hash code", className:"label"}]),
-                    elem(["span", {className:"content fixed", innerHTML:pad(State.NoteTable[i].cyrb32.toString(16),8)}])
-                    ),
-                elem(["div", {className:"modalFlex"}],
-                    elem(["span", {innerHTML: "Used pages", className:"label"}]),
-                    elem(["span", {className:"content", innerHTML:State.NoteTable[i].indexes.length + " ("+(State.NoteTable[i].indexes.length * 256)+" bytes)"}])
-                    ),
-
-                elem(["h1", "Raw note entry"]),
-                elem(["div", {style:"text-align:center;font-size:14px;",innerHTML:noteData}])
+                elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Note name",className:"label"}]),
+                    elem(["span",{className:"content",innerHTML:State.NoteTable[i].noteName}])
+                ),
+                elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Game name",className:"label"}]),
+                    elem(["span",{className:"content",innerHTML:MPKEdit.App.codeDB[State.NoteTable[i].serial]}])
+                ),
+                elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Game code",className:"label"}]),
+                    elem(["span",{className:"content fixed",innerHTML:State.NoteTable[i].serial}])
+                ),
+                elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Region",className:"label"}]),
+                    elem(["span",{className:"content",innerHTML:State.NoteTable[i].region}])
+                ),
+                elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Publisher",className:"label"}]),
+                    elem(["span",{className:"content",innerHTML:MPKEdit.App.pubDB[State.NoteTable[i].publisher]+" (<code>"+State.NoteTable[i].publisher+"</code>)"}])
+                ),
+                elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Hash code",className:"label"}]),
+                    elem(["span",{className:"content fixed",innerHTML:pad(State.NoteTable[i].cyrb32.toString(16),8)+` (${State.NoteTable[i].cyrb32.toString(36)})`}])
+                ),
+                elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Used pages",className:"label"}]),
+                    elem(["span",{className:"content",innerHTML:State.NoteTable[i].indexes.length+" ("+State.NoteTable[i].indexes.length*256+" bytes)"}])
+                ),
+                elem(["h1","Raw note entry"]),
+                elem(["div",{style:"text-align:center;font-size:14px;",innerHTML:noteData}])
             );
+
+            // Append noteInfo block to content.
             content.appendChild(noteInfo);
-                    var x = elem(["div",{className:"pageContainer"}])
-        for(var j = 0; j < 128; j++) {
-            x.appendChild(elem(["span",{className:"b0x",style:(State.NoteTable[i].indexes.indexOf(j)!==-1?" border-color:"+col[i]+";background:"+col[i]+"C0":"")}]))
-            if((j+1)%32===0) {x.appendChild(elem(["br"]))}
+
+            // Paint IndexTable display usage for this Note.
+            var x = elem(["div",{className:"pageContainer"}])
+            for(var sty,j = 0; j < 128; j++) {
+                sty = State.NoteTable[i].indexes.indexOf(j)!==-1?` border-color:${col[i]};background:${col[i]}C0`:"";
+                x.appendChild(elem(["span",{className:"b0x",style:sty}]));
+                if((j+1)%32===0) x.appendChild(elem(["br"]));
+            }
+            // Append display to content.
+            content.appendChild(x);
         }
-        content.appendChild(x);
-        }
 
-        modal.appendChild(content);
-
-
-
-        modal.style.visibility = "";
-        modal.style.opacity = "1";
-        }
+        // #### Appending content to Modal ####
+        var modal = document.getElementById("modal");
+        while(modal.firstChild) modal.removeChild(modal.firstChild); // Clear modal contents first.
+        modal.appendChild(content); // Append content to modal.
+        modal.style.visibility = ""; // Unhide modal.
+        modal.style.opacity = 1;
     };
 
     /* -----------------------------------------------
@@ -275,7 +274,7 @@
         `<span class=statBox>${123-State.usedPages}/123 pages free<div class=outerBar><div style='${w1}' class=innerBar></div></div></span>` +
         `<span class=statBox>${16 -State.usedNotes}/16  notes free<div class=outerBar><div style='${w2}' class=innerBar></div></div></span>`;
         document.getElementById("stats").innerHTML = status;
-        
+
         var out = document.querySelector("table");
         // remove all elements in the table
         while(out.firstChild) out.removeChild(out.firstChild);

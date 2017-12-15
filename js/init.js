@@ -121,7 +121,9 @@ window.addEventListener("load", function() {
         window.addEventListener("blur", changeExportColor);
         // Modal
         document.getElementById("menu").onclick = MPKEdit.App.buildModal;
-        document.getElementById("modal").onclick = MPKEdit.App.buildModal;
+        document.getElementById("modal").onclick = function(e) {
+            if(e.target.id === "modal") modal.style.opacity = 0, modal.style.visibility = "hidden";
+        };
 
         // Hide modal when pressing ESC key.
         window.onkeydown = function(e) {
