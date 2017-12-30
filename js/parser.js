@@ -278,6 +278,7 @@
                 found.parsed.length+", "+found.keys.length+")";
             }
             // Check that each found key exists in the parsed list, individually.
+            // TODO: Check if this error is even possible to trigger---might be useless? Need test case.
             for (var i = 0; i < found.parsed.length; i++) {
                 if (found.parsed.indexOf(found.keys[i]) === -1) {
                     throw "A key doesn't exist in the parsed keys. (" +
