@@ -223,7 +223,7 @@
         try {
             var p, p2;
             var indexEnds = 0;
-            var found = {parsed: [], keys: [], values: []};
+            var found = {parsed: [], keys: [], values: [], dupes: {}};
 
             // Iterate over the IndexTable, checking each index.
             for(var i = o + 0xA; i < o + 0x100; i += 2) {
@@ -231,20 +231,19 @@
 
                 if (p2 === 0 && p === 1 || p >= 5 && p <= 127 && p !== 3) { // TODO: Make this condition more readable with brackets?
                     if(p === 1) indexEnds++; // count the number of seq ending markers (0x01).
-                    if(p !== 1 && found.values.indexOf(p) > -1) { // There shouldn't be any duplicate indexes.
+                    if(p !== 1 && found.dupes[p]) { // There shouldn't be any duplicate indexes.
                         throw "IndexTable contains duplicate index " + "(p="+p+").";
                     }
                     found.values.push(p);         // Think values. List of all valid index sequence values
                     found.keys.push((i - o) / 2); // Think memory addresses. The key/offset location/destination for each value
+                    found.dupes[p] = 1;
                 }
                 else if (p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127) { // TODO: Make this condition more readable with brackets?
                     throw "IndexTable contains illegal value" + "(p="+p+", "+p2+").";
                 }
             }
             // filter out the key indexes (start indexes) which should match the NoteTable.
-            var keyIndexes = found.keys.filter(function(n) {
-                return found.values.indexOf(n) === -1;
-            });
+            var keyIndexes = found.keys.filter(x => !found.values.includes(x));
             // Count note indexes: Check that NoteKeys/indexEnds/keyIndexes counts are the same.
             var nKeysN = NoteKeys.length, nKeysP = keyIndexes.length;
             if (nKeysN !== nKeysP || nKeysN !== indexEnds) {
@@ -264,10 +263,10 @@
                 while(p === 1 || p >= 5 && p <= 127) {
                     if(p === 1) {
                         noteIndexes[keyIndexes[i]] = indexes;
+                        found.parsed.push(...indexes); // push entire array to found.parsed
                         break;
                     }
                     indexes.push(p);
-                    found.parsed.push(p);
                     p = data[p*2 + o + 1];
                 }
             }
@@ -276,14 +275,6 @@
             if(found.parsed.length !== found.keys.length) {
                 throw "Number of parsed keys doesn't match found keys. (" +
                 found.parsed.length+", "+found.keys.length+")";
-            }
-            // Check that each found key exists in the parsed list, individually.
-            // TODO: Check if this error is even possible to trigger---might be useless? Need test case.
-            for (var i = 0; i < found.parsed.length; i++) {
-                if (found.parsed.indexOf(found.keys[i]) === -1) {
-                    throw "A key doesn't exist in the parsed keys. (" +
-                        found.keys[i];
-                }
             }
             // IndexTable checksum calculate + update.
             // Checksum should NOT be relied on for validation. Valid files may have invalid sums, so validate in other ways.
@@ -301,8 +292,9 @@
             return noteIndexes;
         }
         catch(error) { // If main IndexTable is invalid, check backup:
+            console.error(error);
             if(o !== 0x200) { // allows a single recursive call to checkIndexes to check mirror backup.
-                console.log("WOOPS... checking INODE backup", curfile);
+                console.log("WOOPS... checking INODE backup:", curfile);
                 return checkIndexes(data, 0x200, NoteKeys);
             }
         }
