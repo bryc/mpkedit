@@ -238,6 +238,7 @@
                     found.keys.push((i - o) / 2); // Think memory addresses. The key/offset location/destination for each value
                     found.dupes[p] = 1;
                 }
+                else if (p !== 3 || p2 !== 0) { // Only allow p=3 or p2=0
                     throw `IndexTable contains illegal value (i=${i}, p=${p}, p2=${p2}).`;
                 }
             }
