@@ -229,17 +229,16 @@
             for(var i = o + 0xA; i < o + 0x100; i += 2) {
                 p = data[i + 1], p2 = data[i];
 
-                if (p2 === 0 && p === 1 || p >= 5 && p <= 127 && p !== 3) { // TODO: Make this condition more readable with brackets?
+                if (p2 === 0 && (p !== 3 && p === 1 || p >= 5 && p <= 127)) {
                     if(p === 1) indexEnds++; // count the number of seq ending markers (0x01).
                     if(p !== 1 && found.dupes[p]) { // There shouldn't be any duplicate indexes.
-                        throw "IndexTable contains duplicate index " + "(p="+p+").";
+                        throw `IndexTable contains duplicate index (i=${i}, p=${p}).`;
                     }
                     found.values.push(p);         // Think values. List of all valid index sequence values
                     found.keys.push((i - o) / 2); // Think memory addresses. The key/offset location/destination for each value
                     found.dupes[p] = 1;
                 }
-                else if (p2 !== 0 || p !== 1 && p !== 3 && p < 5 || p > 127) { // TODO: Make this condition more readable with brackets?
-                    throw "IndexTable contains illegal value" + "(p="+p+", "+p2+").";
+                    throw `IndexTable contains illegal value (i=${i}, p=${p}, p2=${p2}).`;
                 }
             }
             // filter out the key indexes (start indexes) which should match the NoteTable.
