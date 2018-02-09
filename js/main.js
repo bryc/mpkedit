@@ -22,15 +22,10 @@ var MPKEdit = (function MPKEdit() {
     function: MPKEdit.cyrb32(data)
       CYRB-32 checksum algo.
     */
-    MPKEdit.cyrb32 = function cyrb32(data) {
-        for(var sum = 0x9CB85729, i = 0; i < data.length; i++) {
-            sum = sum + data[i];
-            sum = sum + (sum << ((sum & 7) + 1));
-        }
-        for(var tmp = sum >>> 0; tmp > 0; tmp >>>= 1) {
-            if(tmp & 1) sum = sum + (sum << ((sum & 7) + 1)) + tmp;
-        }
-        return sum >>> 0;
+    MPKEdit.cyrb32 = function cyrb32(d) {
+        for(var i=0,h=1,t=d.length; i<t; i++)
+            h+=d[i], h+=h<<3, h^=h>>>1;
+        return (h^=h<<10, h+=h<<14) >>>0;
     };
 
     /* -----------------------------------------------

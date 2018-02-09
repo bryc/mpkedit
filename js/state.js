@@ -161,6 +161,7 @@
             outputNote = MPKEdit.Uint8Concat(header, cmt, outputNote);
         }
 
+        outputNote = new Uint8Array(outputNote);
         if(event.type === "dragstart") { // chrome drag-out save method
             var blobURL = URL.createObjectURL(new Blob([outputNote]));
             event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+filename+":"+blobURL);
