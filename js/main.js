@@ -23,9 +23,9 @@ var MPKEdit = (function MPKEdit() {
       CYRB-32 checksum algo.
     */
     MPKEdit.cyrb32 = function cyrb32(d) {
-        for(var i=0,h=1,t=d.length; i<t; i++)
-            h+=d[i], h+=h<<3, h^=h>>>1;
-        return (h^=h<<10, h+=h<<14) >>>0;
+        for(var i=0,h=0x41c6ce57,t=d.length; i<t; i++)
+            h+=d[i], h+=h<<4, h^=h>>>1;
+        return (h^=h<<11, h+=h<<14) >>>0;
     };
 
     /* -----------------------------------------------
