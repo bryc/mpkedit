@@ -773,7 +773,7 @@ MPKEdit.App.codeDB = {
     "CZLE": "Legend of Zelda, The - Ocarina of Time (U)",
     "CZGE": "Legend of Zelda, The - Ocarina of Time (U)",
     "NZLE": "Legend of Zelda, The - Ocarina of Time (U)",
-    "CZLJ": "Zelda no Densetsu - Toki no Ocarina GC URA (J)",
+    "CZLJ": "Zelda no Densetsu - Toki no Ocarina (J)",
     "NLGP": "LEGO Racers (E)",
     "NLGE": "LEGO Racers (U)",
     "NLRP": "Lode Runner 3-D (E)",
