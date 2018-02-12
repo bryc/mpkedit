@@ -22,7 +22,7 @@ var MPKEdit = (function MPKEdit() {
     function: MPKEdit.cyrb32(data)
       checksum algo.
     */
-    MPKEdit.cyrb32 = function cyb(key, seed = 0) {
+    MPKEdit.cyrb32 = function cyb(key, seed = 3053) {
     var m = 1540483477, h = seed ^ key.length;
     for(var i=0,k,chunk=-4&key.length; i<chunk; i+=4) {
         k = key[i+3]<<24 | key[i+2]<<16 | key[i+1]<<8 | key[i];
