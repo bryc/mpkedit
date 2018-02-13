@@ -856,7 +856,7 @@ MPKEdit.App.codeDB = {
     "NMYP": "Mortal Kombat Mythologies - Sub-Zero (E)",
     "NMYE": "Mortal Kombat Mythologies - Sub-Zero (U)",
     "NMKP": "Mortal Kombat Trilogy (E)",
-    "NMKE": "Rape Kombat Trilogy Beta1 (Mortal Kombat Hack)",
+    "NMKE": "Mortal Kombat Trilogy (U)",
     "NMRP": "MRC - Multi Racing Championship (E)",
     "NMRJ": "MRC - Multi Racing Championship (J)",
     "NMRE": "MRC - Multi Racing Championship (U)",
