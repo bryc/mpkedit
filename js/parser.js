@@ -385,6 +385,8 @@
             var cmt = "";
             var ver = data[0];
             var cmtlen = data[15];
+            var tS = data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24;
+            if(tS > 0) console.log("Note Timestamp: "+new Date(tS*1000).toString().slice(4,24));
 
             if(ver === 0) { // allow import of obsolete version0 files.
                 len += 256;
@@ -465,6 +467,66 @@
     console.log("INFO: MPKEdit.Parser ready");
 
     /* -----------------------------------------------
+    function: parseCmts(result)
+      Parse MPKCmts block, inserting any associated data into the state.
+    */
+    var parseMPKCmts = function(result) {
+        var MPKCmts = result.data.subarray(32768);
+        var hasCmts = arrstr(MPKCmts, 0, 7) === "MPKMeta";
+        var cmtCount = MPKCmts[15]; // header: stored number of comments
+        if(0 === cmtCount || false === hasCmts) {
+            console.error("MPKMeta block not found. MPKMeta block is corrupt, or MPK file size is wrong.");
+            return false;
+        }
+        // Checksum calculation
+        var chk1 = MPKCmts[8]<<24 | MPKCmts[9]<<16 | MPKCmts[10]<<8 | MPKCmts[11];
+        MPKCmts[8] = 0, MPKCmts[9] = 0, MPKCmts[10] = 0, MPKCmts[11] = 0;
+        var chk2 = MPKEdit.cyrb32(MPKCmts);
+        if(chk2 !== chk1>>>0) {
+            console.error("Hash check failed. MPKMeta block is invalid.");
+            return false;
+        }
+
+        console.log(`MPKMeta block found, attempting to parse ${cmtCount} comment(s)...`);
+        var foundCount = 0;
+        for(var ptr = 16, i = 0; i < cmtCount; i++) {
+            var magic = MPKCmts[ptr+0]^0xA5, magic2 = MPKCmts[ptr+1]^MPKCmts[ptr+2]^MPKCmts[ptr+3]^MPKCmts[ptr+4];
+            if(magic !== magic2) {
+                console.error(`MPKMeta Error: Can't find expected magic (${magic} !== ${magic2}). Aborting load.`);
+                break;
+            }
+            var cmtLen = (MPKCmts[ptr+5]<<8) + MPKCmts[ptr+6];
+            if(0 === cmtLen || cmtLen > 4080) {
+                console.error(`MPKMeta Error: Invalid comment length (${cmtLen}). Aborting load.`);
+                break;
+            }
+
+            // Check if comment's specified startIndex/entryPoint exists, and if the CRC-8 is valid.
+            var noteOfs = false;
+            for(var j = 0; j < 16; j++) {
+                var a = 0x300 + j*32;
+                var chkIdx=MPKCmts[ptr+1]===result.data[a+7], chkCo0=MPKCmts[ptr+2]===result.data[a+1];
+                var chkCo1=MPKCmts[ptr+3]===result.data[a+2], chkCo2=MPKCmts[ptr+4]===result.data[a+3];
+                if(chkIdx && chkCo0 && chkCo1 && chkCo2) {
+                    noteOfs = j; // Index & gameCode found
+                    break;
+                }
+            }
+            if(noteOfs === false) {
+                console.error(`MPKMeta Error: Can't find Comment's associated Note. Aborting load.`);
+                break;
+            }
+
+            console.log(`Comment ${i} points to save note ${noteOfs}`);
+            // Insert comment data into NoteTable
+            var cmtStr = new TextDecoder("utf-8").decode(MPKCmts.subarray(ptr+7, ptr+7 + cmtLen));
+            result.NoteTable[noteOfs].comment = cmtStr;
+            foundCount++;
+            ptr += 7 + cmtLen;
+        }
+    };
+
+    /* -----------------------------------------------
     function: MPKEdit.Parser(data, filename)
       exposed interface to the parser. data array and
       filename provided.
@@ -481,62 +543,8 @@
                 console.warn("ERROR: Data in file provided is not valid: " + filename);
                 return false;
             }
-            // This is all MPKCmts stuff? -- TODO: Add comments (should this even be here? seperate function?)
-            if(result.data.length > 32768) { // Only check for MPKCmts if size > 32KB
-                var bl0c = result.data.subarray(32768);
-                var hasCmts = arrstr(bl0c, 1, 8) === "MPKCmts";
-                var cmtCount = bl0c[15]; // header: stored number of comments
-                var crc8_1 = bl0c[0]; // header: stored crc
-                var crc8_2 = MPKEdit.crc8(result.data.subarray(32768+1));
-                var isValid = hasCmts && (crc8_1===crc8_2);
-
-                if(isValid) {
-                    console.log(`MPKCmts block found, attempting to parse ${cmtCount} comment(s)...`);
-                    var foundCount = 0;
-                    // parsing the cmt block
-                    for(var ptr = 16, i = 0; i < cmtCount; i++) {
-                        var magic  = bl0c[ptr + 0];
-                        if(magic !== 0xA5) { // comment entry indicator
-                            console.error(`MPKCmts Error: Can't find 0xA5 magic (${magic}). Aborting load.`);
-                            break;
-                        }
-                        foundCount++;
-                        var node   = bl0c[ptr + 1]; // associated startIndex
-                        var crc8   = bl0c[ptr + 2]; // CRC of NoteEntry first 8 bytes
-                        var cmtLen = (bl0c[ptr + 3] << 8) + bl0c[ptr+4]; // comment length in bytes
-                        if(cmtLen > 4080 || cmtLen === 0) {
-                            console.error(`MPKCmts Error: Invalid comment length (${cmtLen}). Aborting load.`);
-                            break;
-                        }
-                        var cmtStr = new TextDecoder("utf-8").decode(bl0c.subarray(ptr + 5, ptr + 5 + cmtLen));
-                        ptr += 5 + cmtLen;
-
-                        // Check if comment's specified startIndex/entryPoint exists, and if the CRC-8 is valid.
-                        var nodeFound = false, noteOfs;
-                        for(var j = 0; j < 16; j++) {
-                            var addr = 0x300 + j*32;
-                            var node2 = result.data[addr+7];
-                            var crc8arr = MPKEdit.crc8(result.data.subarray(addr, addr+8));
-                            if(node === node2 && crc8 === crc8arr) {
-                                nodeFound = true; noteOfs = j; // if the test passes, do this
-                                break;
-                            }
-                        }
-                        if(nodeFound) {
-                            console.log(`Comment ${i} points to save note ${noteOfs} (index ${node})`);
-                            result.NoteTable[noteOfs].comment = cmtStr;
-                        } else {
-                            console.warn(`Hmm, Comment ${i} exists, but has no associated Node.`);
-                        }
-                    }
-                    if(foundCount !== cmtCount) {
-                        console.error(`MPKCmts Error: The number of found comments doesn't match stored amount value. (${foundCount} vs ${cmtCount})`);
-                    }
-                }
-                else if(hasCmts) {
-                    console.error(`MPKCmts Error: MPKCmts block is invalid or has wrong size.`);
-                }
-            }
+            // parse and load any MPKCmts data
+            if(result.data.length > 32784) parseMPKCmts(result); // gimme those comments 
 
             // If result.data is NOT 32KB, resize it to 32KB. Could this interfere with the MPKCmts block?
             MPKEdit.State.data = result.data !== 32768 ? resize(result.data) : result.data;

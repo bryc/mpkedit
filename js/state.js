@@ -80,29 +80,39 @@
       Handles browser download, and fsys SaveAs/Save
     */
     State.save = function() {
-        var outputMPK = State.data, notes = Object.keys(MPKEdit.State.NoteTable),
-            MPKCmts = new Uint8Array([0,77,80,75,67,109,116,115,0,0,0,0,0,0,0,0]),
-            numCmts = 0, hasCmts = false;
+        // Initially we only want to output the MPK data.
+        var outputMPK = State.data;
 
-        // check for Notes with comments 
+        // Parse Note comments and build MPKMeta block, if needed.
+        var hasCmts = false;
+        // initialized 16-byte header for MPKMeta
+        var cmtHeader = [77,80,75,77,101,116,97,0,0,0,0,0,0,0,0,0];
+        var MPKCmts = new Uint8Array(cmtHeader);
+        var numCmts = 0;
+        var notes = Object.keys(MPKEdit.State.NoteTable);
         for(var i = 0; i < notes.length; i++) {
             if(State.NoteTable[notes[i]].comment) { // if NoteTable[i] contains a comment.
                 hasCmts = true;
                 numCmts++;
-                var addr = 0x300 + (notes[i] * 32); // NoteEntry addr
-                var idx = State.data[addr + 7]; // startIndex
-                var crc = MPKEdit.crc8(State.data.subarray(addr, addr + 8));
+                // Gather required info
+                var a = 0x300 + (notes[i] * 32); // NoteEntry addr
+                var idx = outputMPK[a+7], c0 = outputMPK[a+1],c1 = outputMPK[a+2],c2 = outputMPK[a+3];
                 var utfdata = new TextEncoder("utf-8").encode(State.NoteTable[notes[i]].comment);
                 var hiSize = utfdata.length >> 8, loSize = utfdata.length & 0xFF;
-                MPKCmts = MPKEdit.Uint8Concat(MPKCmts, [0xA5, idx, crc, hiSize, loSize], utfdata);
-                //console.log(State.NoteTable[notes[i]], idx, State.data.subarray(addr, addr+8) );
+                var id = idx^c0^c1^c2^0xA5;
+                var output = [id, idx, c0, c1, c2, hiSize, loSize];
+                MPKCmts = MPKEdit.Uint8Concat(MPKCmts, output, utfdata);
             }
         }
-        // If comments found, append MPKCmts block to data.
+        // If comments found, update header and append MPKMeta block to data.
         if(hasCmts) {
             MPKCmts[15] = numCmts; // Store total number of comments
-            MPKCmts[0] = MPKEdit.crc8(MPKCmts.subarray(1)); // Store calculated checksum. Do this last.
-            outputMPK = MPKEdit.Uint8Concat(State.data, MPKCmts);
+            var totalHash = MPKEdit.cyrb32(MPKCmts);
+            MPKCmts[8]  = totalHash >>> 24 & 0xFF;
+            MPKCmts[9]  = totalHash >>> 16 & 0xFF;
+            MPKCmts[10] = totalHash >>> 8 & 0xFF;
+            MPKCmts[11] = totalHash & 0xFF;
+            outputMPK = MPKEdit.Uint8Concat(outputMPK, MPKCmts);
         }
         
         if(event.type === "dragstart") { // Chrome drag-out save method
@@ -156,6 +166,12 @@
             var utfdata = new TextEncoder("utf-8").encode(State.NoteTable[id].comment);
             var size = Math.ceil(utfdata.length / 16); // number of rows
             header[15] = size;
+            var tS = State.NoteTable[id].timeStamp; // get or generate timestamp
+            if(!tS) tS = Math.round(new Date().getTime()/1000) >>> 0;
+            header[14] = tS & 0xFF;
+            header[13] = tS >>> 8 & 0xFF;
+            header[12] = tS >>> 16 & 0xFF;
+            header[11] = tS >>> 24 & 0xFF;
             var cmt = new Uint8Array(size * 16);
             cmt.set(utfdata);
             outputNote = MPKEdit.Uint8Concat(header, cmt, outputNote);

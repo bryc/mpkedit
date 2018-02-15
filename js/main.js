@@ -39,28 +39,6 @@ var MPKEdit = (function MPKEdit() {
     };
 
     /* -----------------------------------------------
-    function: MPKEdit.crc8(data)
-      CRC-8 checksum algo.
-      CRC-8/ITU: POLY=0x07, INIT=0, REFIN=false, REFOUT=false, XOROUT=0x55
-    */
-    MPKEdit.crc8 = function(data) {
-        var POLY = 0x5A, INIT = 0, XOROUT = 0;
-        for(var crc = INIT, i = 0, table = []; i < 256; i++) {
-            crc = i;
-            for(var j = 0; j < 8; j++) {
-                crc = crc & 0x80 ? crc << 1 ^ POLY : crc << 1;
-            }
-            table[i] = crc & 0xFF;
-        }
-        return function(data) {
-            for(var crc = 0, i = 0; i < data.length; i++) {
-                crc = table[data[i] ^ crc & 0xFF] ^ crc << 8;
-            }
-            return (crc ^ XOROUT) & 0xFF;
-        }
-    }();
-
-    /* -----------------------------------------------
     function: MPKEdit.elem(options)
       generate a HTMLElement DOM structure from
       supplied array data.
