@@ -481,7 +481,7 @@
         // Checksum calculation
         var chk1 = MPKCmts[8]<<24 | MPKCmts[9]<<16 | MPKCmts[10]<<8 | MPKCmts[11];
         MPKCmts[8] = 0, MPKCmts[9] = 0, MPKCmts[10] = 0, MPKCmts[11] = 0;
-        var chk2 = MPKEdit.cyrb32(MPKCmts);
+        var chk2 = MPKEdit.cyrb32(MPKCmts)[0];
         if(chk2 !== chk1>>>0) {
             console.error("Hash check failed. MPKMeta block is invalid.");
             return false;

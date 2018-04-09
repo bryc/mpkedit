@@ -1,7 +1,7 @@
 (function MPKApp() {
     var App = {};
     function pad(i,x=2,y=0){return(''+y).repeat(x-(''+i).length)+i;}
-
+    function mhs(i){return pad(State.NoteTable[i].cyrb32[0].toString(16),8)+pad(State.NoteTable[i].cyrb32[1].toString(16),8);}
     /* -----------------------------------------------
     function: pixicon(t, r)
       generate random pixel icon from a seed
@@ -97,7 +97,7 @@
         );
 
         if(App.cfg.identicon) { // produce pixicons
-            pixicon(tableRow.querySelector("#hash"), State.NoteTable[i].cyrb32);
+            pixicon(tableRow.querySelector("#hash"), (State.NoteTable[i].cyrb32[0] & 2097151) * 4294967296 + State.NoteTable[i].cyrb32[1]);
         }
         return tableRow;
     };
@@ -215,7 +215,7 @@
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Hash code",className:"label"}]),
-                    elem(["span",{className:"content fixed",innerHTML:pad(State.NoteTable[i].cyrb32.toString(16),8)+` (${State.NoteTable[i].cyrb32.toString(36)})`}])
+                    elem(["span",{className:"content fixed",innerHTML:mhs(i)}])
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Used pages",className:"label"}]),

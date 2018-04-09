@@ -107,7 +107,7 @@
         // If comments found, update header and append MPKMeta block to data.
         if(hasCmts) {
             MPKCmts[15] = numCmts; // Store total number of comments
-            var totalHash = MPKEdit.cyrb32(MPKCmts);
+            var totalHash = MPKEdit.cyrb32(MPKCmts)[0];
             MPKCmts[8]  = totalHash >>> 24 & 0xFF;
             MPKCmts[9]  = totalHash >>> 16 & 0xFF;
             MPKCmts[10] = totalHash >>> 8 & 0xFF;
@@ -153,7 +153,7 @@
             }
         }
 
-        var hash = State.NoteTable[id].cyrb32.toString(36);
+        var hash = State.NoteTable[id].cyrb32[0].toString(36)+State.NoteTable[id].cyrb32[1].toString(36);
         var filename = MPKEdit.App.codeDB[gameCode] || gameCode;
         filename = filename + "_" + hash + ".note";
 
