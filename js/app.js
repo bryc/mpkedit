@@ -28,7 +28,7 @@
         // Set fill color for pixels.
         var A = (r[0]&0x2000000) ? 1:2, B = (r[1]&0x2000000) ? 1:2;
         var color1 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A);
-        var color2 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A);
+        var color2 = i(r[1]&0x1FF, r[1]&0x7E00>>9, r[1]&0x1F8000>>15, (r[1]&0x1E00000>>21)>16 ? 0:B);
         c.fillStyle = color1;
         // Rotate canvas 90 degrees.
         r[0]&0x4000000 && c.rotate(Math.PI * .5)|c.translate(0, -t.width);
