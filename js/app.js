@@ -4,48 +4,51 @@
     function mhs(i){return pad(State.NoteTable[i].cyrb32[0].toString(16),8)+pad(State.NoteTable[i].cyrb32[1].toString(16),8);}
     /* -----------------------------------------------
     function: pixicon(t, r)
-      generate random pixel icon from a seed
+      generate random pixel icon from a hash
     */
     var pixicon = function(t, r) {
+        //r=[Math.random()*2**32|0,Math.random()*2**32|0,Math.random()*2**32|0,Math.random()*2**32|0]
         function i(t, r, e, i=0) { // HSL color generator.
             var set = [
-                [999*t%360, 24+80*r%40, 26+70*e%40],
-                [999*t%360, 9*r%10, 15+36*e%50],
-                [999*t%360, 14*r%40, 37+36*e%40]
+                [t%360, r%10, 17+e%50],
+                [t%360, 24+r%40, 26+e%40],
+                [t%360, 12+r%60, 32+e%40]
             ];
-            return "hsl("+ ~~set[i][0] +","+ ~~set[i][1] +"%,"+ ~~set[i][2] +"%)";
+            return "hsl("+ set[i][0] +","+ set[i][1] +"%,"+ set[i][2] +"%)";
         }
-        function LCG(seed) { // LCG pseudorandom number generator.
-            function lcg(a) {return a * 48271 % 2147483647}
-            seed = seed ? lcg(seed) : lcg(Math.random());
-            return function() {return (seed = lcg(seed)) / 2147483648}
-        }
-        var n = 10, q = n*3, l = n*n, a = [], rng = LCG(r), c = t.getContext("2d");
+        var n = 10, q = n*3, l = n*n, a = [], c = t.getContext("2d");
         // Set canvas dimensions if not already set (performance boost).
         if(t.width !== q) {
-            t.width = t.height = q,
-            t.style.imageRendering = "-moz-crisp-edges",
+            t.width = t.height = q;
+            t.style.imageRendering = "-moz-crisp-edges";
             t.style.imageRendering = "pixelated";
         }
         c.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation.
         c.clearRect(0, 0, t.width, t.height); // Erase previous context.
         // Set fill color for pixels.
-        var color1 = i(rng(), rng(), rng(), rng()>=.9 ? 1:0);
-        var color2 = i(rng(), rng(), rng(), rng()>=.8 ? 2:0);
+        var A = (r[0]&0x2000000) ? 1:2, B = (r[1]&0x2000000) ? 1:2;
+        var color1 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A);
+        var color2 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A);
         c.fillStyle = color1;
-        rng() > .5 && c.rotate(Math.PI * .5)|c.translate(0, -t.width); // Rotate canvas 90 degrees.
+        // Rotate canvas 90 degrees.
+        r[0]&0x4000000 && c.rotate(Math.PI * .5)|c.translate(0, -t.width);
         // Generate pixel array
-        var r = rng(), u = 0|(2*r*l+8*r+l)*.125;
-        for(var s = 0; s < u; s++) a[s] = 1;
-        // Shuffle pixel array (Fisher–Yates). NOTE: |0 prevents infinite loop.
-        for(var v, s = 0|l/2; s;) v = 0|rng() * s--, [a[s], a[v]] = [a[v], a[s]];
+        for(var word = r[2], i = 0; i < 32; i++) {
+            var bit = word & 1;
+            a.push(bit); word >>>= 1;
+        }
+        for(var word = r[3], i = 0; i < 18; i++) {
+            var bit = word & 1;
+            a.push(bit); word >>>= 1;
+        }
         a = a.concat(a.slice().reverse()); // Append reversed pixel array.
         // Paint canvas.
-        for(var o = t.width/n, d=y=s= 0; s < l; s++, d = s%n)
+        for(var o = t.width/n, d=y=s= 0; s < l; s++, d = s%n) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
-            (s === (0|l/2)) && (c.fillStyle = color2),
-            (s && !d) && y++, // Increment y axis.
-            (a[s]) && c.fillRect(o*d, o*y, o, o) // If pixel exists, fill square on canvas (x, y, w, h).
+            (s === (0|l/2)) && (c.fillStyle = color2);
+            (s && !d) && y++; // Increment y axis.
+            (a[s]) && c.fillRect(o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
+        }
     };
 
     /* -----------------------------------------------
@@ -97,7 +100,7 @@
         );
 
         if(App.cfg.identicon) { // produce pixicons
-            pixicon(tableRow.querySelector("#hash"), (State.NoteTable[i].cyrb32[0] & 2097151) * 4294967296 + State.NoteTable[i].cyrb32[1]);
+            pixicon(tableRow.querySelector("#hash"), State.NoteTable[i].cyrb32);
         }
         return tableRow;
     };
