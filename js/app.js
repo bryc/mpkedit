@@ -41,13 +41,27 @@
             var bit = word & 1;
             a.push(bit); word >>>= 1;
         }
-        a = a.concat(a.slice().reverse()); // Append reversed pixel array.
+        // Append mirrored pixel array.
+        if(r[0] & 0x8000000) { // only horizontal
+            var dA = a.slice();
+            for(var i = 0; i < dA.length; i += 5) { // n=10
+                dA[i+0] = dA[i+0] ^ dA[i+4];
+                dA[i+4] = dA[i+0] ^ dA[i+4];
+                dA[i+0] = dA[i+0] ^ dA[i+4];
+                dA[i+1] = dA[i+1] ^ dA[i+3];
+                dA[i+3] = dA[i+1] ^ dA[i+3];
+                dA[i+1] = dA[i+1] ^ dA[i+3];
+            }
+            a = a.concat(dA);
+        } else { // horizontal + vertical
+            a = a.concat(a.slice().reverse()); 
+        }
         // Paint canvas.
-        for(var o = t.width/n, d=y=s= 0; s < l; s++, d = s%n) {
+        for(var o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
-            (s === (0|l/2)) && (c.fillStyle = color2);
+            (s === (0|l/2)) && (c.fillStyle = color2, Q += q/2, y =- 1);
             (s && !d) && y++; // Increment y axis.
-            (a[s]) && c.fillRect(o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
+            (a[s]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
         }
     };
 
