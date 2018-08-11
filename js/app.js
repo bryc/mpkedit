@@ -16,6 +16,23 @@
             ];
             return "hsl("+ set[i][0] +","+ set[i][1] +"%,"+ set[i][2] +"%)";
         }
+        function modHSL(str){
+        var arr = str.replace(/[^\d,.%]/g, '').split(',').map(x => Number.parseFloat(x, 10));
+        return `hsl(${arr[0]-25},${arr[1]-10}%,${arr[2]-7}%)`;
+        }
+        function rota(arr, mode, w, h) {
+            if(mode===3) return arr.slice().reverse();
+            if(mode===0 || mode===1) { // horizontal flip
+                for(var i = 0, arr2 = []; i < arr.length; i++)
+                    arr2[i] = arr[i-2*(i%w)+w-1];
+            }
+            if(mode===2 || mode===4) { // rotate 90° CW
+                for(var i = 0, arr2 = []; i < arr.length; i++)
+                    arr2[i] = arr[0|(h-1)*w-((i%h)*w)+i/h];
+            }
+            if(mode===1||mode===4) arr2.reverse();
+            return arr2;
+        }
         var n = 10, q = n*3, l = n*n, a = [], c = t.getContext("2d");
         // Set canvas dimensions if not already set (performance boost).
         if(t.width !== q) {
@@ -29,6 +46,8 @@
         var A = (r[0]&0x2000000) ? 1:2, B = (r[1]&0x2000000) ? 1:2;
         var color1 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A);
         var color2 = i(r[1]&0x1FF, r[1]&0x7E00>>9, r[1]&0x1F8000>>15, (r[1]&0x1E00000>>21)>16 ? 0:B);
+        var color3 = modHSL(color1);
+        var color4 = modHSL(color2);
         c.fillStyle = color1;
         // Rotate canvas 90 degrees.
         r[0]&0x4000000 && c.rotate(Math.PI * .5)|c.translate(0, -t.width);
@@ -41,27 +60,50 @@
             var bit = word & 1;
             a.push(bit); word >>>= 1;
         }
-        // Append mirrored pixel array.
-        if(r[0] & 0x8000000) { // only horizontal
-            var dA = a.slice();
-            for(var i = 0; i < dA.length; i += 5) { // n=10
-                dA[i+0] = dA[i+0] ^ dA[i+4];
-                dA[i+4] = dA[i+0] ^ dA[i+4];
-                dA[i+0] = dA[i+0] ^ dA[i+4];
-                dA[i+1] = dA[i+1] ^ dA[i+3];
-                dA[i+3] = dA[i+1] ^ dA[i+3];
-                dA[i+1] = dA[i+1] ^ dA[i+3];
+        var goodlist0 = [1,2,3,4,7,8,9,13,14,19];
+        var pt1 = a.slice(0,25);
+        var pt2 = a.slice(25,50);
+        var mask0 = pt1.slice();
+        var mask1 = pt2.slice();
+        for(var i = 0; i < 25; i++) {
+            if(!goodlist0.includes(i)) {
+                mask0[i] = undefined;
+                mask1[i] = undefined;
             }
-            a = a.concat(dA);
-        } else { // horizontal + vertical
-            a = a.concat(a.slice().reverse()); 
         }
+        pt1 = rota(pt1,2,5,5);
+        pt1 = rota(pt1,0,5,5);
+        pt2 = rota(pt2,2,5,5);
+        pt2 = rota(pt2,0,5,5);
+        for(var i = 0; i < 25; i++) {
+            if(goodlist0.includes(i)) {
+                pt1[i] = mask0[i];
+                pt2[i] = mask1[i];
+            }
+        }
+        a = [];
+        a = a.concat(pt1);
+        a = a.concat(rota(pt1,4,n/2,n/2));
+        a = a.concat(rota(pt1,2,n/2,n/2));
+        a = a.concat(rota(pt1,3,n/2,n/2));
         // Paint canvas.
         for(var o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
-            (s === (0|l/2)) && (c.fillStyle = color2, Q += q/2, y =- 1);
+            (s === (0|l/2)) && (c.fillStyle = color3, Q += q/2, y =- 1);
             (s && !d) && y++; // Increment y axis.
             (a[s]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
+        }
+        var b = [];
+        b = b.concat(pt2);
+        b = b.concat(rota(pt2,4,n/2,n/2));
+        b = b.concat(rota(pt2,2,n/2,n/2));
+        b = b.concat(rota(pt2,3,n/2,n/2));
+        c.fillStyle = color2;
+        for(var o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
+            // Change color at halfway point. NOTE: |0 required for odd sizes.
+            (s === (0|l/2)) && (c.fillStyle = color4, Q += q/2, y =- 1);
+            (s && !d) && y++; // Increment y axis.
+            (b[s]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
         }
     };
 
