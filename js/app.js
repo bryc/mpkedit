@@ -60,32 +60,64 @@
             var bit = word & 1;
             a.push(bit); word >>>= 1;
         }
+        for(var word = r[1], i = 0; i < 25; i++) {
+            var bit = word & 1;
+            a.push(bit); word >>>= 1;
+        }
+        for(var word = r[0], i = 0; i < 25; i++) {
+            var bit = word & 1;
+            a.push(bit); word >>>= 1;
+        }
         var goodlist0 = [1,2,3,4,7,8,9,13,14,19];
         var pt1 = a.slice(0,25);
         var pt2 = a.slice(25,50);
+        var pt3 = a.slice(50,75);
+        var pt4 = a.slice(75,100);
         var mask0 = pt1.slice();
         var mask1 = pt2.slice();
+        var mask2 = pt3.slice();
+        var mask3 = pt4.slice();
         for(var i = 0; i < 25; i++) {
             if(!goodlist0.includes(i)) {
                 mask0[i] = undefined;
                 mask1[i] = undefined;
+                mask2[i] = undefined;
+                mask3[i] = undefined;
             }
         }
-        pt1 = rota(pt1,2,5,5);
-        pt1 = rota(pt1,0,5,5);
-        pt2 = rota(pt2,2,5,5);
-        pt2 = rota(pt2,0,5,5);
+        pt1 = rota(pt1,2,5,5), pt1 = rota(pt1,0,5,5);
+        pt2 = rota(pt2,2,5,5), pt2 = rota(pt2,0,5,5);
+        pt3 = rota(pt3,2,5,5), pt3 = rota(pt3,0,5,5);
+        pt4 = rota(pt4,2,5,5), pt4 = rota(pt4,0,5,5);
         for(var i = 0; i < 25; i++) {
             if(goodlist0.includes(i)) {
                 pt1[i] = mask0[i];
                 pt2[i] = mask1[i];
+                pt3[i] = mask2[i];
+                pt4[i] = mask3[i];
             }
         }
-        a = [];
-        a = a.concat(pt1);
-        a = a.concat(rota(pt1,4,n/2,n/2));
-        a = a.concat(rota(pt1,2,n/2,n/2));
-        a = a.concat(rota(pt1,3,n/2,n/2));
+        // Build pixel array.
+        var a = [], b = [];
+        if(r[0] & 0x8000000) { // symmetry mode
+            a = a.concat(pt1);
+            a = a.concat(rota(pt1,4,n/2,n/2));
+            a = a.concat(rota(pt1,2,n/2,n/2));
+            a = a.concat(rota(pt1,3,n/2,n/2));
+            b = b.concat(pt2);
+            b = b.concat(rota(pt2,4,n/2,n/2));
+            b = b.concat(rota(pt2,2,n/2,n/2));
+            b = b.concat(rota(pt2,3,n/2,n/2));
+        } else {
+            a = a.concat(pt1);
+            a = a.concat(rota(pt2,4,n/2,n/2));
+            a = a.concat(rota(pt2,2,n/2,n/2));
+            a = a.concat(rota(pt1,3,n/2,n/2));
+            b = b.concat(pt3);
+            b = b.concat(rota(pt4,4,n/2,n/2));
+            b = b.concat(rota(pt4,2,n/2,n/2));
+            b = b.concat(rota(pt3,3,n/2,n/2));
+        }
         // Paint canvas.
         for(var o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
@@ -93,11 +125,6 @@
             (s && !d) && y++; // Increment y axis.
             (a[s]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
         }
-        var b = [];
-        b = b.concat(pt2);
-        b = b.concat(rota(pt2,4,n/2,n/2));
-        b = b.concat(rota(pt2,2,n/2,n/2));
-        b = b.concat(rota(pt2,3,n/2,n/2));
         c.fillStyle = color2;
         for(var o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
