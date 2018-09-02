@@ -1264,6 +1264,7 @@ MPKEdit.App.codeDB = {
     "ROAD": "Off Road Challenge (E) [b1]",
     "ZCAJ": "Magical Tetris Challenge Featuring Mickey (J) [Aleck64]",
     /* ------------------------------------------------------------- */
+    "NPQE": "The Powerpuff Girls: Chemical X-Traction (U)",
     "NDTB": "South Park (Brazil)",
     "NSDB": "Shadow Man (Brazil)",
     "NFRE": "F1 Racing Championship (Brazil) (En,Fr)",
