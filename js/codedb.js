@@ -6,45 +6,60 @@ MPKEdit.App.media = {
     "Z" : "Aleck64"
 };
 
-/* 
-From: http://n64devkit.square7.ch/info/submission/gateway/01-01.html
-"The destination code (the fourth letter of the game code) must be changed from the
-N64 Game code to the Gateway 64 System code. The fourth letter of the game code
-becomes a "G" for NTSC and an "L" for PAL games."
+/*
+Verified N64 region codes are:
+A = All (Only used in 1080 Snowboarding [USA/JAP] - later "region-free" in Wii)
+B = Brazil (Not in GC/Wii thus possibly unlicensed, but exists in ROM data)
+D = Germany (German only)
+E = North America (USA, Canada, Mexico)
+F = France (French only)
+I = Italy (Italian only)
+J = Japan
+P = Europe (sometimes including Australia)
+S = Spain (Spanish only)
+U = Australia (English-only PAL games)
+X = Europe (Alt. Languages 1)
+Y = Europe (Alt. Languages 2)
 
-From: https://www.romhacking.net/forum/index.php?topic=20415.0
-C=china, h=netherlands, k=south korea
+Verified GC/Wii codes are:
+K = South Korea (GC/Wii only, Comboy 64 uses E or J codes)
+H = Netherlands (GC/Wii)
+R = Russia (Wii)
+V = Sweden (Wii)
+W = Taiwan (GC/Wii)
+M = Sweden (GC) - Wii VC Import (USA>PAL)
+T = Wii VC Import (JAP>KOR)
+N = Wii VC Import (JAP>USA)
+L = Wii VC Import (JAP>PAL)
+Z = Europe (Alt. 3)
 
-From: http://s9.zetaboards.com/Nintendo_64_Forever/topic/7352477/1/
-"I'm aware of some others that were used for the Nintendo Wii:
-H - Dutch (Holland)
-K - Korean (South Korea)
-V - Swedish
-W - Various Scandinavian languages"
-
+Unverified codes:
+G = Lodgenet/Gateway 64 (NTSC, mentioned in N64 SDKs)
+L = Lodgenet/Gateway 64 (PAL, mentioned in N64 SDKs)
+C = China (No reliable source, not even used officially in Wii or iQue)
+W = Scandinavia (No reliable source, probably wrong)
+N = Canada (No reliable source, probably wrong)
 */
+
 MPKEdit.App.region = {
-    "A" : "All", // used in 1080 snowboarding only (JAP/ENG NTSC)
-    "B" : "Brazil",
-    "C" : "China", // possibly used in iQue, unknown
+    "A" : "All",
+    "B" : "Brazil", // Unlicensed?
+    "C" : "China", // Unused?
     "D" : "Germany",
     "E" : "North America",
     "F" : "France",
-    "G" : "Gateway 64 (NTSC)", // mentioned in documentation
-    "H" : "Netherlands", // Wii?
+    "H" : "Netherlands", // Unused. GC/Wii only.
     "I" : "Italy",
     "J" : "Japan",
-    "K" : "South Korea", // Comboy64 did not use these - Wii?
-    "L" : "Gateway 64 (PAL)",
-    "N" : "Canada", // questionable
+    "K" : "South Korea", // Unused. GC/Wii only.
     "P" : "Europe",
+    "R" : "Russia", // Unused. Wii only.
     "S" : "Spain",
-    "U" : "Australia", // Some AU games did not use this
-    "V" : "Sweden", // Wii?
-    "W" : "Other Scandinavia", // Wii?
-    "X" : "Alternate", // Alternative version (Other languages)
-    "Y" : "Alternate", // Alternative version (Other languages)
-    "Z" : "Alternate" // questionable
+    "U" : "Australia", // Although some AU games used standard P codes.
+    "W" : "Taiwan", // Unused. GC/Wii only.
+    "X" : "Europe (Alt. 1)", // Alternative PAL version (Other languages)
+    "Y" : "Europe (Alt. 2)", // Alternative PAL version (Other languages)
+    "Z" : "Europe (Alt. 3)" // Unused. Alternative PAL version 3. Possibly Wii only.
 };
 
 /*
