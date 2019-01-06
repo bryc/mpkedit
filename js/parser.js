@@ -475,7 +475,7 @@
         var hasCmts = arrstr(MPKCmts, 0, 7) === "MPKMeta";
         var cmtCount = MPKCmts[15]; // header: stored number of comments
         if(0 === cmtCount || false === hasCmts) {
-            console.error("MPKMeta block not found. MPKMeta block is corrupt, or MPK file size is wrong.");
+            console.warn("MPKMeta block not found. MPK file size is wrong or MPKMeta block is corrupt.");
             return false;
         }
         // Checksum calculation
