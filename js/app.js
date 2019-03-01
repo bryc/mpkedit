@@ -1,15 +1,15 @@
 (function MPKApp() {
-    var App = {};
+    const App = {};
     function pad(i,x=2,y=0){return(''+y).repeat(x-(''+i).length)+i;}
     function mhs(i){return pad(State.NoteTable[i].cyrb32[0].toString(16),8)+pad(State.NoteTable[i].cyrb32[1].toString(16),8);}
     /* -----------------------------------------------
     function: pixicon(t, r)
       generate random pixel icon from a hash
     */
-    var pixicon = function(t, r) {
+    const pixicon = function(t, r) {
         //r=[Math.random()*2**32|0,Math.random()*2**32|0,Math.random()*2**32|0,Math.random()*2**32|0]
         function i(t, r, e, i=0) { // HSL color generator.
-            var set = [
+            const set = [
                 [t%360, r%10, 17+e%50],
                 [t%360, 24+r%40, 26+e%40],
                 [t%360, 12+r%60, 32+e%40]
@@ -17,23 +17,28 @@
             return "hsl("+ set[i][0] +","+ set[i][1] +"%,"+ set[i][2] +"%)";
         }
         function modHSL(str){
-        var arr = str.replace(/[^\d,.%]/g, '').split(',').map(x => Number.parseFloat(x, 10));
-        return `hsl(${arr[0]-25},${arr[1]-10}%,${arr[2]-7}%)`;
+            const arr = str.replace(/[^\d,.%]/g, '').split(',').map(x => Number.parseFloat(x, 10));
+            return `hsl(${arr[0]-25},${arr[1]-10}%,${arr[2]-7}%)`;
         }
         function rota(arr, mode, w, h) {
+            let arr2 = [];
             if(mode===3) return arr.slice().reverse();
             if(mode===0 || mode===1) { // horizontal flip
-                for(var i = 0, arr2 = []; i < arr.length; i++)
+                for(let i = 0; i < arr.length; i++)
                     arr2[i] = arr[i-2*(i%w)+w-1];
             }
-            if(mode===2 || mode===4) { // rotate 90Â° CW
-                for(var i = 0, arr2 = []; i < arr.length; i++)
+            if(mode===2 || mode===4) { // rotate 90° CW
+                for(let i = 0; i < arr.length; i++)
                     arr2[i] = arr[0|(h-1)*w-((i%h)*w)+i/h];
             }
             if(mode===1||mode===4) arr2.reverse();
             return arr2;
         }
-        var n = 10, q = n*3, l = n*n, a = [], c = t.getContext("2d");
+        const n = 10;
+        const q = n*3;
+        const l = n*n;
+        let a = [];
+        const c = t.getContext("2d");
         // Set canvas dimensions if not already set (performance boost).
         if(t.width !== q) {
             t.width = t.height = q;
@@ -43,41 +48,41 @@
         c.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation.
         c.clearRect(0, 0, t.width, t.height); // Erase previous context.
         // Set fill color for pixels.
-        var A = (r[0]&0x2000000) ? 1:2, B = (r[1]&0x2000000) ? 1:2;
-        var color1 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A);
-        var color2 = i(r[1]&0x1FF, r[1]&0x7E00>>9, r[1]&0x1F8000>>15, (r[1]&0x1E00000>>21)>16 ? 0:B);
-        var color3 = modHSL(color1);
-        var color4 = modHSL(color2);
+        const A = (r[0]&0x2000000) ? 1:2, B = (r[1]&0x2000000) ? 1:2;
+        const color1 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A);
+        const color2 = i(r[1]&0x1FF, r[1]&0x7E00>>9, r[1]&0x1F8000>>15, (r[1]&0x1E00000>>21)>16 ? 0:B);
+        const color3 = modHSL(color1);
+        const color4 = modHSL(color2);
         c.fillStyle = color1;
         // Rotate canvas 90 degrees.
         r[0]&0x4000000 && c.rotate(Math.PI * .5)|c.translate(0, -t.width);
         // Generate pixel array
-        for(var word = r[2], i = 0; i < 32; i++) {
-            var bit = word & 1;
+        for(let word = r[2], i = 0; i < 32; i++) {
+            const bit = word & 1;
             a.push(bit); word >>>= 1;
         }
-        for(var word = r[3], i = 0; i < 18; i++) {
-            var bit = word & 1;
+        for(let word = r[3], i = 0; i < 18; i++) {
+            const bit = word & 1;
             a.push(bit); word >>>= 1;
         }
-        for(var word = r[1], i = 0; i < 25; i++) {
-            var bit = word & 1;
+        for(let word = r[1], i = 0; i < 25; i++) {
+            const bit = word & 1;
             a.push(bit); word >>>= 1;
         }
-        for(var word = r[0], i = 0; i < 25; i++) {
-            var bit = word & 1;
+        for(let word = r[0], i = 0; i < 25; i++) {
+            const bit = word & 1;
             a.push(bit); word >>>= 1;
         }
-        var goodlist0 = [1,2,3,4,7,8,9,13,14,19];
-        var pt1 = a.slice(0,25);
-        var pt2 = a.slice(25,50);
-        var pt3 = a.slice(50,75);
-        var pt4 = a.slice(75,100);
-        var mask0 = pt1.slice();
-        var mask1 = pt2.slice();
-        var mask2 = pt3.slice();
-        var mask3 = pt4.slice();
-        for(var i = 0; i < 25; i++) {
+        const goodlist0 = [1,2,3,4,7,8,9,13,14,19];
+        let pt1 = a.slice(0,25);
+        let pt2 = a.slice(25,50);
+        let pt3 = a.slice(50,75);
+        let pt4 = a.slice(75,100);
+        const mask0 = pt1.slice();
+        const mask1 = pt2.slice();
+        const mask2 = pt3.slice();
+        const mask3 = pt4.slice();
+        for(let i = 0; i < 25; i++) {
             if(!goodlist0.includes(i)) {
                 mask0[i] = undefined;
                 mask1[i] = undefined;
@@ -89,7 +94,7 @@
         pt2 = rota(pt2,2,5,5), pt2 = rota(pt2,0,5,5);
         pt3 = rota(pt3,2,5,5), pt3 = rota(pt3,0,5,5);
         pt4 = rota(pt4,2,5,5), pt4 = rota(pt4,0,5,5);
-        for(var i = 0; i < 25; i++) {
+        for(let i = 0; i < 25; i++) {
             if(goodlist0.includes(i)) {
                 pt1[i] = mask0[i];
                 pt2[i] = mask1[i];
@@ -98,7 +103,8 @@
             }
         }
         // Build pixel array.
-        var a = [], b = [];
+        a = []; 
+        let b = [];
         if(r[0] & 0x8000000) { // symmetry mode
             a = a.concat(pt1);
             a = a.concat(rota(pt1,4,n/2,n/2));
@@ -119,14 +125,14 @@
             b = b.concat(rota(pt3,3,n/2,n/2));
         }
         // Paint canvas.
-        for(var o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
+        for(let o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
             (s === (0|l/2)) && (c.fillStyle = color3, Q += q/2, y =- 1);
             (s && !d) && y++; // Increment y axis.
             (a[s]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
         }
         c.fillStyle = color2;
-        for(var o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
+        for(let o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
             (s === (0|l/2)) && (c.fillStyle = color4, Q += q/2, y =- 1);
             (s && !d) && y++; // Increment y axis.
@@ -138,22 +144,22 @@
     function: buildRow(i)
       build HTMLElement row for NoteTable in MPK
     */
-    var buildRow = function(i) {
+    const buildRow = function(i) {
         function fixHTML(str) { // sanitize comments for HTML.
-            var rep = '&,amp,<,lt,>,gt,",quot,\',apos'.split(',');
-            for(var i=0; i<rep.length; i+=2) str=str.replace(new RegExp(rep[i],'g'),`&${rep[i+1]};`);
+            const rep = '&,amp,<,lt,>,gt,",quot,\',apos'.split(',');
+            for(let i=0; i<rep.length; i+=2) str=str.replace(new RegExp(rep[i],'g'),`&${rep[i+1]};`);
             return str;
         }
         // Handle empty rows
         if(!State.NoteTable[i]) {
-            var tableRow = elem(["tr",{className:"empty"}],elem(["td",{innerHTML:i+1,"colSpan":16}]));
+            const tableRow = elem(["tr",{className:"empty"}],elem(["td",{innerHTML:i+1,"colSpan":16}]));
             return tableRow;
         }
 
-        var cmtIcon = State.NoteTable[i].comment?"<span title='"+fixHTML(State.NoteTable[i].comment)+"' class='fa fa-comment'></span>":"";
-        var displayName = State.NoteTable[i].noteName + cmtIcon;
+        const cmtIcon = State.NoteTable[i].comment?"<span title='"+fixHTML(State.NoteTable[i].comment)+"' class='fa fa-comment'></span>":"";
+        const displayName = State.NoteTable[i].noteName + cmtIcon;
 
-        var tableRow =
+        const tableRow =
         elem(["tr",{className:"note",id:i}],
             // start pixicon display
             App.cfg.identicon ?
@@ -194,14 +200,14 @@
     */
     App.buildModal = function(e) {
         //if(e.target.id!=="menu"||e.target.className!=="fa fa-info-circle") return; // only allow execution from specific clickies
-        var content = elem(["div",{className:"modalContent"}]);
+        const content = elem(["div",{className:"modalContent"}]);
 
-        var col = ["#713257", "#D9C173", "#5B4DA4", "#3A991B", "#1B696A", "#69532F", "#A52626", "#92C9C0",
+        const col = ["#713257", "#D9C173", "#5B4DA4", "#3A991B", "#1B696A", "#69532F", "#A52626", "#92C9C0",
                    "#1F4F75", "#D6664D", "#F4AD9B", "#BBF637", "#777564", "#497BA5", "#ED6BB2", "#3D4142"];
 
         // ################ Modal: Settings ################
         if(e.target.id === "menu") {
-            var settings =
+            const settings =
             elem([],
                 elem(["h1","Settings"]),
                 // SETTING 1: Hide Rows
@@ -230,13 +236,13 @@
                 )
             );
             // Generate the IndexTable visualizer display
-            var x = elem(["div",{className:"pageContainer"}])
-            for(var j = 1; j <= 128; j++) {
+            const x = elem(["div",{className:"pageContainer"}])
+            for(let j = 1; j <= 128; j++) {
                 x.appendChild(elem(["span",{className:"b0x"}]))
                 if(j%32===0) x.appendChild(elem(["br"]));
             }
             // Populate squares of display based on NoteTable data.
-            var x2 = x.querySelectorAll("span.b0x");
+            const x2 = x.querySelectorAll("span.b0x");
             for(var page,y,i = 0; i < 16; i++) {
                 if(State.NoteTable[i]) {
                     y = State.NoteTable[i].indexes;
@@ -257,16 +263,17 @@
         // ################ Modal: Note Info ################
         if(e.target.className === "fa fa-info-circle") {
             // Get ID of the selected Note and its memory address.
-            var i = e.target.parentElement.parentElement.id;
-            var i2 = 0x300 + (32*i);
+            const i = e.target.parentElement.parentElement.id;
+            const i2 = 0x300 + (32*i);
 
             // Print raw bytes of NoteEntry
-            for(var noteData = "<code>", j = i2; j < i2+32; j++) {
+            let noteData = "<code>";
+            for(let j = i2; j < i2+32; j++) {
                 noteData += pad(State.data[j].toString(16).toUpperCase(),2);
                 if(j-i2===15) noteData += "<br>"; else noteData += " ";
             } noteData += "</code>";
 
-            var noteInfo =
+            const noteInfo =
             elem([],
                 elem(["h1","Note details"]),
                 elem(["div",{className:"modalFlex"}],
@@ -315,8 +322,8 @@
             content.appendChild(noteInfo);
 
             // Paint IndexTable display usage for this Note.
-            var x = elem(["div",{className:"pageContainer"}])
-            for(var sty,j = 0; j < 128; j++) {
+            const x = elem(["div",{className:"pageContainer"}])
+            for(let sty,j = 0; j < 128; j++) {
                 sty = State.NoteTable[i].indexes.indexOf(j)!==-1?` border-color:${col[i]};background:${col[i]}C0`:"";
                 x.appendChild(elem(["span",{className:"b0x",style:sty}]));
                 if((j+1)%32===0) x.appendChild(elem(["br"]));
@@ -326,7 +333,7 @@
         }
 
         // #### Appending content to Modal ####
-        var modal = document.getElementById("modal");
+        const modal = document.getElementById("modal");
         while(modal.firstChild) modal.removeChild(modal.firstChild); // Clear modal contents first.
         modal.appendChild(content); // Append content to modal.
         modal.style.visibility = ""; // Unhide modal.
@@ -337,7 +344,7 @@
     function: updateSettings(i)
       Update a localStorage setting individually
     */
-    var updateSettings = function() {
+    const updateSettings = function() {
         App.cfg[this.id] = this.checked;
         if(MPKEdit.App.usefsys) chrome.storage.local.set({MPKEdit:App.cfg});
         else localStorage.MPKEdit = JSON.stringify(App.cfg);
@@ -352,23 +359,23 @@
     App.updateUI = function() {
         document.getElementById("filename").innerHTML = State.filename;
         // Stats bar dynamic CSS
-        var w1 = 100 * (State.usedPages / 123);
-        var w2 = 100 * (State.usedNotes / 16);
+        let w1 = 100 * (State.usedPages / 123);
+        let w2 = 100 * (State.usedNotes / 16);
         w1 = `width:${w1}%;`+(w1===100?"background:#547F96;":"")+(w1>0&&w1<100?"border-right:1px solid rgba(0,0,0,0.15)":"");
         w2 = `width:${w2}%;`+(w2===100?"background:#547F96;":"")+(w2>0&&w2<100?"border-right:1px solid rgba(0,0,0,0.15)":"");
-        var status =
+        const status =
         `<span class=statBox>${123-State.usedPages}/123 pages free<div class=outerBar><div style='${w1}' class=innerBar></div></div></span>` +
         `<span class=statBox>${16 -State.usedNotes}/16  notes free<div class=outerBar><div style='${w2}' class=innerBar></div></div></span>`;
         document.getElementById("stats").innerHTML = status;
 
-        var out = document.querySelector("table");
+        const out = document.querySelector("table");
         // remove all elements in the table
         while(out.firstChild) out.removeChild(out.firstChild);
 
-        for(var i = 0; i < 16; i++) {
+        for(let i = 0; i < 16; i++) {
             // skip if hideRows enabled & Note doesn't exist
             if(App.cfg.hideRows && !State.NoteTable[i]) {continue;}
-            var tableRow = buildRow(i);
+            const tableRow = buildRow(i);
             out.appendChild(tableRow);
         }
         // display "Empty" msg if hideRows enabled
@@ -376,8 +383,8 @@
     };
 
     MPKEdit.App = App;
-    var elem = MPKEdit.elem;
-    var State = MPKEdit.State;
+    const elem = MPKEdit.elem;
+    const State = MPKEdit.State;
 
     console.log("INFO: MPKEdit.App ready");
 }());

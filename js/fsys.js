@@ -1,7 +1,7 @@
 (function fsys() {
-    var fsys = {};
+    const fsys = {};
 
-    var writeDone = function(Entry,  event) {
+    const writeDone = function(Entry,  event) {
         if(event.loaded === event.currentTarget.position) {
             event.currentTarget.truncate(event.currentTarget.position); // truncate data to correct size.
             MPKEdit.State.Entry = Entry;
@@ -10,7 +10,7 @@
         }
     };
 
-    var writeFile = function(data, Entry) {
+    const writeFile = function(data, Entry) {
         if(chrome.runtime.lastError) {return false;}
 
         Entry.createWriter(function(writer) {
@@ -33,13 +33,13 @@
     };
 
     fsys.loadFile = function() {
-        var readFile = function(i, Entry) {
+        const readFile = function(i, Entry) {
             Entry.file(function(fl) {
                 // set tmpEntry only if .MPK file.
                 if("MPK" === fl.name.split('.').pop().toUpperCase()) {
                     MPKEdit.App.tmpEntry = Entry;
                 }
-                var reader = new FileReader();
+                const reader = new FileReader();
                 reader.onload = function(e) {
                     MPKEdit.Parser(new Uint8Array(e.target.result), fl.name);
                 }
@@ -49,7 +49,7 @@
 
         chrome.fileSystem.chooseEntry({acceptsMultiple: true}, function(Entry) {
             if(chrome.runtime.lastError) {return false;}
-            for(var i = 0; i < Entry.length; i++) readFile(i, Entry[i]);
+            for(let i = 0; i < Entry.length; i++) readFile(i, Entry[i]);
         });
     };
 

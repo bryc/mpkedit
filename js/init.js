@@ -5,14 +5,14 @@ window.addEventListener("load", function() {
       read files from a drop event or a browse file input, and proceeds to
       parse/check the file (only reads 36928 bytes).
     */
-    var readFiles = function(event) {
+    const readFiles = function(event) {
         /* To give [reader.onload] access to [i], we need to pull some strings.
         // It can be done using an IIFE or modifying [reader] obj, but I've chosen to 
         // use a named function, which is easier to read and arguably faster. */
-        var readFile = function(i) {
-            var reader = new FileReader();
+        const readFile = function(i) {
+            const reader = new FileReader();
             reader.onload = function(e) {
-                MPKEdit.Parser(new Uint8Array(e.target.result), files[i].name)
+                MPKEdit.Parser(new Uint8Array(e.target.result), files[i].name);
             };
             // fsys: Load DnD FileEntry to tmpEntry
             if(MPKEdit.App.usefsys) {
@@ -23,9 +23,9 @@ window.addEventListener("load", function() {
             reader.readAsArrayBuffer(files[i].slice(0, 98144));
         };
         // Support both <input type=file> AND drag and drop
-        var files = event.target.files || event.dataTransfer.files;
+        const files = event.target.files || event.dataTransfer.files;
         // Do the loop.
-        for(var i = 0; i < files.length; i++) readFile(i);
+        for(let i = 0; i < files.length; i++) readFile(i);
         event.preventDefault();
     };
 
@@ -33,15 +33,17 @@ window.addEventListener("load", function() {
     function: setDragEffects()
       sets up events for the visual effect when dragging a file over.
     */
-    var setDragEffects = function setDragEffects() {
+    const setDragEffects = function setDragEffects() {
         function isFile(event) {
-            for (var dt = event.dataTransfer, i = 0; i < dt.types.length; i++) {
+            const dt = event.dataTransfer;
+            for (let i = 0; i < dt.types.length; i++) {
                 if (dt.types[i] === "Files") return true;
             }
             return false;
         }
 
-        var lastTarget = null, dropzone = document.getElementById("dropzone");
+        let lastTarget = null;
+        const dropzone = document.getElementById("dropzone");
         window.addEventListener("dragenter", function (event) {
             if (isFile(event)) {
                 lastTarget = event.target;
@@ -66,16 +68,17 @@ window.addEventListener("load", function() {
         - setup events: file drag handlers, GUI and other events
         - initialize MPK state (empty file)
     */
-    var init = function() {
+    const init = function() {
         function changeExportColor(event) {
-            for(var trg = document.querySelectorAll(".fa-download"), i = 0; i < trg.length; i++) {
+            const trg = document.querySelectorAll(".fa-download");
+            for(let i = 0; i < trg.length; i++) {
                 trg[i].style.color = event.ctrlKey ? "#c00" : "";
             }
         }
         function browse() {
             if(MPKEdit.App.usefsys) MPKEdit.fsys.loadFile();
             else {
-                var selectFile = document.getElementById("fileOpen");
+                const selectFile = document.getElementById("fileOpen");
                 if(selectFile.value) selectFile.value = "";
                 selectFile.onchange = readFiles, selectFile.click();
             }
