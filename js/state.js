@@ -23,7 +23,8 @@
         block[26] = 0x01;
 
         // calculate pakId checksum
-        let sumA = 0, sumB = 0xFFF2;
+        let sumA = 0, 
+            sumB = 0xFFF2;
         for(let i = 0; i < 28; i += 2) {
             sumA += (block[i] << 8) + block[i + 1], sumA &= 0xFFFF;
         }
@@ -59,8 +60,8 @@
     */
     State.erase = function(id) {
         if(!State.NoteTable[id]) return; // cancel if id doesn't exist in NoteTable
-        const tmpData = new Uint8Array(State.data); // operate on tmp copy to run thru parser later
-        const indexes = State.NoteTable[id].indexes; // get note's indexes sequence to overwrite with 0x03
+        const   tmpData = new Uint8Array(State.data), // operate on tmp copy to run thru parser later
+                indexes = State.NoteTable[id].indexes; // get note's indexes sequence to overwrite with 0x03
         // Erase all indexes in IndexTable
         let offset;
         for(let i = 0; i < indexes.length; i++) {
@@ -87,21 +88,25 @@
         // Parse Note comments and build MPKMeta block, if needed.
         let hasCmts = false;
         // initialized 16-byte header for MPKMeta
-        const cmtHeader = [77,80,75,77,101,116,97,0,0,0,0,0,0,0,0,0];
-        let MPKCmts = new Uint8Array(cmtHeader);
-        let numCmts = 0;
-        const notes = Object.keys(MPKEdit.State.NoteTable);
+        const   cmtHeader = [77,80,75,77,101,116,97,0,0,0,0,0,0,0,0,0],
+                notes = Object.keys(MPKEdit.State.NoteTable);
+        let MPKCmts = new Uint8Array(cmtHeader),
+            numCmts = 0;
         for(let i = 0; i < notes.length; i++) {
             if(State.NoteTable[notes[i]].comment) { // if NoteTable[i] contains a comment.
                 hasCmts = true;
                 numCmts++;
                 // Gather required info
-                const a = 0x300 + (notes[i] * 32); // NoteEntry addr
-                const idx = outputMPK[a+7], c0 = outputMPK[a+1],c1 = outputMPK[a+2],c2 = outputMPK[a+3];
-                const utfdata = new TextEncoder("utf-8").encode(State.NoteTable[notes[i]].comment);
-                const hiSize = utfdata.length >> 8, loSize = utfdata.length & 0xFF;
-                const id = idx^c0^c1^c2^0xA5;
-                const output = [id, idx, c0, c1, c2, hiSize, loSize];
+                const   a = 0x300 + (notes[i] * 32), // NoteEntry addr
+                        idx = outputMPK[a+7],
+                        c0 = outputMPK[a+1],
+                        c1 = outputMPK[a+2],
+                        c2 = outputMPK[a+3],
+                        utfdata = new TextEncoder("utf-8").encode(State.NoteTable[notes[i]].comment),
+                        hiSize = utfdata.length >> 8,
+                        loSize = utfdata.length & 0xFF,
+                        id = idx^c0^c1^c2^0xA5,
+                        output = [id, idx, c0, c1, c2, hiSize, loSize];
                 MPKCmts = MPKEdit.Uint8Concat(MPKCmts, output, utfdata);
             }
         }
@@ -121,12 +126,13 @@
             event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+State.filename+":"+blobURL);
         }
         else if(MPKEdit.App.usefsys) { // fsys save method. Hold CTRL will force SaveAs mode.
+            // TODO Ternary?
             if(State.Entry && !event.ctrlKey) MPKEdit.fsys.saveFile(outputMPK, State.Entry);
             else MPKEdit.fsys.saveFileAs(outputMPK, State.filename);
         }
         else { // browser saveAs method
-            const ext = State.filename.slice(-3).toUpperCase() !== "MPK";
-            const fn = State.filename + (ext ? ".mpk" : "");
+            const   ext = State.filename.slice(-3).toUpperCase() !== "MPK",
+                    fn = State.filename + (ext ? ".mpk" : "");
             MPKEdit.saveAs(new Blob([outputMPK]), fn);
         }
     };
@@ -138,9 +144,9 @@
     */
     State.saveNote = function(id, event) {
         let outputNote = [];
-        const indexes = State.NoteTable[id].indexes;
-        const gameCode = State.NoteTable[id].serial;
-        const noteName = State.NoteTable[id].noteName;
+        const   indexes = State.NoteTable[id].indexes,
+                gameCode = State.NoteTable[id].serial,
+                noteName = State.NoteTable[id].noteName;
 
         // Write NoteEntry as header for RAW format.
         for(let i = 0; i < 32; i++) outputNote.push(State.data[0x300 + (id * 32) + i]);
@@ -160,12 +166,12 @@
 
         if (event && event.ctrlKey) { // Hold CTRL for raw save data (no NoteEntry header)
             filename = noteName.replace(/[\\|\/"<>*?:]/g, "-"); // TODO: Not sure why I am using noteName here.
-            filename = filename + "_" + hash + "_raw.note";
+            filename = filename + "_" + hash + "_raw.note"; // TODO Template literal
             outputNote = outputNote.slice(32); // slice off header.
         } else if(State.NoteTable[id].comment) {
-            const header = [1,77,80,75,78,111,116,101,0,0,0,0,0,0,0,0];
-            const utfdata = new TextEncoder("utf-8").encode(State.NoteTable[id].comment);
-            const size = Math.ceil(utfdata.length / 16); // number of rows
+            const   header = [1,77,80,75,78,111,116,101,0,0,0,0,0,0,0,0],
+                    utfdata = new TextEncoder("utf-8").encode(State.NoteTable[id].comment),
+                    size = Math.ceil(utfdata.length / 16); // number of rows
             header[15] = size;
             let tS = State.NoteTable[id].timeStamp; // get or generate timestamp
             if(!tS) tS = Math.round(new Date().getTime()/1000) >>> 0;
@@ -181,7 +187,7 @@
         outputNote = new Uint8Array(outputNote);
         if(event.type === "dragstart") { // chrome drag-out save method
             const blobURL = URL.createObjectURL(new Blob([outputNote]));
-            event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+filename+":"+blobURL);
+            event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+filename+":"+blobURL); // TODO Template literal
         }
         else if(MPKEdit.App.usefsys) MPKEdit.fsys.saveFileAs(outputNote, filename);  // fsys save method
         else MPKEdit.saveAs(new Blob([outputNote]), filename); // browser saveAs method

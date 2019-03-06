@@ -6,7 +6,8 @@ const MPKEdit = (function MPKEdit() {
       Concat Uint8Arrays
     */
     MPKEdit.Uint8Concat = function(...arrs) {
-        let offset = 0, totalLength = 0;
+        let offset = 0, 
+            totalLength = 0;
         for (let arr of arrs) {
             totalLength += arr.length;
         }
@@ -42,7 +43,7 @@ const MPKEdit = (function MPKEdit() {
             h4 = seed ^ p4;
         
         const b = key.length & -16;
-        for(var i = 0; i < b;) {
+        for(let i = 0; i < b;) {
             k1 = key[i+3] << 24 | key[i+2] << 16 | key[i+1] << 8 | key[i];
             k1 = Math.imul(k1, p1); k1 = k1 << 15 | k1 >>> 17;
             h1 ^= Math.imul(k1, p2); h1 = h1 << 19 | h1 >>> 13; h1 += h2;

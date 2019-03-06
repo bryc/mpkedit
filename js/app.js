@@ -14,31 +14,31 @@
                 [t%360, 24+r%40, 26+e%40],
                 [t%360, 12+r%60, 32+e%40]
             ];
-            return "hsl("+ set[i][0] +","+ set[i][1] +"%,"+ set[i][2] +"%)";
+            return "hsl("+ set[i][0] +","+ set[i][1] +"%,"+ set[i][2] +"%)"; // TODO Template literal
         }
         function modHSL(str){
             const arr = str.replace(/[^\d,.%]/g, '').split(',').map(x => Number.parseFloat(x, 10));
-            return `hsl(${arr[0]-25},${arr[1]-10}%,${arr[2]-7}%)`;
+            return `hsl(${arr[0]-25}, ${arr[1]-10}%, ${arr[2]-7}%)`;
         }
         function rota(arr, mode, w, h) {
-            let arr2 = [];
-            if(mode===3) return arr.slice().reverse();
-            if(mode===0 || mode===1) { // horizontal flip
+            const arr2 = [];
+            if(mode === 3) return arr.slice().reverse();
+            if(mode === 0 || mode === 1) { // horizontal flip
                 for(let i = 0; i < arr.length; i++)
                     arr2[i] = arr[i-2*(i%w)+w-1];
             }
-            if(mode===2 || mode===4) { // rotate 90° CW
+            if(mode === 2 || mode === 4) { // rotate 90° CW
                 for(let i = 0; i < arr.length; i++)
                     arr2[i] = arr[0|(h-1)*w-((i%h)*w)+i/h];
             }
-            if(mode===1||mode===4) arr2.reverse();
+            if(mode === 1 || mode === 4) arr2.reverse();
             return arr2;
         }
-        const n = 10;
-        const q = n*3;
-        const l = n*n;
+        const   n = 10,
+                q = n*3,
+                l = n*n,
+                c = t.getContext("2d");
         let a = [];
-        const c = t.getContext("2d");
         // Set canvas dimensions if not already set (performance boost).
         if(t.width !== q) {
             t.width = t.height = q;
@@ -48,40 +48,41 @@
         c.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation.
         c.clearRect(0, 0, t.width, t.height); // Erase previous context.
         // Set fill color for pixels.
-        const A = (r[0]&0x2000000) ? 1:2, B = (r[1]&0x2000000) ? 1:2;
-        const color1 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A);
-        const color2 = i(r[1]&0x1FF, r[1]&0x7E00>>9, r[1]&0x1F8000>>15, (r[1]&0x1E00000>>21)>16 ? 0:B);
-        const color3 = modHSL(color1);
-        const color4 = modHSL(color2);
+        const   A = (r[0]&0x2000000) ? 1:2, 
+                B = (r[1]&0x2000000) ? 1:2,
+                color1 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A),
+                color2 = i(r[1]&0x1FF, r[1]&0x7E00>>9, r[1]&0x1F8000>>15, (r[1]&0x1E00000>>21)>16 ? 0:B),
+                color3 = modHSL(color1),
+                color4 = modHSL(color2);
         c.fillStyle = color1;
         // Rotate canvas 90 degrees.
         r[0]&0x4000000 && c.rotate(Math.PI * .5)|c.translate(0, -t.width);
         // Generate pixel array
         for(let word = r[2], i = 0; i < 32; i++) {
-            const bit = word & 1;
-            a.push(bit); word >>>= 1;
+            a.push(word & 1);
+            word >>>= 1;
         }
         for(let word = r[3], i = 0; i < 18; i++) {
-            const bit = word & 1;
-            a.push(bit); word >>>= 1;
+            a.push(word & 1);
+            word >>>= 1;
         }
         for(let word = r[1], i = 0; i < 25; i++) {
-            const bit = word & 1;
-            a.push(bit); word >>>= 1;
+            a.push(word & 1);
+            word >>>= 1;
         }
         for(let word = r[0], i = 0; i < 25; i++) {
-            const bit = word & 1;
-            a.push(bit); word >>>= 1;
+            a.push(word & 1);
+            word >>>= 1;
         }
-        const goodlist0 = [1,2,3,4,7,8,9,13,14,19];
-        let pt1 = a.slice(0,25);
-        let pt2 = a.slice(25,50);
-        let pt3 = a.slice(50,75);
-        let pt4 = a.slice(75,100);
-        const mask0 = pt1.slice();
-        const mask1 = pt2.slice();
-        const mask2 = pt3.slice();
-        const mask3 = pt4.slice();
+        const   goodlist0 = [1,2,3,4,7,8,9,13,14,19];
+        let pt1 = a.slice(0,25),
+            pt2 = a.slice(25,50),
+            pt3 = a.slice(50,75),
+            pt4 = a.slice(75,100);
+        const   mask0 = pt1.slice(),
+                mask1 = pt2.slice(),
+                mask2 = pt3.slice(),
+                mask3 = pt4.slice();
         for(let i = 0; i < 25; i++) {
             if(!goodlist0.includes(i)) {
                 mask0[i] = undefined;
@@ -103,7 +104,7 @@
             }
         }
         // Build pixel array.
-        a = []; 
+        a = [];
         let b = [];
         if(r[0] & 0x8000000) { // symmetry mode
             a = a.concat(pt1);
@@ -125,18 +126,22 @@
             b = b.concat(rota(pt3,3,n/2,n/2));
         }
         // Paint canvas.
-        for(let o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
+        const o = t.width/n;
+        let Q = 0,
+            y = 0,
+            d;
+        for(let i = 0; i < l; i++, d = i%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
-            (s === (0|l/2)) && (c.fillStyle = color3, Q += q/2, y =- 1);
-            (s && !d) && y++; // Increment y axis.
-            (a[s]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
+            (i === (0|l/2)) && (c.fillStyle = color3, Q += q/2, y =- 1);
+            (i && !d) && y++; // Increment y axis.
+            (a[i]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
         }
         c.fillStyle = color2;
-        for(let o = t.width/n, Q=d=y=s= 0; s < l; s++, d = s%(n/2)) {
+        for(let i = 0; i < l; i++, d = i%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
-            (s === (0|l/2)) && (c.fillStyle = color4, Q += q/2, y =- 1);
-            (s && !d) && y++; // Increment y axis.
-            (b[s]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
+            (i === (0|l/2)) && (c.fillStyle = color4, Q += q/2, y =- 1);
+            (i && !d) && y++; // Increment y axis.
+            (b[i]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
         }
     };
 
@@ -156,7 +161,7 @@
             return tableRow;
         }
 
-        const cmtIcon = State.NoteTable[i].comment?"<span title='"+fixHTML(State.NoteTable[i].comment)+"' class='fa fa-comment'></span>":"";
+        const cmtIcon = State.NoteTable[i].comment?"<span title='"+fixHTML(State.NoteTable[i].comment)+"' class='fa fa-comment'></span>":""; // TODO Template literal
         const displayName = State.NoteTable[i].noteName + cmtIcon;
 
         const tableRow =
@@ -243,13 +248,14 @@
             }
             // Populate squares of display based on NoteTable data.
             const x2 = x.querySelectorAll("span.b0x");
-            for(var page,y,i = 0; i < 16; i++) {
+            for(let i = 0; i < 16; i++) {
+                let page = 0, y;
                 if(State.NoteTable[i]) {
                     y = State.NoteTable[i].indexes;
-                    for(var j = 0; j < y.length; j++) {
+                    for(let j = 0; j < y.length; j++) {
                         page = y[j];
                         x2[page].style.borderColor = col[i];
-                        x2[page].style.background = col[i]+"C0";
+                        x2[page].style.background = col[i] + "C0"; // TODO Template literal
                     }
                 }
             }
@@ -270,7 +276,7 @@
             let noteData = "<code>";
             for(let j = i2; j < i2+32; j++) {
                 noteData += pad(State.data[j].toString(16).toUpperCase(),2);
-                if(j-i2===15) noteData += "<br>"; else noteData += " ";
+                noteData += (j-i2===15) ? "<br>" : " ";
             } noteData += "</code>";
 
             const noteInfo =
@@ -279,7 +285,7 @@
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Comment",className:"label"}]),
                     elem(["textarea",{maxLength:2048,placeholder:"No comment...",oninput:function() {
-                        var encoded = new TextEncoder("utf-8").encode(this.value);
+                        const encoded = new TextEncoder("utf-8").encode(this.value);
                         if(encoded.length <= 4080) {
                             this.style.color = "", State.NoteTable[i].comment = this.value;
                             App.updateUI();
@@ -304,7 +310,7 @@
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Publisher",className:"label"}]),
-                    elem(["span",{className:"content",innerHTML:MPKEdit.App.pubDB[State.NoteTable[i].publisher]+" (<code>"+State.NoteTable[i].publisher+"</code>)"}])
+                    elem(["span",{className:"content",innerHTML:MPKEdit.App.pubDB[State.NoteTable[i].publisher]+" (<code>"+State.NoteTable[i].publisher+"</code>)"}]) // TODO Template literal
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Hash code",className:"label"}]),
@@ -312,7 +318,7 @@
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Used pages",className:"label"}]),
-                    elem(["span",{className:"content",innerHTML:State.NoteTable[i].indexes.length+" ("+State.NoteTable[i].indexes.length*256+" bytes)"}])
+                    elem(["span",{className:"content",innerHTML:State.NoteTable[i].indexes.length+" ("+State.NoteTable[i].indexes.length*256+" bytes)"}]) // TODO Template literal
                 ),
                 elem(["h1","Raw note entry"]),
                 elem(["div",{style:"text-align:center;font-size:14px;",innerHTML:noteData}])
@@ -323,8 +329,8 @@
 
             // Paint IndexTable display usage for this Note.
             const x = elem(["div",{className:"pageContainer"}])
-            for(let sty,j = 0; j < 128; j++) {
-                sty = State.NoteTable[i].indexes.indexOf(j)!==-1?` border-color:${col[i]};background:${col[i]}C0`:"";
+            for(let j = 0; j < 128; j++) {
+                const sty = State.NoteTable[i].indexes.indexOf(j)!==-1?` border-color:${col[i]};background:${col[i]}C0`:"";
                 x.appendChild(elem(["span",{className:"b0x",style:sty}]));
                 if((j+1)%32===0) x.appendChild(elem(["br"]));
             }
@@ -361,8 +367,8 @@
         // Stats bar dynamic CSS
         let w1 = 100 * (State.usedPages / 123);
         let w2 = 100 * (State.usedNotes / 16);
-        w1 = `width:${w1}%;`+(w1===100?"background:#547F96;":"")+(w1>0&&w1<100?"border-right:1px solid rgba(0,0,0,0.15)":"");
-        w2 = `width:${w2}%;`+(w2===100?"background:#547F96;":"")+(w2>0&&w2<100?"border-right:1px solid rgba(0,0,0,0.15)":"");
+        w1 = `width:${w1}%;`+(w1===100?"background:#547F96;":"")+(w1>0&&w1<100?"border-right:1px solid rgba(0,0,0,0.15)":""); // TODO Template literal
+        w2 = `width:${w2}%;`+(w2===100?"background:#547F96;":"")+(w2>0&&w2<100?"border-right:1px solid rgba(0,0,0,0.15)":""); // TODO Template literal
         const status =
         `<span class=statBox>${123-State.usedPages}/123 pages free<div class=outerBar><div style='${w1}' class=innerBar></div></div></span>` +
         `<span class=statBox>${16 -State.usedNotes}/16  notes free<div class=outerBar><div style='${w2}' class=innerBar></div></div></span>`;
@@ -374,7 +380,7 @@
 
         for(let i = 0; i < 16; i++) {
             // skip if hideRows enabled & Note doesn't exist
-            if(App.cfg.hideRows && !State.NoteTable[i]) {continue;}
+            if(App.cfg.hideRows && !State.NoteTable[i]) continue;
             const tableRow = buildRow(i);
             out.appendChild(tableRow);
         }

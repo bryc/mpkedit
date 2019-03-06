@@ -1,7 +1,8 @@
 (function MPKParser() {
     // temporary globals
-    let curfile = undefined;
-    let tmpComments = [], isExtended;
+    let curfile = undefined,
+        tmpComments = [], 
+        isExtended;
 
     /* -----------------------------------------------
     function: resize(data)
@@ -78,13 +79,13 @@
         isExtended = arrstr(data, 1, 8) === "MPKNote"; // check for our MPKNote header
         let noteOfs = 0; // noteOfs is the size of the MPKNote block to trim for 0xCAFE.
         if(isExtended) {
-            const ver = data[0];
-            const len = data[15];
+            const   ver = data[0],
+                    len = data[15];
             noteOfs = (ver === 1) ? (16+16*len) : 16+256; // fallback for version 0
         }
         // Rely on noteOfs to find 0xCAFE in extended files.
-        const magicCheck = 0xCAFE === data[noteOfs + 0x07] + (data[noteOfs + 0x06] << 8);
-        const pageCheck = 0 === data.subarray(noteOfs + 32).length % 256;
+        const   magicCheck = 0xCAFE === data[noteOfs + 0x07] + (data[noteOfs + 0x06] << 8),
+                pageCheck = 0 === data.subarray(noteOfs + 32).length % 256;
         console.log("isNote", isExtended, magicCheck, pageCheck);
         return magicCheck && pageCheck;
     };
@@ -95,9 +96,6 @@
       offset. utility function for checkHeader()
     */
     const checkBlock = function(data, o, state) {
-        const sumX = (data[o + 28] << 8) + data[o + 29];
-        let sumY = (data[o + 30] << 8) + data[o + 31];
-
         let sumA = 0, sumB = 0xFFF2;
         for(let i = 0; i < 28; i += 2) {
             sumA += (data[o + i] << 8) + data[o + i + 1];
@@ -108,6 +106,8 @@
         // many checksums in DexDrive files are incorrect.
         // this detects and fixes the specific issue.
         state[o] = {};
+        const sumX = (data[o + 28] << 8) + data[o + 29];
+        let sumY = (data[o + 30] << 8) + data[o + 31];
         if(sumY !== sumB && (sumY ^ 0x0C) === sumB && sumX === sumA) {
            sumY ^= 0xC;
            data[o + 31] ^= 0xC;
@@ -125,8 +125,8 @@
       AFAIK this is correct libultra behavior. Will have to check... it might be better to just repair any corrupt slots.
     */
     const checkHeader = function(data) {
-        const state = {};
-        const loc = [0x20, 0x60, 0x80, 0xC0];
+        const   state = {},
+                loc = [0x20, 0x60, 0x80, 0xC0];
         let firstValid = null;
         // Check all header blocks
         for(let i = 0; i < 4; i++) {
@@ -139,7 +139,7 @@
         if(state[0x20].valid === true) return true;
         // Check if a valid backup was found as firstValid, copy to Main
         else if(firstValid !== null) {
-            console.info("Using Backup " + firstValid);
+            console.info("Using Backup " + firstValid); // TODO Template literal
             for(let i = 0; i < 0x20; i++) {
                 data[loc[0] + i] = data[loc[firstValid] + i];
             }
@@ -158,8 +158,8 @@
         const NoteTable = {};
 
         for(let i = 0x300; i < 0x500; i += 32) { // iterate over NoteTable
-            const p = data[i + 0x07];
-            const validIndex = data[i + 0x06] === 0 && p >= 5 && p <= 127; // firstIndex validation
+            const   p = data[i + 0x07],
+                    validIndex = data[i + 0x06] === 0 && p >= 5 && p <= 127; // firstIndex validation
 
             if(validIndex) {
                 const id = (i - 0x300) / 32;
@@ -179,15 +179,15 @@
                 }
 
                 if((data[i + 0x08] & 0x02) === 0) {
-                    console.info(id, "Fixing required bit 8:2 in note: " + noteName);
+                    console.info(id, "Fixing required bit 8:2 in note: " + noteName); // TODO Template literal
                     data[i + 0x08] |= 0x02;
                 }
 
                 if (data[i + 10] | data[i + 11]) {
-                    console.info("Unused bytes (0x0A-0x0B) are not empty:" + noteName);
+                    console.info("Unused bytes (0x0A-0x0B) are not empty:" + noteName); // TODO Template literal
                 }
                 if (data[i + 13] | data[i + 14] | data[i + 15]) {
-                    console.info("Note Extension contains data in reserved characters: " + noteName);
+                    console.info("Note Extension contains data in reserved characters: " + noteName); // TODO Template literal
                 }
 
                 const gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
@@ -222,8 +222,7 @@
     */
     const checkIndexes = function(data, o, NoteKeys) {
         try {
-            let p, p2;
-            let indexEnds = 0;
+            let p, p2, indexEnds = 0;
             const found = {parsed: [], keys: [], values: [], dupes: {}};
 
             // Iterate over the IndexTable, checking each index.
@@ -248,12 +247,12 @@
             // Count note indexes: Check that NoteKeys/indexEnds/keyIndexes counts are the same.
             const nKeysN = NoteKeys.length, nKeysP = keyIndexes.length;
             if (nKeysN !== nKeysP || nKeysN !== indexEnds) {
-                throw "Key index totals do not match (" +nKeysN+", "+nKeysP+", "+indexEnds+")";
+                throw "Key index totals do not match (" +nKeysN+", "+nKeysP+", "+indexEnds+")"; // TODO Template literal
             }
             // Check that keyIndexes and NoteKeys report the same values
             for (let i = 0; i < nKeysN; i++) {
                 if (NoteKeys.indexOf(keyIndexes[i]) === -1) {
-                    throw "A key index doesn't exist in the note table ("+keyIndexes[i]+")";
+                    throw "A key index doesn't exist in the note table ("+keyIndexes[i]+")"; // TODO Template literal
                 }
             }
             // Parse the Key Indexes to derive index sequence.
@@ -274,8 +273,7 @@
             // Check that parsed indexes and found keys counts are the same.
             // This is to ensure every key found is used in a sequence.
             if(found.parsed.length !== found.keys.length) {
-                throw "Number of parsed keys doesn't match found keys. (" +
-                found.parsed.length+", "+found.keys.length+")";
+                throw "Number of parsed keys doesn't match found keys. (" + found.parsed.length+", "+found.keys.length+")"; // TODO Template literal
             }
             // IndexTable checksum calculate + update.
             // Checksum should NOT be relied on for validation. Valid files may have invalid sums, so validate in other ways.
@@ -307,13 +305,13 @@
       capture DexDrive note comment strings.
     */
     const getDexNotes = function(data) {
-        const strs=[];
-        let str="";
+        const strs = [];
+        let str = "";
         for(let j=0, i = 0x40; i < 0x1040; i++ ) {
             // fix arrstr to support this -- TODO: support WHAT exactly?
             if(data[i] !== 0x00) { str += String.fromCharCode(data[i]); j++ }
             else {
-                if(str==="") { strs.push(undefined); } else { strs.push(str); }
+                strs.push(str === "" ? undefined : str);
                 str = "";
                 i -= j;
                 j = 0;
@@ -339,22 +337,23 @@
             // in the future perhaps we can ignore header and check for any valid data anyway.
             return false;
         }
-        const NoteKeys = []; // shared NoteKeys array. Produced by readNotes, used in checkIndexes.
-        const NoteTable = readNotes(data, NoteKeys);
+        const   NoteKeys = [], // shared NoteKeys array. Produced by readNotes, used in checkIndexes.
+                NoteTable = readNotes(data, NoteKeys);
 
-        const output = checkIndexes(data, 0x100, NoteKeys);
+        const   output = checkIndexes(data, 0x100, NoteKeys);
         if(output) {
-            let usedPages = 0;
-            let usedNotes = 0;
+            let usedPages = 0,
+                usedNotes = 0;
             for(let i = 0; i < Object.keys(NoteTable).length; i++) { // iterate over notes in NoteTable.
                 const _note = NoteTable[Object.keys(NoteTable)[i]]; // get Note object.
 
                 _note.indexes = output[_note.indexes]; // assign the index sequence to obj.
 
                 // Calculate hash of raw data. Gather all page data into array (fileOut).
-                for(var w = 0, fileOut = []; w < _note.indexes.length; w++) {
-                    var pageAddress = _note.indexes[w] * 0x100;
-                    for(var j = 0; j < 0x100; j++) {
+                const fileOut = [];
+                for(let w = 0; w < _note.indexes.length; w++) {
+                    const pageAddress = _note.indexes[w] * 0x100;
+                    for(let j = 0; j < 0x100; j++) {
                         fileOut.push(data[pageAddress + j]);
                     }
                 }
@@ -386,10 +385,10 @@
         if(isExtended) {
             isExtended = undefined;
             let len = 16;
-            const ver = data[0];
-            const cmtlen = data[15];
-            const tS = data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24;
-            if(tS > 0) console.log("Note Timestamp: "+new Date(tS*1000).toString().slice(4,24));
+            const   ver = data[0],
+                    cmtlen = data[15],
+                    tS = data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24;
+            if(tS > 0) console.log("Note Timestamp: "+new Date(tS*1000).toString().slice(4,24)); // TODO Template literal
 
             if(ver === 0) { // allow import of obsolete version0 files.
                 len += 256;
@@ -408,17 +407,15 @@
 
         const tmpdata = new Uint8Array(MPKEdit.State.data); // create tmp State.data copy to parse later.
 
-        const noteData = data.subarray(0, 32);
-        const pageData = data.subarray(32);
-        const pageCount = pageData.length / 256;
-        const newPages = MPKEdit.State.usedPages + pageCount; // Pre-calc used page count before import (to make sure it fits)
+        const   noteData = data.subarray(0, 32),
+                pageData = data.subarray(32),
+                pageCount = pageData.length / 256,
+                newPages = MPKEdit.State.usedPages + pageCount; // Pre-calc used page count before import (to make sure it fits)
 
         if(newPages <= 123 && MPKEdit.State.usedNotes < 16) { // if there's enough space..
             const freeIndexes = [];
             for(let i = 0xA; i < 0x100; i += 2) {
-                if(freeIndexes.length === pageCount) {
-                    break;
-                }
+                if(freeIndexes.length === pageCount) break;
                 if(tmpdata[0x100 + i + 1] === 3) { // allocate list of free indexes for import destination.
                     freeIndexes.push(i / 2);
                 }
@@ -428,9 +425,10 @@
             noteData[0x07] = freeIndexes[0];
 
             for(let i = 0; i < freeIndexes.length; i++) {
-                const target1 = 0x100 + (2 * freeIndexes[i] + 1);
-                const target2 = 0x100 * freeIndexes[i];
-
+                const   target1 = 0x100 + (2 * freeIndexes[i] + 1),
+                        target2 = 0x100 * freeIndexes[i];
+                
+                // TODO Ternary?
                 if(i === freeIndexes.length - 1) { // 0x01 for last index in sequence.
                     tmpdata[target1] = 0x01;
                 }
@@ -474,9 +472,9 @@
       Parse MPKCmts block, inserting any associated data into the state.
     */
     const parseMPKCmts = function(result) {
-        const MPKCmts = result.data.subarray(32768);
-        const hasCmts = arrstr(MPKCmts, 0, 7) === "MPKMeta";
-        const cmtCount = MPKCmts[15]; // header: stored number of comments
+        const   MPKCmts = result.data.subarray(32768),
+                hasCmts = arrstr(MPKCmts, 0, 7) === "MPKMeta",
+                cmtCount = MPKCmts[15]; // header: stored number of comments
         if(0 === cmtCount || false === hasCmts) {
             console.warn("MPKMeta block not found. MPK file size is wrong or MPKMeta block is corrupt.");
             return false;
@@ -492,7 +490,8 @@
 
         console.log(`MPKMeta block found, attempting to parse ${cmtCount} comment(s)...`);
         let foundCount = 0;
-        for(let ptr = 16, i = 0; i < cmtCount; i++) {
+        for(let i = 0; i < cmtCount; i++) {
+            let ptr = 16;
             const magic = MPKCmts[ptr+0]^0xA5, magic2 = MPKCmts[ptr+1]^MPKCmts[ptr+2]^MPKCmts[ptr+3]^MPKCmts[ptr+4];
             if(magic !== magic2) {
                 console.error(`MPKMeta Error: Can't find expected magic (${magic} !== ${magic2}). Aborting load.`);
@@ -507,9 +506,11 @@
             // Check if comment's specified startIndex/entryPoint exists, and if the CRC-8 is valid.
             let noteOfs = false;
             for(let j = 0; j < 16; j++) {
-                const a = 0x300 + j*32;
-                const chkIdx=MPKCmts[ptr+1]===result.data[a+7], chkCo0=MPKCmts[ptr+2]===result.data[a+1];
-                const chkCo1=MPKCmts[ptr+3]===result.data[a+2], chkCo2=MPKCmts[ptr+4]===result.data[a+3];
+                const   a = 0x300 + j*32,
+                        chkIdx = MPKCmts[ptr+1] === result.data[a+7], 
+                        chkCo0 = MPKCmts[ptr+2] === result.data[a+1],
+                        chkCo1 = MPKCmts[ptr+3] === result.data[a+2],
+                        chkCo2 = MPKCmts[ptr+4] === result.data[a+3];
                 if(chkIdx && chkCo0 && chkCo1 && chkCo2) {
                     noteOfs = j; // Index & gameCode found
                     break;
@@ -535,7 +536,7 @@
       filename provided.
     */
     MPKEdit.Parser = function(data, filename) {
-        console.log("Loading file %c"+filename+"...", "font-weight:bold");
+        console.log("Loading file %c"+filename+"...", "font-weight:bold"); // TODO Template literal
         curfile = filename;
 
         if(MPKEdit.State.data && isNote(data)) { // check if data opened is a note file to be imported
@@ -543,7 +544,7 @@
         } else {
             const result = parse(data); // attempt to parse data as MPK.
             if(!result) {
-                console.warn("ERROR: Data in file provided is not valid: " + filename);
+                console.warn("ERROR: Data in file provided is not valid: " + filename); // TODO Template literal
                 return false;
             }
             // parse and load any MPKCmts data
