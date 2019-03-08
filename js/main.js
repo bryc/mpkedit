@@ -32,10 +32,7 @@ const MPKEdit = (function MPKEdit() {
         }
 
         let k;
-        const   p1 = 597399067, 
-                p2 = 2869860233, 
-                p3 = 951274213, 
-                p4 = 2716044179;
+        const p1 = 597399067, p2 = 2869860233, p3 = 951274213, p4 = 2716044179;
 
         let h1 = seed ^ p1,
             h2 = seed ^ p2,
@@ -116,21 +113,16 @@ const MPKEdit = (function MPKEdit() {
     MPKEdit.elem = function(options) {
         let el = document.createDocumentFragment();
         const tag = options[0], prop = options[1];
-        if(typeof tag === "string") {
-            el = document.createElement(tag);
-        }
-        if(typeof prop === "object") {
-            for (let item in prop) {
-                el[item] = prop[item];
-            }
-        } else if(prop) {
-            el.innerHTML = prop;
-        }
-        for(let i = 1; i < arguments.length; i++) {
-            if(arguments[i].nodeType > 0) {
-                el.appendChild(arguments[i]);
-            }
-        }
+        
+        if(typeof tag === "string") el = document.createElement(tag);
+        
+        if(typeof prop === "object")
+            for(let item in prop) el[item] = prop[item];
+        else if(prop) el.innerHTML = prop;
+        
+        for(let i = 1; i < arguments.length; i++)
+            if(arguments[i].nodeType > 0) el.appendChild(arguments[i]);
+        
         return el;
     };
 

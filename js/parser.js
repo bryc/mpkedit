@@ -79,13 +79,13 @@
         isExtended = arrstr(data, 1, 8) === "MPKNote"; // check for our MPKNote header
         let noteOfs = 0; // noteOfs is the size of the MPKNote block to trim for 0xCAFE.
         if(isExtended) {
-            const   ver = data[0],
-                    len = data[15];
+            const ver = data[0],
+                  len = data[15];
             noteOfs = (ver === 1) ? (16+16*len) : 16+256; // fallback for version 0
         }
         // Rely on noteOfs to find 0xCAFE in extended files.
-        const   magicCheck = 0xCAFE === data[noteOfs + 0x07] + (data[noteOfs + 0x06] << 8),
-                pageCheck = 0 === data.subarray(noteOfs + 32).length % 256;
+        const magicCheck = 0xCAFE === data[noteOfs + 0x07] + (data[noteOfs + 0x06] << 8),
+              pageCheck = 0 === data.subarray(noteOfs + 32).length % 256;
         console.log("isNote", isExtended, magicCheck, pageCheck);
         return magicCheck && pageCheck;
     };
@@ -125,8 +125,8 @@
       AFAIK this is correct libultra behavior. Will have to check... it might be better to just repair any corrupt slots.
     */
     const checkHeader = function(data) {
-        const   state = {},
-                loc = [0x20, 0x60, 0x80, 0xC0];
+        const state = {},
+              loc = [0x20, 0x60, 0x80, 0xC0];
         let firstValid = null;
         // Check all header blocks
         for(let i = 0; i < 4; i++) {
@@ -140,9 +140,8 @@
         // Check if a valid backup was found as firstValid, copy to Main
         else if(firstValid !== null) {
             console.info("Using Backup " + firstValid); // TODO Template literal
-            for(let i = 0; i < 0x20; i++) {
+            for(let i = 0; i < 0x20; i++)
                 data[loc[0] + i] = data[loc[firstValid] + i];
-            }
             return true;
         }
         return false;
@@ -158,17 +157,16 @@
         const NoteTable = {};
 
         for(let i = 0x300; i < 0x500; i += 32) { // iterate over NoteTable
-            const   p = data[i + 0x07],
-                    validIndex = data[i + 0x06] === 0 && p >= 5 && p <= 127; // firstIndex validation
+            const p = data[i + 0x07],
+                  validIndex = data[i + 0x06] === 0 && p >= 5 && p <= 127; // firstIndex validation
 
             if(validIndex) {
                 const id = (i - 0x300) / 32;
                 NoteKeys.push(p);
                 
                 let noteName = "";
-                for(let j = 0; j < 16; j++) {
+                for(let j = 0; j < 16; j++)
                     noteName += n64code[data[i + 16 + j]] || "";
-                }
 
                 if(data[i + 12] !== 0) { // extension code
                     noteName += ".";
@@ -183,12 +181,10 @@
                     data[i + 0x08] |= 0x02;
                 }
 
-                if (data[i + 10] | data[i + 11]) {
+                if (data[i + 10] | data[i + 11])
                     console.info("Unused bytes (0x0A-0x0B) are not empty:" + noteName); // TODO Template literal
-                }
-                if (data[i + 13] | data[i + 14] | data[i + 15]) {
+                if (data[i + 13] | data[i + 14] | data[i + 15])
                     console.info("Note Extension contains data in reserved characters: " + noteName); // TODO Template literal
-                }
 
                 const gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
 
@@ -307,7 +303,7 @@
     const getDexNotes = function(data) {
         const strs = [];
         let str = "";
-        for(let j=0, i = 0x40; i < 0x1040; i++ ) {
+        for(let j = 0, i = 0x40; i < 0x1040; i++ ) {
             // fix arrstr to support this -- TODO: support WHAT exactly?
             if(data[i] !== 0x00) { str += String.fromCharCode(data[i]); j++ }
             else {
@@ -337,10 +333,10 @@
             // in the future perhaps we can ignore header and check for any valid data anyway.
             return false;
         }
-        const   NoteKeys = [], // shared NoteKeys array. Produced by readNotes, used in checkIndexes.
-                NoteTable = readNotes(data, NoteKeys);
+        const NoteKeys = [], // shared NoteKeys array. Produced by readNotes, used in checkIndexes.
+              NoteTable = readNotes(data, NoteKeys);
 
-        const   output = checkIndexes(data, 0x100, NoteKeys);
+        const output = checkIndexes(data, 0x100, NoteKeys);
         if(output) {
             let usedPages = 0,
                 usedNotes = 0;
@@ -385,9 +381,9 @@
         if(isExtended) {
             isExtended = undefined;
             let len = 16;
-            const   ver = data[0],
-                    cmtlen = data[15],
-                    tS = data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24;
+            const ver = data[0],
+                  cmtlen = data[15],
+                  tS = data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24;
             if(tS > 0) console.log("Note Timestamp: "+new Date(tS*1000).toString().slice(4,24)); // TODO Template literal
 
             if(ver === 0) { // allow import of obsolete version0 files.
@@ -407,38 +403,32 @@
 
         const tmpdata = new Uint8Array(MPKEdit.State.data); // create tmp State.data copy to parse later.
 
-        const   noteData = data.subarray(0, 32),
-                pageData = data.subarray(32),
-                pageCount = pageData.length / 256,
-                newPages = MPKEdit.State.usedPages + pageCount; // Pre-calc used page count before import (to make sure it fits)
+        const noteData = data.subarray(0, 32),
+              pageData = data.subarray(32),
+              pageCount = pageData.length / 256,
+              newPages = MPKEdit.State.usedPages + pageCount; // Pre-calc used page count before import (to make sure it fits)
 
         if(newPages <= 123 && MPKEdit.State.usedNotes < 16) { // if there's enough space..
             const freeIndexes = [];
             for(let i = 0xA; i < 0x100; i += 2) {
                 if(freeIndexes.length === pageCount) break;
-                if(tmpdata[0x100 + i + 1] === 3) { // allocate list of free indexes for import destination.
-                    freeIndexes.push(i / 2);
-                }
+                // allocate list of free indexes for import destination.
+                if(tmpdata[0x100 + i + 1] === 3) freeIndexes.push(i / 2);
             }
 
             noteData[0x06] = 0; // replace 0xCAFE with first free index.
             noteData[0x07] = freeIndexes[0];
 
             for(let i = 0; i < freeIndexes.length; i++) {
-                const   target1 = 0x100 + (2 * freeIndexes[i] + 1),
-                        target2 = 0x100 * freeIndexes[i];
+                const target1 = 0x100 + (2 * freeIndexes[i] + 1),
+                      target2 = 0x100 * freeIndexes[i];
                 
-                // TODO Ternary?
-                if(i === freeIndexes.length - 1) { // 0x01 for last index in sequence.
-                    tmpdata[target1] = 0x01;
-                }
-                else {
-                    tmpdata[target1] = freeIndexes[i + 1]; // write the index sequence in IndexTable
-                }
+                // write the index sequence in IndexTable. 0x01 for last index in sequence.
+                tmpdata[target1] = (i === freeIndexes.length-1) ? 0x01 : freeIndexes[i+1];
 
-                for(let j = 0; j < 0x100; j++) {
-                    tmpdata[target2 + j] = pageData[0x100 * i + j]; // write the page data sequence.
-                }
+                // write the page data sequence.
+                for(let j = 0; j < 0x100; j++)
+                    tmpdata[target2 + j] = pageData[0x100 * i + j];
             }
 
             for(let i = 0; i < 16; i++) { // Write 32-byte NoteEntry to NoteTable.
@@ -447,21 +437,17 @@
                     // will cause comments to be lost when MPK data is re-parsed.
                     if(cmt) tmpComments[i] = cmt; // TODO: This is POSSIBLY not needed anymore, due to presence of MPKCmts block in State.data???
                     const target = 0x300 + i * 32;
-                    for(let j = 0; j < 32; j++) {
-                        tmpdata[target + j] = noteData[j];
-                    }
+                    for(let j = 0; j < 32; j++) tmpdata[target + j] = noteData[j];
                     break;
                 }
             }
 
             MPKEdit.Parser(tmpdata);
         } else {
-            if(MPKEdit.State.usedNotes >= 16) {
+            if(MPKEdit.State.usedNotes >= 16)
                 console.warn("No note slots available to insert note.");
-            }
-            if(newPages > 123) {
+            if(newPages > 123)
                 console.warn("Not enough pages left to insert note.");
-            }
         }
     };
 
@@ -472,9 +458,9 @@
       Parse MPKCmts block, inserting any associated data into the state.
     */
     const parseMPKCmts = function(result) {
-        const   MPKCmts = result.data.subarray(32768),
-                hasCmts = arrstr(MPKCmts, 0, 7) === "MPKMeta",
-                cmtCount = MPKCmts[15]; // header: stored number of comments
+        const MPKCmts = result.data.subarray(32768),
+              hasCmts = arrstr(MPKCmts, 0, 7) === "MPKMeta",
+              cmtCount = MPKCmts[15]; // header: stored number of comments
         if(0 === cmtCount || false === hasCmts) {
             console.warn("MPKMeta block not found. MPK file size is wrong or MPKMeta block is corrupt.");
             return false;
@@ -506,11 +492,11 @@
             // Check if comment's specified startIndex/entryPoint exists, and if the CRC-8 is valid.
             let noteOfs = false;
             for(let j = 0; j < 16; j++) {
-                const   a = 0x300 + j*32,
-                        chkIdx = MPKCmts[ptr+1] === result.data[a+7], 
-                        chkCo0 = MPKCmts[ptr+2] === result.data[a+1],
-                        chkCo1 = MPKCmts[ptr+3] === result.data[a+2],
-                        chkCo2 = MPKCmts[ptr+4] === result.data[a+3];
+                const a = 0x300 + j*32,
+                      chkIdx = MPKCmts[ptr+1] === result.data[a+7], 
+                      chkCo0 = MPKCmts[ptr+2] === result.data[a+1],
+                      chkCo1 = MPKCmts[ptr+3] === result.data[a+2],
+                      chkCo2 = MPKCmts[ptr+4] === result.data[a+3];
                 if(chkIdx && chkCo0 && chkCo1 && chkCo2) {
                     noteOfs = j; // Index & gameCode found
                     break;
@@ -558,9 +544,7 @@
             MPKEdit.State.filename = filename || MPKEdit.State.filename;
 
             // Update State.Entry with fsys tmpEntry. Occurs only when loading .MPK via fsys.
-            if(MPKEdit.App.usefsys && filename) {
-                MPKEdit.State.Entry = MPKEdit.App.tmpEntry;
-            }
+            if(MPKEdit.App.usefsys && filename) MPKEdit.State.Entry = MPKEdit.App.tmpEntry;
 
             MPKEdit.App.updateUI();
         }

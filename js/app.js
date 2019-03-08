@@ -8,7 +8,7 @@
     */
     const pixicon = function(t, r) {
         //r=[Math.random()*2**32|0,Math.random()*2**32|0,Math.random()*2**32|0,Math.random()*2**32|0]
-        function i(t, r, e, i=0) { // HSL color generator.
+        function hsl(t, r, e, i=0) { // HSL color generator.
             const set = [
                 [t%360, r%10, 17+e%50],
                 [t%360, 24+r%40, 26+e%40],
@@ -34,10 +34,7 @@
             if(mode === 1 || mode === 4) arr2.reverse();
             return arr2;
         }
-        const   n = 10,
-                q = n*3,
-                l = n*n,
-                c = t.getContext("2d");
+        const n = 10, q = n*3, l = n*n, c = t.getContext("2d");
         let a = [];
         // Set canvas dimensions if not already set (performance boost).
         if(t.width !== q) {
@@ -48,41 +45,34 @@
         c.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation.
         c.clearRect(0, 0, t.width, t.height); // Erase previous context.
         // Set fill color for pixels.
-        const   A = (r[0]&0x2000000) ? 1:2, 
-                B = (r[1]&0x2000000) ? 1:2,
-                color1 = i(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A),
-                color2 = i(r[1]&0x1FF, r[1]&0x7E00>>9, r[1]&0x1F8000>>15, (r[1]&0x1E00000>>21)>16 ? 0:B),
-                color3 = modHSL(color1),
-                color4 = modHSL(color2);
+        const A = (r[0]&0x2000000) ? 1:2, B = (r[1]&0x2000000) ? 1:2,
+              color1 = hsl(r[0]&0x1FF, r[0]&0x7E00>>9, r[0]&0x1F8000>>15, (r[0]&0x1E00000>>21)>16 ? 0:A),
+              color2 = hsl(r[1]&0x1FF, r[1]&0x7E00>>9, r[1]&0x1F8000>>15, (r[1]&0x1E00000>>21)>16 ? 0:B),
+              color3 = modHSL(color1), color4 = modHSL(color2);
         c.fillStyle = color1;
         // Rotate canvas 90 degrees.
         r[0]&0x4000000 && c.rotate(Math.PI * .5)|c.translate(0, -t.width);
         // Generate pixel array
-        for(let word = r[2], i = 0; i < 32; i++) {
-            a.push(word & 1);
-            word >>>= 1;
-        }
-        for(let word = r[3], i = 0; i < 18; i++) {
-            a.push(word & 1);
-            word >>>= 1;
-        }
-        for(let word = r[1], i = 0; i < 25; i++) {
-            a.push(word & 1);
-            word >>>= 1;
-        }
-        for(let word = r[0], i = 0; i < 25; i++) {
-            a.push(word & 1);
-            word >>>= 1;
-        }
-        const   goodlist0 = [1,2,3,4,7,8,9,13,14,19];
+        /*
+        let i, h;
+        for(i = 0, h = r[2]; i < 32; i++, h>>>=1) a.push(h&1);
+        for(i = 0, h = r[3]; i < 18; i++, h>>>=1) a.push(h&1);
+        for(i = 0, h = r[1]; i < 25; i++, h>>>=1) a.push(h&1);
+        for(i = 0, h = r[0]; i < 25; i++, h>>>=1) a.push(h&1);
+        */
+        [[2,32], [3,18], [1,25], [0,25]].forEach(item => {
+            let i, num = item[1], h = r[item[0]];
+            for(i = 0; i < num; i++, h>>>=1) a.push(h&1);
+        });
+        const goodlist0 = [1,2,3,4,7,8,9,13,14,19];
         let pt1 = a.slice(0,25),
             pt2 = a.slice(25,50),
             pt3 = a.slice(50,75),
             pt4 = a.slice(75,100);
-        const   mask0 = pt1.slice(),
-                mask1 = pt2.slice(),
-                mask2 = pt3.slice(),
-                mask3 = pt4.slice();
+        const mask0 = pt1.slice(),
+              mask1 = pt2.slice(),
+              mask2 = pt3.slice(),
+              mask3 = pt4.slice();
         for(let i = 0; i < 25; i++) {
             if(!goodlist0.includes(i)) {
                 mask0[i] = undefined;
@@ -127,9 +117,7 @@
         }
         // Paint canvas.
         const o = t.width/n;
-        let Q = 0,
-            y = 0,
-            d;
+        let Q = 0, y = 0, d;
         for(let i = 0; i < l; i++, d = i%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
             (i === (0|l/2)) && (c.fillStyle = color3, Q += q/2, y =- 1);
@@ -161,8 +149,8 @@
             return tableRow;
         }
 
-        const cmtIcon = State.NoteTable[i].comment?"<span title='"+fixHTML(State.NoteTable[i].comment)+"' class='fa fa-comment'></span>":""; // TODO Template literal
-        const displayName = State.NoteTable[i].noteName + cmtIcon;
+        const cmtIcon = State.NoteTable[i].comment?"<span title='"+fixHTML(State.NoteTable[i].comment)+"' class='fa fa-comment'></span>":"", // TODO Template literal
+              displayName = State.NoteTable[i].noteName + cmtIcon;
 
         const tableRow =
         elem(["tr",{className:"note",id:i}],
@@ -241,7 +229,7 @@
                 )
             );
             // Generate the IndexTable visualizer display
-            const x = elem(["div",{className:"pageContainer"}])
+            const x = elem(["div",{className:"pageContainer"}]);
             for(let j = 1; j <= 128; j++) {
                 x.appendChild(elem(["span",{className:"b0x"}]))
                 if(j%32===0) x.appendChild(elem(["br"]));
@@ -269,8 +257,8 @@
         // ################ Modal: Note Info ################
         if(e.target.className === "fa fa-info-circle") {
             // Get ID of the selected Note and its memory address.
-            const i = e.target.parentElement.parentElement.id;
-            const i2 = 0x300 + (32*i);
+            const i = e.target.parentElement.parentElement.id,
+                  i2 = 0x300 + (32*i);
 
             // Print raw bytes of NoteEntry
             let noteData = "<code>";
@@ -365,8 +353,7 @@
     App.updateUI = function() {
         document.getElementById("filename").innerHTML = State.filename;
         // Stats bar dynamic CSS
-        let w1 = 100 * (State.usedPages / 123);
-        let w2 = 100 * (State.usedNotes / 16);
+        let w1 = 100 * (State.usedPages / 123), w2 = 100 * (State.usedNotes / 16);
         w1 = `width:${w1}%;`+(w1===100?"background:#547F96;":"")+(w1>0&&w1<100?"border-right:1px solid rgba(0,0,0,0.15)":""); // TODO Template literal
         w2 = `width:${w2}%;`+(w2===100?"background:#547F96;":"")+(w2>0&&w2<100?"border-right:1px solid rgba(0,0,0,0.15)":""); // TODO Template literal
         const status =

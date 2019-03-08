@@ -25,9 +25,8 @@
         // calculate pakId checksum
         let sumA = 0, 
             sumB = 0xFFF2;
-        for(let i = 0; i < 28; i += 2) {
+        for(let i = 0; i < 28; i += 2)
             sumA += (block[i] << 8) + block[i + 1], sumA &= 0xFFFF;
-        }
         sumB -= sumA;
         // store checksums
         block[28] = sumA >> 8;
@@ -60,8 +59,8 @@
     */
     State.erase = function(id) {
         if(!State.NoteTable[id]) return; // cancel if id doesn't exist in NoteTable
-        const   tmpData = new Uint8Array(State.data), // operate on tmp copy to run thru parser later
-                indexes = State.NoteTable[id].indexes; // get note's indexes sequence to overwrite with 0x03
+        const tmpData = new Uint8Array(State.data), // operate on tmp copy to run thru parser later
+              indexes = State.NoteTable[id].indexes; // get note's indexes sequence to overwrite with 0x03
         // Erase all indexes in IndexTable
         let offset;
         for(let i = 0; i < indexes.length; i++) {
@@ -88,8 +87,8 @@
         // Parse Note comments and build MPKMeta block, if needed.
         let hasCmts = false;
         // initialized 16-byte header for MPKMeta
-        const   cmtHeader = [77,80,75,77,101,116,97,0,0,0,0,0,0,0,0,0],
-                notes = Object.keys(MPKEdit.State.NoteTable);
+        const cmtHeader = [77,80,75,77,101,116,97,0,0,0,0,0,0,0,0,0],
+              notes = Object.keys(MPKEdit.State.NoteTable);
         let MPKCmts = new Uint8Array(cmtHeader),
             numCmts = 0;
         for(let i = 0; i < notes.length; i++) {
@@ -97,16 +96,13 @@
                 hasCmts = true;
                 numCmts++;
                 // Gather required info
-                const   a = 0x300 + (notes[i] * 32), // NoteEntry addr
-                        idx = outputMPK[a+7],
-                        c0 = outputMPK[a+1],
-                        c1 = outputMPK[a+2],
-                        c2 = outputMPK[a+3],
-                        utfdata = new TextEncoder("utf-8").encode(State.NoteTable[notes[i]].comment),
-                        hiSize = utfdata.length >> 8,
-                        loSize = utfdata.length & 0xFF,
-                        id = idx^c0^c1^c2^0xA5,
-                        output = [id, idx, c0, c1, c2, hiSize, loSize];
+                const a = 0x300 + (notes[i] * 32), // NoteEntry addr
+                      idx = outputMPK[a+7],
+                      c0 = outputMPK[a+1], c1 = outputMPK[a+2], c2 = outputMPK[a+3],
+                      utfdata = new TextEncoder("utf-8").encode(State.NoteTable[notes[i]].comment),
+                      hiSize = utfdata.length >> 8, loSize = utfdata.length & 0xFF,
+                      id = idx^c0^c1^c2^0xA5,
+                      output = [id, idx, c0, c1, c2, hiSize, loSize];
                 MPKCmts = MPKEdit.Uint8Concat(MPKCmts, output, utfdata);
             }
         }
@@ -131,8 +127,8 @@
             else MPKEdit.fsys.saveFileAs(outputMPK, State.filename);
         }
         else { // browser saveAs method
-            const   ext = State.filename.slice(-3).toUpperCase() !== "MPK",
-                    fn = State.filename + (ext ? ".mpk" : "");
+            const ext = State.filename.slice(-3).toUpperCase() !== "MPK",
+                  fn = State.filename + (ext ? ".mpk" : "");
             MPKEdit.saveAs(new Blob([outputMPK]), fn);
         }
     };
@@ -144,9 +140,9 @@
     */
     State.saveNote = function(id, event) {
         let outputNote = [];
-        const   indexes = State.NoteTable[id].indexes,
-                gameCode = State.NoteTable[id].serial,
-                noteName = State.NoteTable[id].noteName;
+        const indexes = State.NoteTable[id].indexes,
+              gameCode = State.NoteTable[id].serial,
+              noteName = State.NoteTable[id].noteName;
 
         // Write NoteEntry as header for RAW format.
         for(let i = 0; i < 32; i++) outputNote.push(State.data[0x300 + (id * 32) + i]);
@@ -155,9 +151,8 @@
         // Write associated save data.
         for(let i = 0; i < indexes.length; i++) {
             const pageAddress = indexes[i] * 0x100;
-            for(let j = 0; j < 0x100; j++) {
+            for(let j = 0; j < 0x100; j++)
                 outputNote.push(State.data[pageAddress + j]);
-            }
         }
 
         const hash = State.NoteTable[id].cyrb32[0].toString(36)+State.NoteTable[id].cyrb32[1].toString(36);
@@ -169,9 +164,9 @@
             filename = filename + "_" + hash + "_raw.note"; // TODO Template literal
             outputNote = outputNote.slice(32); // slice off header.
         } else if(State.NoteTable[id].comment) {
-            const   header = [1,77,80,75,78,111,116,101,0,0,0,0,0,0,0,0],
-                    utfdata = new TextEncoder("utf-8").encode(State.NoteTable[id].comment),
-                    size = Math.ceil(utfdata.length / 16); // number of rows
+            const header = [1,77,80,75,78,111,116,101,0,0,0,0,0,0,0,0],
+                  utfdata = new TextEncoder("utf-8").encode(State.NoteTable[id].comment),
+                  size = Math.ceil(utfdata.length / 16); // number of rows
             header[15] = size;
             let tS = State.NoteTable[id].timeStamp; // get or generate timestamp
             if(!tS) tS = Math.round(new Date().getTime()/1000) >>> 0;
