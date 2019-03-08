@@ -124,7 +124,7 @@
             (i && !d) && y++; // Increment y axis.
             (a[i]) && c.fillRect(Q+o*d, o*y, o, o); // If pixel exists, fill square on canvas (x, y, w, h).
         }
-        c.fillStyle = color2;
+        c.fillStyle = color2; Q = 0, y = 0;
         for(let i = 0; i < l; i++, d = i%(n/2)) {
             // Change color at halfway point. NOTE: |0 required for odd sizes.
             (i === (0|l/2)) && (c.fillStyle = color4, Q += q/2, y =- 1);
