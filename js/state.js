@@ -79,7 +79,7 @@
       Save the full MPK output file (Standard RAW MPK file)
       Handles browser download, and fsys SaveAs/Save
     */
-    State.save = function() {
+    State.save = function(event) {
         // Initially we only want to output the MPK data.
         let outputMPK = State.data;
 
