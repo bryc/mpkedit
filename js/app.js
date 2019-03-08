@@ -243,7 +243,7 @@
                     for(let j = 0; j < y.length; j++) {
                         page = y[j];
                         x2[page].style.borderColor = col[i];
-                        x2[page].style.background = `${col[i]}C0`;
+                        x2[page].style.background = col[i] + "C0";
                     }
                 }
             }
