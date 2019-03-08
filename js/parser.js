@@ -1,8 +1,6 @@
 (function MPKParser() {
     // temporary globals
-    let curfile = undefined,
-        tmpComments = [], 
-        isExtended;
+    let curfile = undefined, tmpComments = [], isExtended;
 
     /* -----------------------------------------------
     function: resize(data)
@@ -125,8 +123,7 @@
       AFAIK this is correct libultra behavior. Will have to check... it might be better to just repair any corrupt slots.
     */
     const checkHeader = function(data) {
-        const state = {},
-              loc = [0x20, 0x60, 0x80, 0xC0];
+        const state = {}, loc = [0x20, 0x60, 0x80, 0xC0];
         let firstValid = null;
         // Check all header blocks
         for(let i = 0; i < 4; i++) {
@@ -302,8 +299,7 @@
     */
     const getDexNotes = function(data) {
         const strs = [];
-        let str = "";
-        for(let j = 0, i = 0x40; i < 0x1040; i++ ) {
+        for(let i = 0x40, j = 0, str = ""; i < 0x1040; i++ ) {
             // fix arrstr to support this -- TODO: support WHAT exactly?
             if(data[i] !== 0x00) { str += String.fromCharCode(data[i]); j++ }
             else {
@@ -338,8 +334,7 @@
 
         const output = checkIndexes(data, 0x100, NoteKeys);
         if(output) {
-            let usedPages = 0,
-                usedNotes = 0;
+            let usedPages = 0, usedNotes = 0;
             for(let i = 0; i < Object.keys(NoteTable).length; i++) { // iterate over notes in NoteTable.
                 const _note = NoteTable[Object.keys(NoteTable)[i]]; // get Note object.
 
@@ -381,8 +376,7 @@
         if(isExtended) {
             isExtended = undefined;
             let len = 16;
-            const ver = data[0],
-                  cmtlen = data[15],
+            const ver = data[0], cmtlen = data[15], 
                   tS = data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24;
             if(tS > 0) console.log(`Note Timestamp: ${new Date(tS*1000).toString().slice(4,24)}`);
 
@@ -403,7 +397,7 @@
 
         const tmpdata = new Uint8Array(MPKEdit.State.data); // create tmp State.data copy to parse later.
 
-        const noteData = data.subarray(0, 32),
+        const noteData = data.subarray(0, 32), 
               pageData = data.subarray(32),
               pageCount = pageData.length / 256,
               newPages = MPKEdit.State.usedPages + pageCount; // Pre-calc used page count before import (to make sure it fits)

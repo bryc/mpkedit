@@ -23,8 +23,7 @@
         block[26] = 0x01;
 
         // calculate pakId checksum
-        let sumA = 0, 
-            sumB = 0xFFF2;
+        let sumA = 0, sumB = 0xFFF2;
         for(let i = 0; i < 28; i += 2)
             sumA += (block[i] << 8) + block[i + 1], sumA &= 0xFFFF;
         sumB -= sumA;
@@ -89,8 +88,7 @@
         // initialized 16-byte header for MPKMeta
         const cmtHeader = [77,80,75,77,101,116,97,0,0,0,0,0,0,0,0,0],
               notes = Object.keys(MPKEdit.State.NoteTable);
-        let MPKCmts = new Uint8Array(cmtHeader),
-            numCmts = 0;
+        let MPKCmts = new Uint8Array(cmtHeader), numCmts = 0;
         for(let i = 0; i < notes.length; i++) {
             if(State.NoteTable[notes[i]].comment) { // if NoteTable[i] contains a comment.
                 hasCmts = true;
