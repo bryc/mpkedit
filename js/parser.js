@@ -469,9 +469,7 @@
         }
 
         console.log(`MPKMeta block found, attempting to parse ${cmtCount} comment(s)...`);
-        let foundCount = 0;
-        for(let i = 0; i < cmtCount; i++) {
-            let ptr = 16;
+        for(let i = 0, foundCount = 0, ptr = 16; i < cmtCount; i++) {
             const magic = MPKCmts[ptr+0]^0xA5, magic2 = MPKCmts[ptr+1]^MPKCmts[ptr+2]^MPKCmts[ptr+3]^MPKCmts[ptr+4];
             if(magic !== magic2) {
                 console.error(`MPKMeta Error: Can't find expected magic (${magic} !== ${magic2}). Aborting load.`);
