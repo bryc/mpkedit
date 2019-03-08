@@ -14,7 +14,7 @@
                 [t%360, 24+r%40, 26+e%40],
                 [t%360, 12+r%60, 32+e%40]
             ];
-            return "hsl("+ set[i][0] +","+ set[i][1] +"%,"+ set[i][2] +"%)"; // TODO Template literal
+            return `hsl(${set[i][0]}, ${set[i][1]}%, ${set[i][2]}%)`;
         }
         function modHSL(str){
             const arr = str.replace(/[^\d,.%]/g, '').split(',').map(x => Number.parseFloat(x, 10));
@@ -149,7 +149,7 @@
             return tableRow;
         }
 
-        const cmtIcon = State.NoteTable[i].comment?"<span title='"+fixHTML(State.NoteTable[i].comment)+"' class='fa fa-comment'></span>":"", // TODO Template literal
+        const cmtIcon = State.NoteTable[i].comment?`<span title='${fixHTML(State.NoteTable[i].comment)}' class='fa fa-comment'></span>`:"",
               displayName = State.NoteTable[i].noteName + cmtIcon;
 
         const tableRow =
@@ -243,7 +243,7 @@
                     for(let j = 0; j < y.length; j++) {
                         page = y[j];
                         x2[page].style.borderColor = col[i];
-                        x2[page].style.background = col[i] + "C0"; // TODO Template literal
+                        x2[page].style.background = `${col[i]}C0`;
                     }
                 }
             }
@@ -298,7 +298,7 @@
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Publisher",className:"label"}]),
-                    elem(["span",{className:"content",innerHTML:MPKEdit.App.pubDB[State.NoteTable[i].publisher]+" (<code>"+State.NoteTable[i].publisher+"</code>)"}]) // TODO Template literal
+                    elem(["span",{className:"content",innerHTML:`${MPKEdit.App.pubDB[State.NoteTable[i].publisher]} (<code>${State.NoteTable[i].publisher}</code>)`}])
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Hash code",className:"label"}]),
@@ -306,7 +306,7 @@
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Used pages",className:"label"}]),
-                    elem(["span",{className:"content",innerHTML:State.NoteTable[i].indexes.length+" ("+State.NoteTable[i].indexes.length*256+" bytes)"}]) // TODO Template literal
+                    elem(["span",{className:"content",innerHTML:`${State.NoteTable[i].indexes.length} (${State.NoteTable[i].indexes.length*256} bytes)`}])
                 ),
                 elem(["h1","Raw note entry"]),
                 elem(["div",{style:"text-align:center;font-size:14px;",innerHTML:noteData}])
@@ -354,8 +354,8 @@
         document.getElementById("filename").innerHTML = State.filename;
         // Stats bar dynamic CSS
         let w1 = 100 * (State.usedPages / 123), w2 = 100 * (State.usedNotes / 16);
-        w1 = `width:${w1}%;`+(w1===100?"background:#547F96;":"")+(w1>0&&w1<100?"border-right:1px solid rgba(0,0,0,0.15)":""); // TODO Template literal
-        w2 = `width:${w2}%;`+(w2===100?"background:#547F96;":"")+(w2>0&&w2<100?"border-right:1px solid rgba(0,0,0,0.15)":""); // TODO Template literal
+        w1 = `width:${w1}%;${w1===100?"background:#547F96;":""}${w1>0&&w1<100?"border-right:1px solid rgba(0,0,0,0.15)":""}`;
+        w2 = `width:${w2}%;${w2===100?"background:#547F96;":""}${w2>0&&w2<100?"border-right:1px solid rgba(0,0,0,0.15)":""}`;
         const status =
         `<span class=statBox>${123-State.usedPages}/123 pages free<div class=outerBar><div style='${w1}' class=innerBar></div></div></span>` +
         `<span class=statBox>${16 -State.usedNotes}/16  notes free<div class=outerBar><div style='${w2}' class=innerBar></div></div></span>`;

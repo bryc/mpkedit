@@ -139,7 +139,7 @@
         if(state[0x20].valid === true) return true;
         // Check if a valid backup was found as firstValid, copy to Main
         else if(firstValid !== null) {
-            console.info("Using Backup " + firstValid); // TODO Template literal
+            console.info(`Using Backup ${firstValid}`);
             for(let i = 0; i < 0x20; i++)
                 data[loc[0] + i] = data[loc[firstValid] + i];
             return true;
@@ -177,14 +177,14 @@
                 }
 
                 if((data[i + 0x08] & 0x02) === 0) {
-                    console.info(id, "Fixing required bit 8:2 in note: " + noteName); // TODO Template literal
+                    console.info(id, `Fixing required bit 8:2 in note: ${noteName}`);
                     data[i + 0x08] |= 0x02;
                 }
 
                 if (data[i + 10] | data[i + 11])
-                    console.info("Unused bytes (0x0A-0x0B) are not empty:" + noteName); // TODO Template literal
+                    console.info(`Unused bytes (0x0A-0x0B) are not empty: ${noteName}`);
                 if (data[i + 13] | data[i + 14] | data[i + 15])
-                    console.info("Note Extension contains data in reserved characters: " + noteName); // TODO Template literal
+                    console.info(`Note Extension contains data in reserved characters: ${noteName}`);
 
                 const gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
 
@@ -243,12 +243,12 @@
             // Count note indexes: Check that NoteKeys/indexEnds/keyIndexes counts are the same.
             const nKeysN = NoteKeys.length, nKeysP = keyIndexes.length;
             if (nKeysN !== nKeysP || nKeysN !== indexEnds) {
-                throw "Key index totals do not match (" +nKeysN+", "+nKeysP+", "+indexEnds+")"; // TODO Template literal
+                throw `Key index totals do not match (${nKeysN}, ${nKeysP}, ${indexEnds})`;
             }
             // Check that keyIndexes and NoteKeys report the same values
             for (let i = 0; i < nKeysN; i++) {
                 if (NoteKeys.indexOf(keyIndexes[i]) === -1) {
-                    throw "A key index doesn't exist in the note table ("+keyIndexes[i]+")"; // TODO Template literal
+                    throw `A key index doesn't exist in the note table (${keyIndexes[i]})`;
                 }
             }
             // Parse the Key Indexes to derive index sequence.
@@ -269,7 +269,7 @@
             // Check that parsed indexes and found keys counts are the same.
             // This is to ensure every key found is used in a sequence.
             if(found.parsed.length !== found.keys.length) {
-                throw "Number of parsed keys doesn't match found keys. (" + found.parsed.length+", "+found.keys.length+")"; // TODO Template literal
+                throw `Number of parsed keys doesn't match found keys. (${found.parsed.length}, ${found.keys.length})`;
             }
             // IndexTable checksum calculate + update.
             // Checksum should NOT be relied on for validation. Valid files may have invalid sums, so validate in other ways.
@@ -384,7 +384,7 @@
             const ver = data[0],
                   cmtlen = data[15],
                   tS = data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24;
-            if(tS > 0) console.log("Note Timestamp: "+new Date(tS*1000).toString().slice(4,24)); // TODO Template literal
+            if(tS > 0) console.log(`Note Timestamp: ${new Date(tS*1000).toString().slice(4,24)}`);
 
             if(ver === 0) { // allow import of obsolete version0 files.
                 len += 256;
@@ -522,7 +522,7 @@
       filename provided.
     */
     MPKEdit.Parser = function(data, filename) {
-        console.log("Loading file %c"+filename+"...", "font-weight:bold"); // TODO Template literal
+        console.log(`Loading file %c${filename}...`, "font-weight:bold");
         curfile = filename;
 
         if(MPKEdit.State.data && isNote(data)) { // check if data opened is a note file to be imported
@@ -530,7 +530,7 @@
         } else {
             const result = parse(data); // attempt to parse data as MPK.
             if(!result) {
-                console.warn("ERROR: Data in file provided is not valid: " + filename); // TODO Template literal
+                console.warn(`ERROR: Data in file provided is not valid: ${filename}`);
                 return false;
             }
             // parse and load any MPKCmts data

@@ -161,7 +161,7 @@
 
         if (event && event.ctrlKey) { // Hold CTRL for raw save data (no NoteEntry header)
             filename = noteName.replace(/[\\|\/"<>*?:]/g, "-"); // TODO: Not sure why I am using noteName here.
-            filename = filename + "_" + hash + "_raw.note"; // TODO Template literal
+            filename = `${filename}_${hash}_${raw.note}`;
             outputNote = outputNote.slice(32); // slice off header.
         } else if(State.NoteTable[id].comment) {
             const header = [1,77,80,75,78,111,116,101,0,0,0,0,0,0,0,0],
@@ -182,7 +182,7 @@
         outputNote = new Uint8Array(outputNote);
         if(event.type === "dragstart") { // chrome drag-out save method
             const blobURL = URL.createObjectURL(new Blob([outputNote]));
-            event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+filename+":"+blobURL); // TODO Template literal
+            event.dataTransfer.setData("DownloadURL", `application/octet-stream:${filename}:${blobURL}`);
         }
         else if(MPKEdit.App.usefsys) MPKEdit.fsys.saveFileAs(outputNote, filename);  // fsys save method
         else MPKEdit.saveAs(new Blob([outputNote]), filename); // browser saveAs method
