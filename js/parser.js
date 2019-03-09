@@ -77,8 +77,7 @@
         isExtended = arrstr(data, 1, 8) === "MPKNote"; // check for our MPKNote header
         let noteOfs = 0; // noteOfs is the size of the MPKNote block to trim for 0xCAFE.
         if(isExtended) {
-            const ver = data[0],
-                  len = data[15];
+            const ver = data[0], len = data[15];
             noteOfs = (ver === 1) ? (16+16*len) : 16+256; // fallback for version 0
         }
         // Rely on noteOfs to find 0xCAFE in extended files.
