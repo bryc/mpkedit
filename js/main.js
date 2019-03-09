@@ -1,17 +1,17 @@
-var MPKEdit = (function MPKEdit() {
-    var MPKEdit = {};
+const MPKEdit = (function MPKEdit() {
+    const MPKEdit = {};
 
     /* -----------------------------------------------
     function: MPKEdit.Uint8Concat(arrays)
       Concat Uint8Arrays
     */
     MPKEdit.Uint8Concat = function(...arrs) {
-        var offset = 0, totalLength = 0;
-        for (var arr of arrs) {
+        let offset = 0, totalLength = 0;
+        for (let arr of arrs) {
             totalLength += arr.length;
         }
-        var result = new Uint8Array(totalLength);
-        for (var arr of arrs) {
+        const result = new Uint8Array(totalLength);
+        for (let arr of arrs) {
             result.set(arr, offset);
             offset += arr.length;
         }
@@ -30,14 +30,16 @@ var MPKEdit = (function MPKEdit() {
             return h;
         }
 
-        var k, p1 = 597399067, p2 = 2869860233, p3 = 951274213, p4 = 2716044179;
+        let k;
+        const p1 = 597399067, p2 = 2869860233, p3 = 951274213, p4 = 2716044179;
 
-        var h1 = seed ^ p1,
+        let h1 = seed ^ p1,
             h2 = seed ^ p2,
             h3 = seed ^ p3,
-            h4 = seed ^ p4;
-
-        for(var i = 0, b = key.length & -16; i < b;) {
+            h4 = seed ^ p4,
+            i;
+        
+        for(i = 0, b = key.length & -16; i < b;) {
             k1 = key[i+3] << 24 | key[i+2] << 16 | key[i+1] << 8 | key[i];
             k1 = Math.imul(k1, p1); k1 = k1 << 15 | k1 >>> 17;
             h1 ^= Math.imul(k1, p2); h1 = h1 << 19 | h1 >>> 13; h1 += h2;
@@ -108,23 +110,18 @@ var MPKEdit = (function MPKEdit() {
       supplied array data.
     */
     MPKEdit.elem = function(options) {
-        var el = document.createDocumentFragment(),
-            tag = options[0], prop = options[1];
-        if(typeof tag === "string") {
-            el = document.createElement(tag);
-        }
-        if(typeof prop === "object") {
-            for (var item in prop) {
-                el[item] = prop[item];
-            }
-        } else if(prop) {
-            el.innerHTML = prop;
-        }
-        for(var i = 1; i < arguments.length; i++) {
-            if(arguments[i].nodeType > 0) {
-                el.appendChild(arguments[i]);
-            }
-        }
+        let el = document.createDocumentFragment();
+        const tag = options[0], prop = options[1];
+        
+        if(typeof tag === "string") el = document.createElement(tag);
+        
+        if(typeof prop === "object")
+            for(let item in prop) el[item] = prop[item];
+        else if(prop) el.innerHTML = prop;
+        
+        for(let i = 1; i < arguments.length; i++)
+            if(arguments[i].nodeType > 0) el.appendChild(arguments[i]);
+        
         return el;
     };
 
