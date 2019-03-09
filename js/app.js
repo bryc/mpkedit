@@ -236,8 +236,7 @@
             }
             // Populate squares of display based on NoteTable data.
             const x2 = x.querySelectorAll("span.b0x");
-            for(let i = 0; i < 16; i++) {
-                let page = 0, y;
+            for(let i = 0, page, y; i < 16; i++) {
                 if(State.NoteTable[i]) {
                     y = State.NoteTable[i].indexes;
                     for(let j = 0; j < y.length; j++) {
