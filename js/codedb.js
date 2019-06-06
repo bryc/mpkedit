@@ -766,8 +766,8 @@ MPKEdit.App.codeDB = {
     "NHGE": "F-1 Pole Position 64 (U)",
     "NHGJ": "Human Grand Prix - New Generation (J)",
     "NHGP": "F-1 Pole Position 64 (E)",
-    "NHHE": "Mario Kart 64 (U)",
-    "NHHP": "Mario Kart 64 (E)",
+    "NHHE": "Mario Kart 64 (Super W00ting Hack) (U)", // HyperHacker @ acmlmboard
+    "NHHP": "Mario Kart 64 (Super W00ting Hack) (E)",
     "NHKJ": "Hiryuu no Ken Twin (J)",
     "NHLE": "NHL Breakaway 98 (U)",
     "NHLP": "NHL Breakaway 98 (E)",
