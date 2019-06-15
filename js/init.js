@@ -11,9 +11,9 @@ window.addEventListener("load", function() {
         // use a named function, which is easier to read and arguably faster. */
         const readFile = function(i) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.addEventListener("load", function(e) {
                 MPKEdit.Parser(new Uint8Array(e.target.result), files[i].name);
-            };
+            });
             // fsys: Load DnD FileEntry to tmpEntry
             if(MPKEdit.App.usefsys) {
                 MPKEdit.App.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
@@ -35,12 +35,8 @@ window.addEventListener("load", function() {
     */
     const setDragEffects = function setDragEffects() {
         function isFile(event) {
-            const dt = event.dataTransfer;
-            // NOTE Maybe a map or something like that can be used here
-            for (let i = 0; i < dt.types.length; i++) {
-                if (dt.types[i] === "Files") return true;
-            }
-            return false;
+            // check if it has at least one occurrence of "Files" type
+            return event.dataTransfer.types.find(type => type === "Files") !== undefined;
         }
 
         let lastTarget = null;
@@ -124,13 +120,11 @@ window.addEventListener("load", function() {
         window.addEventListener("blur", changeExportColor);
         // Modal
         document.getElementById("menu").addEventListener("click", MPKEdit.App.buildModal);
-        // NOTE Maybe a map or something like that can be used here
         document.getElementById("modal").addEventListener("click", function(e) {
             if(e.target.id === "modal") modal.style.opacity = 0, modal.style.visibility = "hidden";
         });
 
         // Hide modal when pressing ESC key.
-        // NOTE Maybe a map or something like that can be used here
         window.addEventListener("keydown", function(e) {
             if(e.keyCode === 27) modal.style.opacity = 0, modal.style.visibility = "hidden";
         });

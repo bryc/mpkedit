@@ -40,9 +40,9 @@
                     MPKEdit.App.tmpEntry = Entry;
                 }
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.addEventListener("load", function(e) {
                     MPKEdit.Parser(new Uint8Array(e.target.result), fl.name);
-                }
+                });
                 reader.readAsArrayBuffer(fl.slice(0, 98144));
             });
         }
