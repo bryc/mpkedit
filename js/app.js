@@ -26,8 +26,8 @@
             if(mode === 0 || mode === 1) { // horizontal flip
                 for(let i = 0; i < arr.length; i++)
                     arr2[i] = arr[i-2*(i%w)+w-1];
-            }
-            if(mode === 2 || mode === 4) { // rotate 90° CW
+            } else
+            if(mode === 2 || mode === 4) { // rotate 90ï¿½ CW
                 for(let i = 0; i < arr.length; i++)
                     arr2[i] = arr[0|(h-1)*w-((i%h)*w)+i/h];
             }
@@ -61,8 +61,9 @@
         for(i = 0, h = r[0]; i < 25; i++, h>>>=1) a.push(h&1);
         */
         [[2,32], [3,18], [1,25], [0,25]].forEach(item => {
-            let i, num = item[1], h = r[item[0]];
-            for(i = 0; i < num; i++, h>>>=1) a.push(h&1);
+            const num = item[1];
+            let h = r[item[0]];
+            for(let i = 0; i < num; i++, h>>>=1) a.push(h&1);
         });
         const goodlist0 = [1,2,3,4,7,8,9,13,14,19];
         let pt1 = a.slice(0,25),
@@ -96,8 +97,8 @@
         // Build pixel array.
         a = [];
         let b = [];
+        a = a.concat(pt1);
         if(r[0] & 0x8000000) { // symmetry mode
-            a = a.concat(pt1);
             a = a.concat(rota(pt1,4,n/2,n/2));
             a = a.concat(rota(pt1,2,n/2,n/2));
             a = a.concat(rota(pt1,3,n/2,n/2));
@@ -106,7 +107,6 @@
             b = b.concat(rota(pt2,2,n/2,n/2));
             b = b.concat(rota(pt2,3,n/2,n/2));
         } else {
-            a = a.concat(pt1);
             a = a.concat(rota(pt2,4,n/2,n/2));
             a = a.concat(rota(pt2,2,n/2,n/2));
             a = a.concat(rota(pt1,3,n/2,n/2));
