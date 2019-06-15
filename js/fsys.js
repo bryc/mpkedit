@@ -11,7 +11,7 @@
     };
 
     const writeFile = function(data, Entry) {
-        if(chrome.runtime.lastError) {return false;}
+        if(chrome.runtime.lastError) return false;
 
         Entry.createWriter(function(writer) {
             writer.onwriteend = writeDone.bind(null, Entry);
@@ -48,7 +48,7 @@
         }
 
         chrome.fileSystem.chooseEntry({acceptsMultiple: true}, function(Entry) {
-            if(chrome.runtime.lastError) {return false;}
+            if(chrome.runtime.lastError) return false;
             for(let i = 0; i < Entry.length; i++) readFile(i, Entry[i]);
         });
     };
