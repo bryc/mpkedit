@@ -6,7 +6,7 @@
       generate empty MPK data then immediately load it.
     */
     State.init = function() {
-        function writeAt(ofs) {for(let i = 0; i < 32; i++) data[ofs + i] = block[i];}
+        function writeAt(ofs) {for(let i = 0; i < 32; i++) data[ofs + i] = block[i]}
 
         const data = new Uint8Array(32768), block = new Uint8Array(32);
         
@@ -117,7 +117,7 @@
         
         if(event.type === "dragstart") { // Chrome drag-out save method
             const blobURL = URL.createObjectURL(new Blob([outputMPK]));
-            event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+State.filename+":"+blobURL);
+            event.dataTransfer.setData("DownloadURL", `application/octet-stream:${State.filename}:${blobURL}`);
         }
         else if(MPKEdit.App.usefsys) { // fsys save method. Hold CTRL will force SaveAs mode.
             // TODO Ternary?
@@ -154,7 +154,7 @@
 
         const hash = State.NoteTable[id].cyrb32[0].toString(36)+State.NoteTable[id].cyrb32[1].toString(36);
         let filename = MPKEdit.App.codeDB[gameCode] || gameCode;
-        filename = filename + "_" + hash + ".note";
+        filename = `${filename}_${hash}.note`;
 
         if (event && event.ctrlKey) { // Hold CTRL for raw save data (no NoteEntry header)
             filename = indexes[0].toString(16).padStart(2,"0");
