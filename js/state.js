@@ -139,8 +139,7 @@
     State.saveNote = function(id, event) {
         let outputNote = [];
         const indexes = State.NoteTable[id].indexes,
-              gameCode = State.NoteTable[id].serial,
-              noteName = State.NoteTable[id].noteName;
+              gameCode = State.NoteTable[id].serial;
 
         // Write NoteEntry as header for RAW format.
         for(let i = 0; i < 32; i++) outputNote.push(State.data[0x300 + (id * 32) + i]);
@@ -158,8 +157,8 @@
         filename = filename + "_" + hash + ".note";
 
         if (event && event.ctrlKey) { // Hold CTRL for raw save data (no NoteEntry header)
-            filename = noteName.replace(/[\\|\/"<>*?:]/g, "-"); // TODO: Not sure why I am using noteName here.
-            filename = `${filename}_${hash}_raw.note`;
+            filename = indexes[0].toString(16).padStart(2,"0");
+            filename = `raw-${gameCode}_${filename}.note`;
             outputNote = outputNote.slice(32); // slice off header.
         } else if(State.NoteTable[id].comment) {
             const header = [1,77,80,75,78,111,116,101,0,0,0,0,0,0,0,0],
