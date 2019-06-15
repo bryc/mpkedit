@@ -36,6 +36,7 @@ window.addEventListener("load", function() {
     const setDragEffects = function setDragEffects() {
         function isFile(event) {
             const dt = event.dataTransfer;
+            // NOTE Maybe a map or something like that can be used here
             for (let i = 0; i < dt.types.length; i++) {
                 if (dt.types[i] === "Files") return true;
             }
@@ -70,17 +71,16 @@ window.addEventListener("load", function() {
     */
     const init = function() {
         function changeExportColor(event) {
-            const trg = document.querySelectorAll(".fa-download");
-            for(let i = 0; i < trg.length; i++) {
-                trg[i].style.color = event.ctrlKey ? "#c00" : "";
-            }
+            document.querySelectorAll(".fa-download").forEach(trg => {
+                trg.style.color = event.ctrlKey ? "#c00" : "";
+            });
         }
         function browse() {
             if(MPKEdit.App.usefsys) MPKEdit.fsys.loadFile();
             else {
                 const selectFile = document.getElementById("fileOpen");
                 if(selectFile.value) selectFile.value = "";
-                selectFile.onchange = readFiles, selectFile.click();
+                selectFile.addEventListener("change", readFiles), selectFile.click();
             }
         }
 
@@ -109,33 +109,35 @@ window.addEventListener("load", function() {
 
         // #### Assign event handlers ####
         // Load file button
-        document.getElementById("fileOpen").onchange = readFiles;
-        document.getElementById("loadButton").onclick = browse;
+        document.getElementById("fileOpen").addEventListener("change", readFiles);
+        document.getElementById("loadButton").addEventListener("click", browse);
         // Drag files
-        window.addEventListener("dragover", function(e) {e.preventDefault();});
+        window.addEventListener("dragover", function(e) {e.preventDefault()});
         window.addEventListener("drop", readFiles);
         setDragEffects();
         // Save file
-        document.getElementById("save").onclick = MPKEdit.State.save;
+        document.getElementById("save").addEventListener("click", MPKEdit.State.save);
         // Allows dragging the save icon to save
-        document.getElementById("save").ondragstart = MPKEdit.State.save;
+        document.getElementById("save").addEventListener("dragstart", MPKEdit.State.save);
         window.addEventListener("keydown", changeExportColor);
         window.addEventListener("keyup", changeExportColor);
         window.addEventListener("blur", changeExportColor);
         // Modal
-        document.getElementById("menu").onclick = MPKEdit.App.buildModal;
-        document.getElementById("modal").onclick = function(e) {
+        document.getElementById("menu").addEventListener("click", MPKEdit.App.buildModal);
+        // NOTE Maybe a map or something like that can be used here
+        document.getElementById("modal").addEventListener("click", function(e) {
             if(e.target.id === "modal") modal.style.opacity = 0, modal.style.visibility = "hidden";
-        };
+        });
 
         // Hide modal when pressing ESC key.
-        window.onkeydown = function(e) {
+        // NOTE Maybe a map or something like that can be used here
+        window.addEventListener("keydown", function(e) {
             if(e.keyCode === 27) modal.style.opacity = 0, modal.style.visibility = "hidden";
-        };
+        });
         // Hide dropzone when clicking it (in case it ever persists)
-        document.getElementById("dropzone").onclick = function(e) {
+        document.getElementById("dropzone").addEventListener("click", function(e) {
             dropzone.style.opacity = 0, dropzone.style.visibility = "hidden";
-        };
+        });
 
         MPKEdit.State.init();
     };
