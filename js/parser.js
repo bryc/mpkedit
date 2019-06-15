@@ -494,7 +494,7 @@
                 }
             }
             if(noteOfs === false) {
-                console.error(`MPKMeta Error: Can't find Comment's associated Note. Aborting load.`);
+                console.error("MPKMeta Error: Can't find Comment's associated Note. Aborting load.");
                 break;
             }
 
