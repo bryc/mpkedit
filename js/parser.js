@@ -376,7 +376,7 @@
             isExtended = undefined;
             let len = 16;
             const ver = data[0], cmtlen = data[15], 
-                  tS = data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24;
+                  tS = (data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24)>>>0;
             if(tS > 0) console.log(`Note Timestamp: ${new Date(tS*1000).toString().slice(4,24)}`);
 
             if(ver === 0) { // allow import of obsolete version0 files.
