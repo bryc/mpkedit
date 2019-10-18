@@ -80,6 +80,28 @@
             const ver = data[0], len = data[15];
             noteOfs = (ver === 1) ? (16+16*len) : 16+256; // fallback for version 0
         }
+        else if (0 === data.length%256 && curfile && /^(raw-N[0-9A-Z]{3}_[0-9A-F]{2}$)+/.test(curfile.slice(0,11))) {
+            let foundKey = false,
+                gameCode = curfile.substr(4,4),
+                startIdx = parseInt(curfile.substr(9,2), 16),
+                nTbl = MPKEdit.State.NoteTable;
+            for (let key in nTbl) {
+                if(nTbl[key].serial === gameCode && nTbl[key].indexes[0] === startIdx && data.length === 256 * nTbl[key].indexes.length) {
+                    foundKey = key; break;
+                }
+            }
+            if(foundKey !== false) {
+                let doIt = confirm(`Overwrite save data at table index ${startIdx}?\n${MPKEdit.App.codeDB[gameCode]}`)
+                if(doIt) {
+                    for(let i = 0; i < nTbl[foundKey].indexes.length; i++) {
+                        for(let j = 0; j < 0x100; j++) MPKEdit.State.data[0x100 * nTbl[foundKey].indexes[i] + j] = data[0x100 * i + j];
+                    }
+                    console.warn("Existing data was overwritten. Say your prayers. Ignore other console warnings.");
+                    MPKEdit.Parser(MPKEdit.State.data);
+                    document.querySelectorAll("tr")[foundKey].querySelector("td.name").innerHTML += "<b style='cursor:pointer;color:crimson' onclick='this.parentNode.removeChild(this)'>Notice: The data for this note has been overwritten.<br>Click to dismiss.</div>";
+                }
+            }
+        }
         // Rely on noteOfs to find 0xCAFE in extended files.
         const magicCheck = 0xCAFE === data[noteOfs + 0x07] + (data[noteOfs + 0x06] << 8),
               pageCheck = 0 === data.subarray(noteOfs + 32).length % 256;
