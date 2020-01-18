@@ -321,8 +321,8 @@
     const getDexNotes = function(data) {
         const strs = [];
         for(let i = 0x40, j = 0, str = ""; i < 0x1040; i++ ) {
-            // fix arrstr to support this -- TODO: support WHAT exactly?
-            if(data[i] !== 0x00) { str += String.fromCharCode(data[i]); j++ }
+            // Parse DexDrive comments as 7-bit ASCII. 8th bit is sometimes incorrectly set. 
+            if(data[i] !== 0x00) { str += String.fromCharCode(data[i] & 127); j++ }
             else {
                 strs.push(str === "" ? undefined : str);
                 str = "";

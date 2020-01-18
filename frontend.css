@@ -306,7 +306,38 @@ span#loadButton:active .fa-folder-open {
 .fa-floppy-o:active, .fa-info-circle:active {
     color: #b89583;
 }
-.name .fa {
-    float: right;
-    cursor: help;
+
+/*
+    ----------------------------------------
+    TOOLTIP STUFF
+    ----------------------------------------
+*/
+[aria-label]{margin:2px 5px;float:right;position:relative;cursor:help}
+[aria-label]:hover .fa-comment {color: #cda692}
+[aria-label]:hover:after,[aria-label]:hover:before{opacity:1}
+[aria-label]:after,[aria-label]:before {
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0;
+    position: absolute;
+    top: 100%;
+    transition: all .1s ease .1s;
+}
+[aria-label]:after {
+    content: attr(aria-label);
+    margin-top: 5px;
+    right: 0;
+    border-radius: 3px;
+    background: #023B;
+    color: #FFF;
+    padding: 8px;
+    white-space: pre-wrap;
+    width: 320px;
+}
+[aria-label]:before {
+    content: "";
+    margin-top: -5px;
+    right: 7px;
+    border: 5px solid transparent;
+    border-bottom-color: #023B;
 }

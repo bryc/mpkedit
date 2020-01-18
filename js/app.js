@@ -149,7 +149,7 @@
             return tableRow;
         }
 
-        const cmtIcon = State.NoteTable[i].comment?`<span title='${fixHTML(State.NoteTable[i].comment)}' class='fa fa-comment'></span>`:"",
+        const cmtIcon = State.NoteTable[i].comment?`<span aria-label='${fixHTML(State.NoteTable[i].comment)}'><span class='fa fa-comment'></span></span>`:"",
               displayName = State.NoteTable[i].noteName + cmtIcon;
 
         const tableRow =

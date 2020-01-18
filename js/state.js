@@ -158,7 +158,7 @@
 
         if (event && event.ctrlKey) { // Hold CTRL for raw save data (no NoteEntry header)
             filename = indexes[0].toString(16).padStart(2,"0");
-            filename = `raw-${gameCode}_${filename}.note`;
+            filename = `raw-${gameCode}_${filename}.rawnote`;
             outputNote = outputNote.slice(32); // slice off header.
         } else if(State.NoteTable[id].comment) {
             const header = [1,77,80,75,78,111,116,101,0,0,0,0,0,0,0,0],
