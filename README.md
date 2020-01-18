@@ -1,6 +1,6 @@
 # MPKEdit - Controller Pak Manager
 
-Makes managing N64 Controller Pak files (.MPK) easy, whether from an emulator or a flash cart. MPKEdit is written in JavaScript and works in most modern browsers (Chrome, Firefox, Opera, etc.). Includes native file system support when installed as a Chrome extension (until Google discontinues Chrome Apps).
+Makes managing N64 Controller Pak files (.MPK) easy, whether from an emulator or a flash cart. MPKEdit is written in JavaScript and works in most modern browsers (Chrome, Firefox, Opera, etc.).
 
 ### [**Try it online**](https://bryc.github.io/mempak)
 
