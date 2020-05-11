@@ -21,9 +21,9 @@ You can also add text comments to any of the 16 save slots, accessible by clicki
 
 ![image](https://user-images.githubusercontent.com/1408749/44122120-7ba24680-9ff0-11e8-8997-b84e3a5378a8.png)
 
-For advanced users, holding the Control key while saving a note activates **raw note saving** (when activated, save icons turn **red**). This saves only the raw save data itself without any headers. This is useful for extracting EEPROM or SRAM saves, or for hacking save data. You can reimport the .rawnote file by loading it back into the original .MPK it came from. Just don't change the "raw-XXX_XX" part of the filename, as that is how it knows where to put it back.
+For advanced users, holding the Control key while saving a note activates **raw note saving** (when activated, save icons turn **red**). This saves only the raw save data itself without any headers. This is useful for extracting EEPROM or SRAM saves, or for hacking save data. You can reimport the .rawnote file by loading it back into the original .MPK file it came from. You can add text to the end of the filename, Just don't change the "raw-XXX_XX" part at the beginning of the filename, as that is how it knows where to put it back. And the modified .rawnote data **must be the same size as the original**, as you cannot alter the size of the note data this way.
 
-In Chrome, it is possible to save the MPK or notes to a specific folder by clicking and dragging the save button to your destination or folder.
+In Chrome, it is possible to save the MPK or notes to a specific folder by clicking and dragging the save button to your destination or folder. This may not work in all environments.
 
 As for the blocky icons, those are just a way to identify unique save data, useful if you have multiple saves of the same game and need to differentiate between them. It is disabled by default but can be enabled in the Options menu. It ended up turning into a fun little side project I'm still working on. Even the smallest change will produce a radically different icon. Useful for finding duplicates too. It's disabled by default, but you can enable them if you want to see what your save's icons look like or just think they're pretty. There should be trillions of different icons possible, so each one is unique!
 
