@@ -25,11 +25,16 @@ html {
 }
 
 body {
-    max-width: 768px;
-    margin: 2px auto;
+    margin:0;
     background: #fff;
     color: #505050;
     font: 16px "Lato", "Meiryo", "メイリオ", sans-serif; /*FF needs Meiryo explictly */
+}
+
+.main {
+    max-width: 768px;
+    margin: 0 auto;
+    position: relative;
 }
 
 h1, h2, h3 {
@@ -341,3 +346,7 @@ span#loadButton:active .fa-folder-open {
     border: 5px solid transparent;
     border-bottom-color: #023B;
 }
+/* GitHub ribbon */
+svg{fill:#92b9cd;color:#fff;position:fixed;top:0;border:0;right:0}svg:hover{fill:#cda692}
+.gc:hover .oa{animation:qw 560ms ease-in-out;transform-origin:142px}
+@keyframes qw{20%,60%{transform:rotate(-9deg)}40%,80%{transform:rotate(9deg)}}
