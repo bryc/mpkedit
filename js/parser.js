@@ -110,9 +110,10 @@
     };
 
     /* -----------------------------------------------
-    function: checkBlock(data, o, state)  TODO : rename checkIdBlock?
-      check the header checksum in label area at specified
+    function: checkBlock(data, o, state)  TODO : rename checkIdBlock? yes, do that.
+      check the header checksum in id area at specified
       offset. utility function for checkHeader()
+      TODO: incorporate deviceid bit check, and '01' bank check.
     */
     const checkBlock = function(data, o, state) {
         let sumA = 0, sumB = 0xFFF2;
@@ -140,8 +141,7 @@
     /* -----------------------------------------------
     function: checkHeader(data)
       checks all four checksum sections in header.
-      Note: Currently will not overwrite/repair backup slots. Just validates first one and loads first valid backup found, if required.
-      AFAIK this is correct libultra behavior. Will have to check... it might be better to just repair any corrupt slots.
+      TODO: As a final step, gently repair any corrupt backups individually.
     */
     const checkHeader = function(data) {
         const state = {}, loc = [0x20, 0x60, 0x80, 0xC0];
