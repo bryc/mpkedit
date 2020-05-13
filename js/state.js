@@ -11,7 +11,7 @@
         const data = new Uint8Array(32768), block = new Uint8Array(32);
         
         // generate checksum block
-        block[0]  = 0xFF;
+        block[0]  = 0xFF; // repair indicator, maybe safe to disable.
         block[1]  = 0xFF;
         block[2]  = 0xFF;
         block[3]  = 0xFF;
@@ -19,8 +19,8 @@
         block[5]  = 0|Math.random()*256;
         block[6]  = 0|Math.random()*256;
         block[7]  = block[4] ^ block[5] ^ block[6] ^ 0xFF;
-        block[25] = 0x01; // size?
-        block[26] = 0x01;
+        block[25] = 0x01; // device bit
+        block[26] = 0x01; // bank size int (must be exactly '01')
 
         // calculate pakId checksum
         let sumA = 0, sumB = 0xFFF2;
@@ -47,6 +47,7 @@
         data[257] = 0x71;
         data[513] = 0x71;
 
+        //for(let i = 0; i < 32; i++) data[i] = i; // write label - needs to be verified
         data[0] = 0x81; // libultra's 81 mark
 
         MPKEdit.Parser(data, "New.mpk");
