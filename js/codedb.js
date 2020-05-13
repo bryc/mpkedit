@@ -108,13 +108,28 @@ These are verified publisher  codes on N64:
     "C8": "Koei",
     "E8": "Asmik Ace",
     "EB": "Atlus",
+    "B2": "Bandai",
+    "9C": "Imagineer",
+    "D9": "Banpresto",
+    "18": "Hudson Soft",
+    "BA": "Culture Brain",
+    "E7": "Athena",
+    "A0": "Telenet",
+    "9H": "Bottom Up",
+    "99": "Marvelous Interactive",
+    "29": "SETA",
+    "13": "Electronic Arts Japan",
+    "E4": "T&E Soft",
+    "AL": "Media Factory",
+    "C0": "Taito",
+    "1L": "ASCII Something Good",
 */
 
 MPKEdit.App.pubDB = {
     //"--": "",
     //"úÞ": "",
     //"\u00124": ""
-    "-\x01": "Nintendo...?", // Wave Race 64 uses this, perhaps a bug on N's part.
+    "-\x01": "Nintendo", // Wave Race 64 uses this, perhaps a bug on N's part.
     "01": "Nintendo",
     "02": "Rocket Games (unlicensed?)",
     "03": "Imagineer-Zoom",
@@ -153,7 +168,7 @@ MPKEdit.App.pubDB = {
     "1G": "SMDE",
     "1J": "Daikokudenki",
     "1P": "Creatures Inc.",
-    "1L": "ASCII Something Good Co. (i4)", // bryc: New company code (AI Shogi 3).
+    "1L": "ASCII Something Good", // bryc: New company code (AI Shogi 3).
     "1Q": "TDK Deep Impresion",
     "20": "Destination Software",
     "21": "Sunsoft/Tokai Engineering??",
@@ -239,7 +254,7 @@ MPKEdit.App.pubDB = {
     "5X": "Microids",
     "5Z": "Conspiracy/Swing",
     "60": "Titus",
-    "6O": "Titus", // One of Titus games uses O instead of 0 (Xena?)
+    "6O": "Titus", // One of Titus games uses O instead of 0 (Xena)
     "61": "Virgin Interactive",
     "62": "Maxis",
     "64": "LucasArts Entertainment",
@@ -306,6 +321,7 @@ MPKEdit.App.pubDB = {
     "95": "Varie",
     "96": "Yonezawa/S'pal",
     "97": "Kaneko",
+    "99": "Marvelous Interactive", // bryc: New code (Nushi Tsuri 64)
     "9A": "Nichibutsu/Nihon Bussan",
     "9B": "Tecmo",
     "9C": "Imagineer",
@@ -332,7 +348,7 @@ MPKEdit.App.pubDB = {
     "AH": "J-Wing",
     "AJ": "Pioneer LDC",
     "AK": "KID",
-    "AL": "Mediafactory",
+    "AL": "Media Factory",
     "AP": "Infogrames Hudson",
     "AQ": "Kiratto. Ludic Inc",
     "B0": "Acclaim Japan",
@@ -395,7 +411,7 @@ MPKEdit.App.pubDB = {
     //"E1": "????",
     "E2": "Yutaka",
     "E3": "Varie",
-    "E4": "T&ESoft",
+    "E4": "T&E Soft",
     "E5": "Epoch",
     "E7": "Athena",
     "E8": "Asmik Ace",
@@ -1003,7 +1019,7 @@ MPKEdit.App.codeDB = {
     "NPWP": "Pilotwings 64 (E)",
     "NPXE": "Polaris SnoCross (U)",
     "NPYJ": "Puyo Puyo Sun 64 (J)",
-    "NPZJ": "Susume! Taisen Puzzle Dama Toukon! Marumata Chou (J)",
+    "NPZJ": "Susume! Taisen Puzzle-Dama - Toukon! Marutama Chou (J)",
     "NQ2E": "Quake II (U)",
     "NQ2P": "Quake II (E)",
     "NQ8E": "NFL Quarterback Club 98 (U)",
@@ -1064,8 +1080,8 @@ MPKEdit.App.codeDB = {
     "NRZE": "RR64 - Ridge Racer 64 (U)",
     "NRZP": "RR64 - Ridge Racer 64 (E)",
     "NS2J": "Sim City 2000 (J)",
-    "NS3J": "AI Shougi 3 (J)",
-    "NS4J": "Super Robot Taisen 64 (J)",
+    "NS3J": "AI Shogi 3 (J)",
+    "NS4J": "Super Robot Wars 64 (J)",
     "NS6E": "Star Soldier - Vanishing Earth (U)",
     "NS6J": "Star Soldier - Vanishing Earth (J)",
     "NSAJ": "Sonic Wings Assault (J)",
