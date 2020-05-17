@@ -10,11 +10,7 @@
 
         const data = new Uint8Array(32768), block = new Uint8Array(32);
         
-        // generate checksum block
-        block[0]  = 0xFF; // repair indicator, maybe safe to disable.
-        block[1]  = 0xFF;
-        block[2]  = 0xFF;
-        block[3]  = 0xFF;
+        // generate id block
         block[4]  = 0|Math.random()*256;
         block[5]  = 0|Math.random()*256;
         block[6]  = 0|Math.random()*256;
