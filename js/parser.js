@@ -1,6 +1,6 @@
 (function MPKParser() {
     // temporary globals
-    let curfile = undefined, tmpComments = [], isExtended;
+    let curfile = undefined, tmpComments = [], tmpStamp = [], isExtended;
 
     /* -----------------------------------------------
     function: resize(data)
@@ -147,11 +147,11 @@
         const state = {}, loc = [0x20, 0x60, 0x80, 0xC0];
         let firstValid = null;
         // Check all header blocks
-        for(let i = 0; i < 4; i++) {
+        for(let i = 0, bl0x = []; i < 4; i++) {
             checkBlock(data, loc[i], state);
             if(state[loc[i]].valid === true && firstValid === null) firstValid = i; // get only first valid
-            console.log("Block:", i+1, state[loc[i]].valid);
-            if(state[loc[i]].dexdriveFix) console.log("\tDexDrive checksum repaired");
+            if(state[loc[i]].dexdriveFix) console.log("Block "+(i+1), "\tDexDrive checksum repaired");
+            bl0x.push(state[loc[i]].valid); if(i === 3) console.log("ID Blocks:", bl0x);
         }
         // Check if FIRST id block is valid
         if(state[0x20].valid === true) return true;
@@ -206,13 +206,20 @@
 
                 const gameCode = arrstr(data, i, i+4).replace(/\0/g,"-");
 
-                let comment = undefined;
+                let comment = undefined, timeStamp = undefined;
                 // Load any temporary comments (DexDrive or insertNote)
                 if(tmpComments[id]) {
                     comment = tmpComments[id] || undefined;
                 } else if(!curfile) {
                     // Salvage pre-existing comments in NoteTable.
                     comment = (MPKEdit.State.NoteTable[id]||{}).comment || undefined;
+                }
+                // Load any timestamp
+                if(tmpStamp[id]) {
+                    timeStamp = tmpStamp[id] || undefined;
+                } else if(!curfile) {
+                    // Salvage pre-existing comments in NoteTable.
+                    timeStamp = (MPKEdit.State.NoteTable[id]||{}).timeStamp || undefined;
                 }
                 NoteTable[id] = {
                     indexes: p,
@@ -221,11 +228,12 @@
                     noteName: noteName,
                     region: MPKEdit.App.region[gameCode[3]] || "Unknown",
                     media: MPKEdit.App.media[gameCode[0]],
-                    comment: comment
+                    comment: comment,
+                    timeStamp: timeStamp
                 };
             }
         }
-        tmpComments = [];
+        tmpComments = [], tmpStamp = []; // We must clear, otherwise garbage data will persist.
         return NoteTable;
     };
 
@@ -391,13 +399,13 @@
     function: insertNote(data)
       insert note data into currently opened MPK file.
     */
-    const insertNote = function(data) {
-        let cmt = "";
+    const insertNote = function(data, filemod) {
+        let cmt = "", tS;
         // Check if note to insert is an extended note file (has comments).
         if(isExtended) {
             isExtended = undefined;
             let len = 16;
-            const ver = data[0], cmtlen = data[15], 
+            const ver = data[0], cmtlen = data[15]; 
                   tS = (data[14] | data[13]<<8 | data[12]<<16 | data[11]<<24)>>>0;
             if(tS > 0) console.log(`Note Timestamp: ${new Date(tS*1000).toString().slice(4,24)}`);
 
@@ -451,6 +459,7 @@
                     // tmpComments must be used here because saving directly to MPKEdit.State
                     // will cause comments to be lost when MPK data is re-parsed.
                     if(cmt) tmpComments[i] = cmt; // TODO: This is POSSIBLY not needed anymore, due to presence of MPKCmts block in State.data???
+                    tmpStamp[i] = tS || Math.round(filemod/1000);
                     const target = 0x300 + i * 32;
                     for(let j = 0; j < 32; j++) tmpdata[target + j] = noteData[j];
                     break;
@@ -534,12 +543,12 @@
       exposed interface to the parser. data array and
       filename provided.
     */
-    MPKEdit.Parser = function(data, filename) {
-        console.log(`Loading file %c${filename}...`, "font-weight:bold");
+    MPKEdit.Parser = function(data, filename, filemod) {
+        console.log(`Loading file %c${filename}... \n(file date: ${filemod?new Date(filemod).toString().substr(4,17):"N/A"})`, "font-weight:bold");
         curfile = filename;
 
         if(MPKEdit.State.data && isNote(data)) { // check if data opened is a note file to be imported
-            insertNote(data);
+            insertNote(data, filemod);
         } else {
             const result = parse(data); // attempt to parse data as MPK.
             if(!result) {
@@ -555,6 +564,7 @@
             MPKEdit.State.usedNotes = result.usedNotes;
             MPKEdit.State.usedPages = result.usedPages;
             MPKEdit.State.filename = filename || MPKEdit.State.filename;
+            MPKEdit.State.filemod = filemod || MPKEdit.State.filemod;
 
             // Update State.Entry with fsys tmpEntry. Occurs only when loading .MPK via fsys.
             if(MPKEdit.App.usefsys && filename) MPKEdit.State.Entry = MPKEdit.App.tmpEntry;

@@ -288,6 +288,13 @@
                     elem(["span",{className:"content",innerHTML:MPKEdit.App.codeDB[State.NoteTable[i].serial]}])
                 ),
                 elem(["div",{className:"modalFlex"}],
+                    elem(["span",{innerHTML:"Date",className:"label"}]),
+                    elem(["span",{className:"content",innerHTML: 
+                        State.NoteTable[i].timeStamp && new Date(State.NoteTable[i].timeStamp*1000).toString().substr(4,17) || 
+                        State.filemod && new Date(State.filemod).toString().substr(4,17) ||
+                        "None"}])
+                ),
+                elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Game code",className:"label"}]),
                     elem(["span",{className:"content fixed",innerHTML:State.NoteTable[i].serial}])
                 ),

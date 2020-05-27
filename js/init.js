@@ -12,7 +12,7 @@ window.addEventListener("load", function() {
         const readFile = function(i) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                MPKEdit.Parser(new Uint8Array(e.target.result), files[i].name);
+                MPKEdit.Parser(new Uint8Array(e.target.result), files[i].name, files[i].lastModified);
             };
             // fsys: Load DnD FileEntry to tmpEntry
             if(MPKEdit.App.usefsys) {

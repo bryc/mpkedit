@@ -146,7 +146,7 @@
                 outputNote.push(State.data[pageAddress + j]);
         }
 
-        const hash = State.NoteTable[id].cyrb32[0].toString(36)+State.NoteTable[id].cyrb32[1].toString(36);
+        const hash = State.NoteTable[id].cyrb32[0].toString(36).slice(1, 6) + State.NoteTable[id].cyrb32[1].toString(36).slice(1, 6);
         let filename = MPKEdit.App.codeDB[gameCode] || gameCode;
         filename = filename + "_" + hash + ".note";
 
@@ -154,13 +154,13 @@
             filename = indexes[0].toString(16).padStart(2,"0");
             filename = `raw-${gameCode}_${filename}.rawnote`;
             outputNote = outputNote.slice(32); // slice off header.
-        } else if(State.NoteTable[id].comment) {
+        } else {
             const header = [1,77,80,75,78,111,116,101,0,0,0,0,0,0,0,0],
                   utfdata = new TextEncoder("utf-8").encode(State.NoteTable[id].comment),
                   size = Math.ceil(utfdata.length / 16); // number of rows
             header[15] = size;
             let tS = State.NoteTable[id].timeStamp; // get or generate timestamp
-            if(!tS) tS = Math.round(new Date().getTime()/1000) >>> 0;
+            if(!tS) tS = Math.round(State.filemod/1000) || Math.round(new Date().getTime()/1000);
             header[14] = tS & 0xFF;
             header[13] = tS >>> 8 & 0xFF;
             header[12] = tS >>> 16 & 0xFF;
@@ -171,7 +171,7 @@
         }
 
         outputNote = new Uint8Array(outputNote);
-        if(event.type === "dragstart") { // chrome drag-out save method
+        if(event && event.type === "dragstart") { // chrome drag-out save method
             const blobURL = URL.createObjectURL(new Blob([outputNote]));
             event.dataTransfer.setData("DownloadURL", `application/octet-stream:${filename}:${blobURL}`);
         }
