@@ -134,6 +134,49 @@
     };
 
     /* -----------------------------------------------
+    Note Reorder stuff
+    */
+
+    // Necessary workaround for Firefox 88 text node issue
+    if(!Text.prototype.closest) Text.prototype.closest = function(s){return this.parentNode.closest(s);}
+
+    var ro_origin, ro_dest;
+    var leave = function(event) {
+        var tabl = document.getElementsByTagName("table")[0];
+        // Node.contains is TRUE even for itself, so another check is needed.
+        var withinTable = tabl.contains(event.relatedTarget) && tabl !== event.relatedTarget;
+        // Cancel ro_dest if outside table with active drag
+        if(ro_origin && ro_dest && !withinTable) {
+            ro_dest.removeAttribute("style");
+            ro_dest = undefined;
+        }
+    }
+    var enter = function(event) {
+        if(!ro_origin) {return false;} // only proceed if ro_origin is active
+        if(ro_dest) ro_dest.removeAttribute("style");
+        ro_dest = event.target.closest("tr");
+        ro_dest.style.outline = "2px solid #000";
+    }
+    var start = function(event) {
+        ro_origin = event.target.closest("tr");
+    }
+    var end = function() {
+        if(!ro_origin || !ro_dest) {return false;}
+        var p0 = 0x300 + 32 * ro_dest.id;
+        var p1 = 0x300 + 32 * ro_origin.id;
+
+        if(ro_dest.id !== ro_origin.id) {
+            var tmp = new Uint8Array(MPKEdit.State.data);
+            for(var j = 0; j < 32; j++) [tmp[j+p0], tmp[j+p1]] = [tmp[j+p1], tmp[j+p0]]; 
+            MPKEdit.Parser(tmp);
+        }
+        ro_origin = undefined;
+        ro_dest = undefined;
+        ro_origin.removeAttribute("style");
+        ro_dest.removeAttribute("style");
+    }
+
+    /* -----------------------------------------------
     function: buildRow(i)
       build HTMLElement row for NoteTable in MPK
     */
@@ -145,7 +188,12 @@
         }
         // Handle empty rows
         if(!State.NoteTable[i]) {
-            const tableRow = elem(["tr",{className:"empty"}],elem(["td",{innerHTML:i+1,"colSpan":16}]));
+            const tableRow = elem(["tr",{id:i,className:"empty"}],elem(["td",{innerHTML:i+1,"colSpan":16}]));
+            if(App.cfg.reorder) {
+                tableRow.ondragenter = enter;
+                tableRow.ondragend   = end;
+                tableRow.ondragleave = leave;
+            }
             return tableRow;
         }
 
@@ -181,6 +229,13 @@
             )
         );
 
+        if(App.cfg.reorder) {
+            tableRow.draggable   = true; 
+            tableRow.ondragenter = enter; 
+            tableRow.ondragstart = start; 
+            tableRow.ondragend   = end;
+            tableRow.ondragleave = leave;
+        }
         if(App.cfg.identicon) { // produce pixicons
             pixicon(tableRow.querySelector("#hash"), State.NoteTable[i].cyrb32);
         }
@@ -225,6 +280,18 @@
                     elem(["div",{className:"textLabel",onmousedown:function(e){e.preventDefault()},innerHTML:"Show icons",
                         onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}}]),
                     elem(["div",{className:"textInfo",innerHTML:"Identify unique saves with icons."}])
+                    )
+                ),
+                // SETTING 3: Reorder
+                elem(["div",{className:"modalBlock"}],
+                    elem(["span",{className:"state"}],
+                        elem(["input",{checked:App.cfg.reorder,id:"reorder",onchange:updateSettings,type:"checkbox"}]),
+                        elem(["span",{onclick:function(){this.previousSibling.click()},className:"chkb0x"}])
+                    ),
+                    elem(["div",{className:"text"}],
+                    elem(["div",{className:"textLabel",onmousedown:function(e){e.preventDefault()},innerHTML:"Enable reorder mode",
+                        onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}}]),
+                    elem(["div",{className:"textInfo",innerHTML:"Allows notes to be reordered by drag & drop."}])
                     )
                 )
             );

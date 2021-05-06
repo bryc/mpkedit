@@ -91,7 +91,8 @@ window.addEventListener("load", function() {
         MPKEdit.App.cfg = {
             "#!version" : 0.1,    // app config version (increase when introducing config changes)
             "identicon" : false,  // true = display identicons for notes
-            "hideRows"  : true    // true = hide empty rows 
+            "hideRows"  : true,   // true = hide empty rows 
+            "reorder"   : false,  // true = enable reorder function 
         };
 
         // Load config from storage
