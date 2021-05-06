@@ -170,10 +170,10 @@
             for(var j = 0; j < 32; j++) [tmp[j+p0], tmp[j+p1]] = [tmp[j+p1], tmp[j+p0]]; 
             MPKEdit.Parser(tmp);
         }
-        ro_origin = undefined;
-        ro_dest = undefined;
         ro_origin.removeAttribute("style");
         ro_dest.removeAttribute("style");
+        ro_origin = undefined;
+        ro_dest = undefined;
     }
 
     /* -----------------------------------------------
