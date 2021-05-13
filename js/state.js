@@ -150,7 +150,10 @@
         let filename = MPKEdit.App.codeDB[gameCode] || gameCode;
         filename = filename + "_" + hash + ".note";
 
-        if (event && event.ctrlKey) { // Hold CTRL for raw save data (no NoteEntry header)
+        let cartSav = gameCode === "\x3B\xAD\xD1\xE5" || gameCode === "\xDE\xAD\xBE\xEF",
+            held = event.ctrlKey;
+        if(cartSav) held = !held;
+        if (event && held) { // Hold CTRL for raw save data (no NoteEntry header)
             filename = indexes[0].toString(16).padStart(2,"0");
             filename = `raw-${gameCode}_${filename}.rawnote`;
             outputNote = outputNote.slice(32); // slice off header.
