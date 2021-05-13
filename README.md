@@ -15,7 +15,7 @@ Makes managing N64 Controller Pak files (.MPK) easy, whether from an emulator or
 
 ## Instructions
 
-To open files, click the **file icon at the top left**, or drag and drop into the window. Save the file by clicking the Save (floppy) icon at the top right. Individual save files (notes) can be saved by clicking the save icon at the rightmost of each row. It is also possible to re-order notes by clicking and dragging by enabling **reorder mode** in Settings.
+To open files, click the **file icon at the top left**, or drag and drop into the window. Save the file by clicking the Save (floppy) icon at the top right. Individual save files (notes) can be saved by clicking the save icon at the rightmost of each row. It is also possible to re-order notes by clicking and dragging with **reorder mode** enabled in Settings.
 
 You can also add text comments to any of the 16 save slots, accessible by clicking the info button beside the save icon. When a note has a comment assigned, a text bubble appears for that entry, which displays the comment when hovered. These will be saved in both .note or .MPK files. Be careful when using .MPKs with comments in an emulator as they may not know how to handle the appended data and it may be lost. Always keep it backed up somewhere.
 
