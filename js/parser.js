@@ -174,14 +174,27 @@
 
         for(let i = 0x300; i < 0x500; i += 32) { // iterate over NoteTable
             const p = data[i + 7],
+                  p2 = data[0x100 + p*2+1],
                   // First check if firstIndex range is valid.
                   validIndex = data[i + 6] === 0 && p >= 5 && p <= 127,
                   // For stricter parsing, these conditions can be used as well.
                   validSum   = data[i + 10] === 0 && data[i + 11] === 0,
-                  validCode  = arrstr(data, i, i+4) !== "\x00\x00\x00\x00" && arrstr(data, i+4, i+6) !== "\x00\x00";
+                  // Check if the actual index exists.
+                  entryCheck = p2 === 1 || p2 >= 5 && p2 <= 127;
 
+            // Check game/pub code and perform a fix if needed.
+            let gSum = data[i] + data[i + 1] + data[i + 2] + data[i + 3],
+                pSum = data[i + 4] + data[i + 5];
+            if(validIndex && entryCheck && validSum) {
+                let r = 0;
+                if(!gSum) gSum = data[i+3] |= 1, r++;
+                if(!pSum) pSum = data[i+5] |= 1, r++;
+                if(r) console.error(`ERROR: A note was found but ${r} values are corrupt. Manual repair required.`, curfile)
+            }
+            const validCode = gSum !== 0 && pSum !== 0;
 
             if(validIndex && validSum && validCode) {
+            if(validIndex && entryCheck && validSum && validCode) {
 
                 const id = (i - 0x300) / 32;
                 NoteKeys.push(p);
