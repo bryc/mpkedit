@@ -559,13 +559,16 @@
       exposed interface to the parser. data array and
       filename provided.
     */
-    MPKEdit.Parser = function(data, filename, filemod) {
+    MPKEdit.Parser = function(data, filename, filemod, origsize) {
+
         console.log(`Loading file %c${filename}... \n(file date: ${filemod?new Date(filemod).toString().substr(4,17):"N/A"})`, "font-weight:bold");
         curfile = filename;
 
         if(MPKEdit.State.data && isNote(data)) { // check if data opened is a note file to be imported
             insertNote(data, filemod);
         } else {
+            if(origsize === 296960 || origsize === 34816) origsize = true, data = data.slice(2048);
+            
             const result = parse(data); // attempt to parse data as MPK.
             if(!result) {
                 console.warn(`ERROR: Data in file provided is not valid: ${filename}`);
@@ -581,6 +584,7 @@
             MPKEdit.State.usedPages = result.usedPages;
             MPKEdit.State.filename = filename || MPKEdit.State.filename;
             MPKEdit.State.filemod = filemod || MPKEdit.State.filemod;
+            MPKEdit.State.MupenNext = origsize || MPKEdit.State.MupenNext;
 
             // Update State.Entry with fsys tmpEntry. Occurs only when loading .MPK via fsys.
             if(MPKEdit.App.usefsys && filename) MPKEdit.State.Entry = MPKEdit.App.tmpEntry;

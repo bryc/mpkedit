@@ -108,7 +108,8 @@
             MPKCmts[11] = totalHash & 0xFF;
             outputMPK = MPKEdit.Uint8Concat(outputMPK, MPKCmts);
         }
-        
+        if(State.MupenNext === true) outputMPK = MPKEdit.Uint8Concat(new Uint8Array(2048),outputMPK);
+
         if(event.type === "dragstart") { // Chrome drag-out save method
             const blobURL = URL.createObjectURL(new Blob([outputMPK]));
             event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+State.filename+":"+blobURL);
@@ -119,8 +120,9 @@
             else MPKEdit.fsys.saveFileAs(outputMPK, State.filename);
         }
         else { // browser saveAs method
-            const ext = State.filename.slice(-3).toUpperCase() !== "MPK",
+            let ext = State.filename.slice(-3).toUpperCase() !== "MPK",
                   fn = State.filename + (ext ? ".mpk" : "");
+                  if(State.MupenNext === true) fn = fn.slice(0,-4);
             MPKEdit.saveAs(new Blob([outputMPK]), fn);
         }
     };
