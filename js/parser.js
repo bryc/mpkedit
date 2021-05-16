@@ -176,8 +176,9 @@
 
         for(let i = 0x300; i < 0x500; i += 32) { // iterate over NoteTable
             const p = data[i + 0x07],
-                  validIndex = data[i + 0x06] === 0 && p >= 5 && p <= 127; // firstIndex validation
-                  sumCheck = data[i + 0x0A] === 0 && data[i + 0x0B] === 0;
+                  validIndex = data[i + 0x06] === 0 && p >= 5 && p <= 127, // firstIndex validation
+                  sumCheck   = data[i + 0x0A] === 0 && data[i + 0x0B] === 0;
+
             if(validIndex && sumCheck) {
 
                 const id = (i - 0x300) / 32;
