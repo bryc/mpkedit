@@ -193,7 +193,6 @@
             }
             const validCode = gSum !== 0 && pSum !== 0;
 
-            if(validIndex && validSum && validCode) {
             if(validIndex && entryCheck && validSum && validCode) {
 
                 const id = (i - 0x300) / 32;
