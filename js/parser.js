@@ -68,7 +68,8 @@
         141: "ブ", 142: "ベ", 143: "ボ", 144: "パ",
         145: "ピ", 146: "プ", 147: "ペ", 148: "ポ"
     };
-
+    MPKEdit.n64code = n64code;
+    
     /* -----------------------------------------------
     function: isNote(data)
       determine whether the file loaded is a note file.

@@ -348,7 +348,20 @@
                     ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Note name",className:"label"}]),
-                    elem(["span",{className:"content",innerHTML:State.NoteTable[i].noteName}])
+                    elem(["input",{maxLength:16,onkeyup:function(event){
+                        function extractKeyValue(obj, value) {
+                            return Object.keys(obj)[Object.values(obj).indexOf(value)];
+                        }
+                        if(event.keyCode === 13) {
+                             for(var i = 0; i < 16; i++)   {
+                                console.log(State.data[i2+16+i], extractKeyValue(MPKEdit.n64code, this.value[i] || 0))
+                                State.data[i2+16+i] = extractKeyValue(MPKEdit.n64code, this.value[i])
+                                }
+                        MPKEdit.Parser(State.data);
+                        }
+                    },oninput:function() {
+                        this.value = this.value.toUpperCase();
+                    },className:"content",value:State.NoteTable[i].noteName}])
                 ),
                 elem(["div",{className:"modalFlex"}],
                     elem(["span",{innerHTML:"Game name",className:"label"}]),
