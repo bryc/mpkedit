@@ -348,7 +348,7 @@
     const parse = function(data) {
         data = new Uint8Array(data); // should create a copy of the data?
         // Detect DexDrive file
-        if(arrstr(data, 0, 11) === "123-456-STD") {
+        if(arrstr(data, 0, 12) === "123-456-STD\x00") {
             console.info("DexDrive file detected. Saving notes and stripping header.");
             tmpComments = getDexNotes(data);
             data = data.subarray(0x1040);
