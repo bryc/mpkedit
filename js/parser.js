@@ -167,19 +167,21 @@
 
     /* -----------------------------------------------
     function: readNotes(data, NoteKeys)
-      parses the Note Table. note validity is determined by validIndex condition (5 - 127 range for pointers and
-      previous byte must be 0). other methods are inaccurate. pointers are stored in NoteKeys for comparing
-      in indexTable parser.
+      Parses the Note Table.
     */
     const readNotes = function(data, NoteKeys) {
         const NoteTable = {};
 
         for(let i = 0x300; i < 0x500; i += 32) { // iterate over NoteTable
-            const p = data[i + 0x07],
-                  validIndex = data[i + 0x06] === 0 && p >= 5 && p <= 127, // firstIndex validation
-                  sumCheck   = data[i + 0x0A] === 0 && data[i + 0x0B] === 0;
+            const p = data[i + 7],
+                  // First check if firstIndex range is valid.
+                  validIndex = data[i + 6] === 0 && p >= 5 && p <= 127,
+                  // For stricter parsing, these conditions can be used as well.
+                  validSum   = data[i + 10] === 0 && data[i + 11] === 0,
+                  validCode  = arrstr(data, i, i+4) !== "\x00\x00\x00\x00" && arrstr(data, i+4, i+6) !== "\x00\x00";
 
-            if(validIndex && sumCheck) {
+
+            if(validIndex && validSum && validCode) {
 
                 const id = (i - 0x300) / 32;
                 NoteKeys.push(p);
@@ -196,9 +198,9 @@
                     noteName += n64code[data[i + 15]] || "";
                 }
 
-                if((data[i + 0x08] & 0x02) === 0) {
+                if((data[i + 8] & 0x02) === 0) {
                     console.info(id, `Fixing required bit 8:2 in note: ${noteName}`);
-                    data[i + 0x08] |= 0x02;
+                    data[i + 8] |= 0x02;
                 }
 
                 if (data[i + 10] | data[i + 11])
