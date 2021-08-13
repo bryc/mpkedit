@@ -20,14 +20,57 @@
     GLOBAL
     ----------------------------------------
 */
+
+:root {
+    /* Highlight Colors -------- */
+    --accent:         #92B9CD;
+    --hover-accent:   #CDA692;
+    /* Text Colors -------- */
+    --tx-body:   #505050;
+    --tx1:       #9F9F9F;
+    --tx0:       #FFFFFF;
+    --tx2:       #777777;
+    /* Background/Border Colors -------- */
+    --bg-body:   #FFFFFF;
+    --bg1:       #FDFDFD;
+    --bg2:       #F9F9F9;
+    --bg3:       #EEEEEE;
+    --bg4:       #E0E0E0;
+    --bg-modal:  #FFFFFF;
+    --bg5:       #CCCCCC;
+    --bg-dark1:  #023B;
+    --bg-dark2:  #AAAAAA;
+}
+
+.theme-dark {
+    /* Highlight Colors -------- */
+    --accent:         #527688;
+    --hover-accent:   #91593d;
+    /* Text Colors -------- */
+    --tx-body:   #BFBFBF;
+    --tx1:       #777777;
+    --tx0:       #222222;
+    --tx2:       #7D7D7D;
+    /* Background/Border Colors -------- */
+    --bg-body:   #161616;
+    --bg1:       #1A1A1A;
+    --bg2:       #212121;
+    --bg3:       #313131;
+    --bg4:       #414141;
+    --bg-modal:  #222222;
+    --bg5:       #777777;
+    --bg-dark1:  #a0a0a0;
+    --bg-dark2:  #181818;
+}
+
 html {
     overflow-y: visible; /* allow scroll in chromeApp */
 }
 
 body {
     margin:0;
-    background: #fff;
-    color: #505050;
+    background: var(--bg-body);
+    color: var(--tx-body);
     font: 16px "Lato", "Meiryo", "メイリオ", sans-serif; /*FF needs Meiryo explictly */
 }
 
@@ -43,7 +86,7 @@ h1, h2, h3 {
     line-height: 0.7;
     padding-bottom: 14px;
     font-size: 24px;
-    border-bottom: 1px solid #CCC;
+    border-bottom: 1px solid var(--bg5);
 }
 
 /*
@@ -51,6 +94,7 @@ h1, h2, h3 {
     OVERLAYS: DROPZONE & MODAL
     ----------------------------------------
 */
+
 div#dropzone {
     z-index: 1;
     position: fixed;
@@ -78,35 +122,36 @@ div.modalContent {
     padding: 12px;
     width: 85%;
     max-width: 700px;
-    background: #FFF;
+    background: var(--bg-modal);
     border-radius: 4px;
 }
 
 input[type=checkbox] {display:none;}
 
 input[type=checkbox]:checked ~  .chkb0x {
-    color:#eee;
-    background:#333;
+    color:var(--tx0);
+    background:var(--bg-dark1);
 }
 
 input[type=checkbox]:checked +  .chkb0x::after {content: "✔"}
 .state {vertical-align: top; display: table-cell; }
 .state,.text {padding: 4px 4px;}
 
-.chkb0x {vertical-align: middle; 
+.chkb0x {
+    vertical-align: middle;
     cursor:pointer;
     display:inline-block;
     height:18px;width:18px;
-    background:#555;
-    color:#999;font-weight:bold;
+    background:var(--bg-dark2);
+    color:var(--tx1);font-weight:bold;
     text-align:center;font-size:12px;
     border-radius:4px;
 } 
 .fixed{font-family:monospace;}
 .modalBlock {vertical-align: top;display:inline-block;width:50%;}
 .text   {vertical-align: middle; display: table-cell; }
-.textInfo{line-height:1;font-weight:normal;color:#999;font-size:13px;}
-.textLabel{line-height:1;cursor:pointer;font-weight:bold;color:#666;}
+.textInfo{line-height:1;font-weight:normal;color:var(--tx1);font-size:13px;}
+.textLabel{line-height:1;cursor:pointer;font-weight:bold;}
 
 .label {
     display: inline-block;
@@ -119,35 +164,43 @@ input[type=checkbox]:checked +  .chkb0x::after {content: "✔"}
 .content {
     word-wrap: break-word;
     font-size: 14px;
-    color:#777;
+    color:var(--tx2);
     width:100%;
     padding-top:2px;
 }
+
 .modalFlex{display: flex;}
+
 textarea {
-    outline:none;
     width:100%;
-    border: 1px solid #AAA;
     padding: 4px 8px;
     margin:2px 0;
     height: 51px;
     resize: none;
 }
-.b0x:nth-child(-n+5) {opacity:0.75;border:1px dotted #CCC;}
+textarea,input {
+        outline:none;
+        border: 1px solid var(--bg4);
+        background-color: var(--bg4);
+}
+
+
+.b0x:nth-child(-n+5) {opacity:0.75;border:1px dotted var(--bg5);}
 .pageContainer {text-align:center;margin-top:32px;line-height:0.3;}
-.b0x{line-height:1;display:inline-block;border:1px solid #CCC;height:8px;width:8px;margin:0.5px;}
+.b0x{line-height:1;display:inline-block;border:1px solid var(--bg5);height:8px;width:8px;margin:0.5px;}
 
 /*
     ----------------------------------------
     TOP TOOLBAR
     ----------------------------------------
 */
+
 div.topToolbar {
     display: flex;
     font-size: 28px;
     padding: 2px 4px; 
-    background: #fdfdfd;
-    border-bottom: 4px solid #92b9cd;
+    background: var(--bg1);
+    border-bottom: 4px solid var(--accent);
 }
 
 div.grow {
@@ -165,8 +218,8 @@ span#loadButton {
 }
 
 span#loadButton:hover {
-    background: #eaeaea;
-    color: #777;
+    background: var(--bg3);
+    color: var(--tx2);
     cursor: pointer;
 }
 
@@ -177,12 +230,13 @@ span#loadButton:hover {
     TOP TOOLBAR (STATUS)
     ----------------------------------------
 */
+
 div#stats {
-    background: #f8f8f8;
+    background: var(--bg2);
     text-align:center;
     font-weight:400;
     font-size:14px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--bg3);
 }
 
 div#stats .statBox {
@@ -191,48 +245,51 @@ div#stats .statBox {
     text-align:center;
     display:inline-block;
 }
+
 div#stats .outerBar {
     margin:1px 3px 6px 2px;
     box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
     text-align:left;
-    background:#e0e0e0;
+    background:var(--bg4);
 }
-div#stats .innerBar {height: 6px; background: #92b9cd;}
+
+div#stats .innerBar {height: 6px; background: var(--accent);}
 
 /*
     ----------------------------------------
     MAIN TABLE
     ----------------------------------------
 */
+
 table {
     width: 100%;
     border-collapse: collapse;
-    background: #fdfdfd;
-    border-bottom: 2px solid #ddd;
-    border-left: 1px solid #fdfdfd;
-    border-right: 1px solid #fdfdfd;
+    background: var(--bg1);
+    border-bottom: 2px solid var(--bg4);
+    border-left: 1px solid var(--bg1);
+    border-right: 1px solid var(--bg1);
     font-size: 14px;
 }
 
 tr.empty {
     text-align:center;
     font-size:10px;
-    color:#aaa;
+    color:var(--tx1);
+    opacity:0.8;
 }
 
-tr.empty:nth-child(even) {background: #f8f8f8;}
+tr.empty:nth-child(even) {background: var(--bg2);}
 tr.empty td::before {content: "· •"; margin-right: 8px;}
 tr.empty td::after  {content: "• ·"; margin-left:  8px;}
 
-
 tr.note {
-    background: #f9f9f9;
-    border: 1px solid #ececec;
+    background: var(--bg1);
+    border: 1px solid var(--bg3);
     height:45px;
 }
 
-tr.note:nth-child(even) {background: #f2f2f2;}
-tr.note td:last-child {border-right: 1px solid #ececec;}
+tr.note:nth-child(even) {background: var(--bg2);}
+tr.note td:last-child {border-right: 1px solid var(--bg3);}
 tr:nth-child(1) {border-top: none;}
 
 td {
@@ -243,7 +300,7 @@ td.divider {padding: 0; width: 1px;}
 td.divider div {
     height: 28px;
     background: linear-gradient(to bottom,
-        rgba(0,0,0,0) 0%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0) 100%);
+        rgba(128,128,128,0) 0%, rgba(128,128,128,0.5) 50%, rgba(128,128,128,0) 100%);
 }
 
 td.name {
@@ -254,21 +311,25 @@ td.name {
 td.name div {
     font-weight: normal;
     font-size: 12px;
-    color: #999;
+    color: var(--tx1);
 }
+
 td.hash {
     width: 5px;
     padding:4px 2px;
     text-align: center;
 }
+
 canvas#hash {
     margin:0 4px;
 }
+
 td.region {
     width: 32px;
     text-align: center;
     font-size: 12px;
 }
+
 td.pgs {
     width: 5px;
     text-align: center;
@@ -294,26 +355,18 @@ td.empty {
     ICON STUFF
     ----------------------------------------
 */
-.fa {color: #92b9cd; margin:1px 0;padding:2px 4px;border-bottom:2px solid transparent;}
+
+.fa {color: var(--accent); margin:1px 0;padding:2px 4px;border-bottom:2px solid transparent;}
 
 span#loadButton:hover .fa-folder-open {
-    color: #cda692;
-}
-
-span#loadButton:active .fa-folder-open {
-    color: #b89583;
+    color: var(--hover-accent);
 }
 
 .fa-trash:hover, .fa-cog:hover, .fa-download:hover,
 .fa-floppy-o:hover, .fa-info-circle:hover {
     cursor: pointer;
-    color: #cda692;
+    color: var(--hover-accent);
     border-bottom: 2px solid;
-}
-
-.fa-trash:active, .fa-cog:active, .fa-download:active,
-.fa-floppy-o:active, .fa-info-circle:active {
-    color: #b89583;
 }
 
 /*
@@ -321,8 +374,9 @@ span#loadButton:active .fa-folder-open {
     TOOLTIP STUFF
     ----------------------------------------
 */
+
 [aria-label]{margin:2px 5px;float:right;position:relative;cursor:help}
-[aria-label]:hover .fa-comment {color: #cda692}
+[aria-label]:hover .fa-comment {color: var(--hover-accent)}
 [aria-label]:hover:after,[aria-label]:hover:before{opacity:1}
 [aria-label]:after,[aria-label]:before {
     pointer-events: none;
@@ -337,8 +391,8 @@ span#loadButton:active .fa-folder-open {
     margin-top: 5px;
     right: 0;
     border-radius: 3px;
-    background: #023B;
-    color: #FFF;
+    background: var(--bg-dark1);
+    color: var(--tx0);
     padding: 8px;
     white-space: pre-wrap;
     width: 320px;
@@ -348,9 +402,11 @@ span#loadButton:active .fa-folder-open {
     margin-top: -5px;
     right: 7px;
     border: 5px solid transparent;
-    border-bottom-color: #023B;
+    border-bottom-color: var(--bg-dark1);
 }
+
 /* GitHub ribbon */
-svg{fill:#92b9cd;color:#fff;position:fixed;top:0;border:0;right:0}svg:hover{fill:#cda692}
+svg{fill:var(--accent);position:fixed;top:0;border:0;right:0}svg:hover{fill:var(--hover-accent)}
+svg path:nth-child(2),svg path:nth-child(3){fill:var(--bg-body);}
 .gc:hover .oa{animation:qw 560ms ease-in-out;transform-origin:142px}
 @keyframes qw{20%,60%{transform:rotate(-9deg)}40%,80%{transform:rotate(9deg)}}

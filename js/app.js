@@ -155,7 +155,7 @@
         if(!ro_origin) {return false;} // only proceed if ro_origin is active
         if(ro_dest) ro_dest.removeAttribute("style");
         ro_dest = event.target.closest("tr");
-        ro_dest.style.outline = "2px solid #000";
+        ro_dest.style.outline = "2px solid #808080";
     }
     var start = function(event) {
         ro_origin = event.target.closest("tr");
@@ -291,7 +291,19 @@
                     elem(["div",{className:"text"}],
                     elem(["div",{className:"textLabel",onmousedown:function(e){e.preventDefault()},innerHTML:"Enable reorder mode",
                         onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}}]),
-                    elem(["div",{className:"textInfo",innerHTML:"Allows notes to be reordered by drag & drop."}])
+                    elem(["div",{className:"textInfo",innerHTML:"Allow notes to be reordered by drag & drop."}])
+                    )
+                ),
+                // SETTING 4: Theme
+                elem(["div",{className:"modalBlock"}],
+                    elem(["span",{className:"state"}],
+                        elem(["input",{checked: App.cfg.theme,id:"theme",onchange:updateSettings,type:"checkbox"}]),
+                        elem(["span",{onclick:function(){this.previousSibling.click()},className:"chkb0x"}])
+                    ),
+                    elem(["div",{className:"text"}],
+                    elem(["div",{className:"textLabel",onmousedown:function(e){e.preventDefault()},innerHTML:"Dark theme",
+                        onclick:function(){this.parentNode.previousSibling.querySelector("input").click()}}]),
+                    elem(["div",{className:"textInfo",innerHTML:"Switch to the dark side."}])
                     )
                 )
             );
@@ -429,8 +441,19 @@
         if(MPKEdit.App.usefsys) chrome.storage.local.set({MPKEdit:App.cfg});
         else localStorage.MPKEdit = JSON.stringify(App.cfg);
         App.updateUI();
+        if(this.id === "theme") App.changeTheme(App.cfg[this.id]);
     };
 
+    /* -----------------------------------------------
+    function: changeTheme(i)
+      Change theme to specified theme
+    */
+    App.changeTheme = function(id) {
+        if(id) document.body.className = "theme-dark"
+        // not the best solution, but it works.
+        else if(document.body.className) document.body.className = "";
+    };
+    
     /* -----------------------------------------------
     function: App.updateUI()
       update the MPK data display UI. used when loading new files and

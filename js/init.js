@@ -93,6 +93,7 @@ window.addEventListener("load", function() {
             "identicon" : false,  // true = display identicons for notes
             "hideRows"  : true,   // true = hide empty rows 
             "reorder"   : false,  // true = enable reorder function 
+            "theme"     : null,   // CSS color scheme
         };
 
         // Load config from storage
@@ -108,6 +109,7 @@ window.addEventListener("load", function() {
             MPKEdit.App.cfg = JSON.parse(localStorage.MPKEdit); 
         }
 
+        if(MPKEdit.App.cfg["theme"]) MPKEdit.App.changeTheme(MPKEdit.App.cfg["theme"]);
         // #### Assign event handlers ####
         // Load file button
         document.getElementById("fileOpen").onchange = readFiles;
