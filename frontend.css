@@ -25,42 +25,38 @@
     /* Highlight Colors -------- */
     --accent:         #92B9CD;
     --hover-accent:   #CDA692;
-    /* Text Colors -------- */
-    --tx-body:   #505050;
-    --tx1:       #9F9F9F;
-    --tx0:       #FFFFFF;
-    --tx2:       #777777;
     /* Background/Border Colors -------- */
     --bg-body:   #FFFFFF;
-    --bg1:       #FDFDFD;
-    --bg2:       #F9F9F9;
-    --bg3:       #EEEEEE;
-    --bg4:       #E0E0E0;
-    --bg-modal:  #FFFFFF;
-    --bg5:       #CCCCCC;
-    --bg-dark1:  #023B;
-    --bg-dark2:  #AAAAAA;
+    --bg1:       #FDFDFD; /*tr.note*/
+    --bg2:       #F9F9F9; /*tr.note even*/
+    --bg3:       #EEEEEE; /*note border*/
+    --bg4:       #E0E0E0; /*progressbar bg*/
+    /* Text Colors -------- */
+    --tx-body:   #505050;
+    --tx1:       #9F9F9F; /* lighter subtext */
+    /* Checkbox/Tooltip -------- */
+    --tx0:       #EEEEEE; /*checkbox/tooltip text*/
+    --bg-dark1:  #44606E; /*checkbox dark*/
+    --bg-dark2:  #AAAAAA; /*checkbox light*/
 }
 
 .theme-dark {
     /* Highlight Colors -------- */
-    --accent:         #527688;
+    --accent:         #538696;
     --hover-accent:   #91593d;
-    /* Text Colors -------- */
-    --tx-body:   #BFBFBF;
-    --tx1:       #777777;
-    --tx0:       #222222;
-    --tx2:       #7D7D7D;
     /* Background/Border Colors -------- */
-    --bg-body:   #161616;
-    --bg1:       #1A1A1A;
-    --bg2:       #212121;
-    --bg3:       #313131;
-    --bg4:       #414141;
-    --bg-modal:  #222222;
-    --bg5:       #777777;
-    --bg-dark1:  #a0a0a0;
-    --bg-dark2:  #181818;
+    --bg-body:   #131413;
+    --bg1:       #151716; /*tr.note*/
+    --bg2:       #1B1D1C; /*tr.note even*/
+    --bg3:       #282C29; /*note border*/
+    --bg4:       #393D39; /*progressbar bg*/
+    /* Text Colors -------- */
+    --tx-body:   #D4DFD7;
+    --tx1:       #7A837C; /* note subtext */
+    /* Checkbox/Tooltip -------- */
+    --tx0:       #111111; /*checkbox/tooltip text*/
+    --bg-dark1:  #a0a0a0; /*checkbox dark*/
+    --bg-dark2:  #111111; /*checkbox light*/
 }
 
 html {
@@ -86,7 +82,7 @@ h1, h2, h3 {
     line-height: 0.7;
     padding-bottom: 14px;
     font-size: 24px;
-    border-bottom: 1px solid var(--bg5);
+    border-bottom: 1px solid var(--bg4);
 }
 
 /*
@@ -122,7 +118,7 @@ div.modalContent {
     padding: 12px;
     width: 85%;
     max-width: 700px;
-    background: var(--bg-modal);
+    background: var(--bg2);
     border-radius: 4px;
 }
 
@@ -164,7 +160,7 @@ input[type=checkbox]:checked +  .chkb0x::after {content: "✔"}
 .content {
     word-wrap: break-word;
     font-size: 14px;
-    color:var(--tx2);
+    color:var(--tx1);
     width:100%;
     padding-top:2px;
 }
@@ -181,13 +177,13 @@ textarea {
 textarea,input {
         outline:none;
         border: 1px solid var(--bg4);
-        background-color: var(--bg4);
+        background-color: var(--bg3);
 }
 
 
-.b0x:nth-child(-n+5) {opacity:0.75;border:1px dotted var(--bg5);}
+.b0x:nth-child(-n+5) {opacity:0.75;border:1px dotted var(--bg4);}
 .pageContainer {text-align:center;margin-top:32px;line-height:0.3;}
-.b0x{line-height:1;display:inline-block;border:1px solid var(--bg5);height:8px;width:8px;margin:0.5px;}
+.b0x{line-height:1;display:inline-block;border:1px solid var(--bg4);height:8px;width:8px;margin:0.5px;}
 
 /*
     ----------------------------------------
@@ -219,7 +215,7 @@ span#loadButton {
 
 span#loadButton:hover {
     background: var(--bg3);
-    color: var(--tx2);
+    color: var(--tx1);
     cursor: pointer;
 }
 
@@ -248,7 +244,7 @@ div#stats .statBox {
 
 div#stats .outerBar {
     margin:1px 3px 6px 2px;
-    box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+    box-shadow: 1px 1px 1px rgba(128, 128, 128, 0.6);
     text-align:left;
     background:var(--bg4);
 }
