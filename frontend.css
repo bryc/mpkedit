@@ -40,6 +40,10 @@ body {
 h1, h2, h3 {
     text-align: center;
     margin: 4px 0 6px 0;
+    line-height: 0.7;
+    padding-bottom: 14px;
+    font-size: 24px;
+    border-bottom: 1px solid #CCC;
 }
 
 /*
@@ -75,7 +79,7 @@ div.modalContent {
     width: 85%;
     max-width: 700px;
     background: #FFF;
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
 input[type=checkbox] {display:none;}
