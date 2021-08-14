@@ -11,7 +11,14 @@
         const data = new Uint8Array(32768), block = new Uint8Array(32);
         
         // generate id block
-        for(let i = 0; i < 24; i++) block[i] = 0|Math.random()*256;
+        block[1]  = 0 | Math.random() * 256 & 0x3F;
+        block[5]  = 0 | Math.random() * 256 & 0x7;
+        block[6]  = 0 | Math.random() * 256;
+        block[7]  = 0 | Math.random() * 256;
+        block[8]  = 0 | Math.random() * 256 & 0xF;
+        block[9]  = 0 | Math.random() * 256;
+        block[10] = 0 | Math.random() * 256;
+        block[11] = 0 | Math.random() * 256;
         block[25] = 0x01; // device bit
         block[26] = 0x01; // bank size int (must be exactly '01')
 

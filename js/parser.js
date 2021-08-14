@@ -195,6 +195,13 @@
             const validCode = gSum !== 0 && pSum !== 0;
 
             if(validIndex && entryCheck && validSum && validCode) {
+                if(validIndex && !entryCheck) console.error("WTF", curfile)
+                // DEBUG
+                //arrhex=a=>{return[].map.call(a,x=>x.toString(16).padStart(2,0)).join(" ").toUpperCase()}
+                //if(typeof shit !== 'undefined')
+                //shit += arrhex(data.subarray(i, i+32)) + `: ${curfile}\n`
+                //console.log(arrhex(data.subarray(0, 0+32)) + `: ${curfile}\n`)
+                // DEBUG
 
                 const id = (i - 0x300) / 32;
                 NoteKeys.push(p);
@@ -212,7 +219,7 @@
                 }
 
                 if((data[i + 8] & 0x02) === 0) {
-                    console.info(id, `Fixing required bit 8:2 in note: ${noteName}`);
+                    console.info(id, `Fixing required bit 8:2 in note: ${noteName}, ${curfile}`);
                     data[i + 8] |= 0x02;
                 }
 
@@ -331,7 +338,7 @@
             return noteIndexes;
         }
         catch(error) { // If main IndexTable is invalid, check backup:
-            console.error(error);
+            console.error(error, curfile);
             if(o !== 0x200) { // allows a single recursive call to checkIndexes to check mirror backup.
                 console.log("WOOPS... checking INODE backup:", curfile);
                 return checkIndexes(data, 0x200, NoteKeys);
