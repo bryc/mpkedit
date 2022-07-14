@@ -782,8 +782,6 @@ MPKEdit.App.codeDB = {
     "NHGE": "F-1 Pole Position 64 (U)",
     "NHGJ": "Human Grand Prix - New Generation (J)",
     "NHGP": "F-1 Pole Position 64 (E)",
-    "NHHE": "Mario Kart 64 (Super W00ting Hack) (U)", // HyperHacker @ acmlmboard
-    "NHHP": "Mario Kart 64 (Super W00ting Hack) (E)",
     "NHKJ": "Hiryuu no Ken Twin (J)",
     "NHLE": "NHL Breakaway 98 (U)",
     "NHLP": "NHL Breakaway 98 (E)",
@@ -1315,6 +1313,8 @@ MPKEdit.App.codeDB = {
     "\x3B\xAD\xD1\xE5": "Cart save (Gameshark/Action Replay)",
     "\xDE\xAD\xBE\xEF": "Cart save (BlackBag's Memory Manager)",
     "ROAD": "Off Road Challenge (E) [b1]", // INVALID/CORRUPT ROM
+    "NHHE": "Mario Kart 64 (Super W00ting Hack) (U)", // HyperHacker @ acmlmboard
+    "NHHP": "Mario Kart 64 (Super W00ting Hack) (E)", // HyperHacker @ acmlmboard
     "NNiE": "Turok - Dinosaur Hunter (U) (V1.0) [t2]", // HACKED ROM
     "NNiJ": "Virtual Pro Wrestling 64 (J) [h1C]", // HACKED ROM
     "NPQE": "The Powerpuff Girls: Chemical X-Traction (U)",
