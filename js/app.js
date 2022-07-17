@@ -172,6 +172,7 @@
 			// Swap comments
 			var a = MPKEdit.State.NoteTable[ro_dest.id], b = MPKEdit.State.NoteTable[ro_origin.id];
 			[a.comment, b.comment] = [b.comment, a.comment];
+			[a.timeStamp, b.timeStamp] = [b.timeStamp, a.timeStamp];
             MPKEdit.Parser(tmp);
         }
         ro_origin.removeAttribute("style");
