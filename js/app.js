@@ -166,8 +166,12 @@
         var p1 = 0x300 + 32 * ro_origin.id;
 
         if(ro_dest.id !== ro_origin.id) {
+			// Swap NoteTable entries
             var tmp = new Uint8Array(MPKEdit.State.data);
             for(var j = 0; j < 32; j++) [tmp[j+p0], tmp[j+p1]] = [tmp[j+p1], tmp[j+p0]]; 
+			// Swap comments
+			var a = MPKEdit.State.NoteTable[ro_dest.id], b = MPKEdit.State.NoteTable[ro_origin.id];
+			[a.comment, b.comment] = [b.comment, a.comment];
             MPKEdit.Parser(tmp);
         }
         ro_origin.removeAttribute("style");
