@@ -6,9 +6,9 @@ const MPKEdit = (function MPKEdit() {
       Initiates a download of a given Blob.
     */
     MPKEdit.saveAs = function(data, fname) {
-        let a = document.createElement("a"), b = window.URL.createObjectURL(data);
+        let a = document.createElement("a"), b = URL.createObjectURL(data);
         a.download = fname, a.href = b, a.dispatchEvent(new MouseEvent("click"));
-        setTimeout(() => window.URL.revokeObjectURL(b), 3e3);
+        setTimeout(() => URL.revokeObjectURL(b), 3e3);
     };
 
     /* -----------------------------------------------
