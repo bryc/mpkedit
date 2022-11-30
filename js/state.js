@@ -78,7 +78,6 @@
     /* -----------------------------------------------
     function: State.save()
       Save the full MPK output file (Standard RAW MPK file)
-      Handles browser download, and fsys SaveAs/Save
     */
     State.save = function(event) {
         // Initially we only want to output the MPK data.
@@ -121,11 +120,6 @@
             const blobURL = URL.createObjectURL(new Blob([outputMPK]));
             event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+State.filename+":"+blobURL);
         }
-        else if(MPKEdit.App.usefsys) { // fsys save method. Hold CTRL will force SaveAs mode.
-            // TODO Ternary?
-            if(State.Entry && !event.ctrlKey) MPKEdit.fsys.saveFile(outputMPK, State.Entry);
-            else MPKEdit.fsys.saveFileAs(outputMPK, State.filename);
-        }
         else { // browser saveAs method
             let ext = State.filename.slice(-3).toUpperCase() !== "MPK",
                   fn = State.filename + (ext ? ".mpk" : "");
@@ -137,7 +131,6 @@
     /* -----------------------------------------------
     function: State.saveNote(id, event)
       Save a note at index/id. Supports holding CTRL for raw save.
-      Handles browser download and fsys saveAs
     */
     State.saveNote = function(id, event) {
         let outputNote = [];
@@ -184,7 +177,6 @@
             const blobURL = URL.createObjectURL(new Blob([outputNote]));
             event.dataTransfer.setData("DownloadURL", `application/octet-stream:${filename}:${blobURL}`);
         }
-        else if(MPKEdit.App.usefsys) MPKEdit.fsys.saveFileAs(outputNote, filename);  // fsys save method
         else MPKEdit.saveAs(new Blob([outputNote]), filename); // browser saveAs method
     };
 

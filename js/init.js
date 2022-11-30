@@ -14,10 +14,6 @@ window.addEventListener("load", function() {
             reader.onload = function(e) {
                 MPKEdit.Parser(new Uint8Array(e.target.result), files[i].name, files[i].lastModified, files[i].size);
             };
-            // fsys: Load DnD FileEntry to tmpEntry
-            if(MPKEdit.App.usefsys) {
-                MPKEdit.App.tmpEntry = event.dataTransfer.items[i].webkitGetAsEntry();
-            }
             // Read bytes from file with upper size limit
             // RawMPK=32768, DexDrive=36928, MaxMPKCmt=98144
             reader.readAsArrayBuffer(files[i].slice(0, 98144));
@@ -76,16 +72,10 @@ window.addEventListener("load", function() {
             }
         }
         function browse() {
-            if(MPKEdit.App.usefsys) MPKEdit.fsys.loadFile();
-            else {
-                const selectFile = document.getElementById("fileOpen");
-                if(selectFile.value) selectFile.value = "";
-                selectFile.onchange = readFiles, selectFile.click();
-            }
+            const selectFile = document.getElementById("fileOpen");
+            if(selectFile.value) selectFile.value = "";
+            selectFile.onchange = readFiles, selectFile.click();
         }
-
-        // Detect running as chrome app.
-        MPKEdit.App.usefsys = location.protocol === "chrome-extension:";
 
         // Init Local Storage config
         MPKEdit.App.cfg = {
@@ -97,15 +87,7 @@ window.addEventListener("load", function() {
         };
 
         // Load config from storage
-        if(MPKEdit.App.usefsys) {
-            chrome.storage.local.get(function(e){
-                if(e.MPKEdit) {
-                    // Annoying ass async API for fsys. Must update UI again.
-                    MPKEdit.App.cfg = e.MPKEdit;
-                    MPKEdit.App.updateUI();
-                }
-            });
-        } else if(!MPKEdit.App.usefsys && localStorage.MPKEdit) { 
+        if(localStorage.MPKEdit) {
             MPKEdit.App.cfg = JSON.parse(localStorage.MPKEdit); 
         }
 

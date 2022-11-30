@@ -443,8 +443,7 @@
     */
     const updateSettings = function() {
         App.cfg[this.id] = this.checked;
-        if(MPKEdit.App.usefsys) chrome.storage.local.set({MPKEdit:App.cfg});
-        else localStorage.MPKEdit = JSON.stringify(App.cfg);
+        localStorage.MPKEdit = JSON.stringify(App.cfg);
         App.updateUI();
         if(this.id === "theme") App.changeTheme(App.cfg[this.id]);
     };

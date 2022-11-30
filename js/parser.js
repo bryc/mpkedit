@@ -594,9 +594,6 @@
             MPKEdit.State.filemod = filemod || MPKEdit.State.filemod;
             MPKEdit.State.MupenNext = origsize || MPKEdit.State.MupenNext;
 
-            // Update State.Entry with fsys tmpEntry. Occurs only when loading .MPK via fsys.
-            if(MPKEdit.App.usefsys && filename) MPKEdit.State.Entry = MPKEdit.App.tmpEntry;
-
             MPKEdit.App.updateUI();
         }
     };
