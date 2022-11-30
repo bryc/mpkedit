@@ -6,13 +6,13 @@
 @font-face {
     font-family: "Lato";
     font-weight: 400;
-    src: url("3rdparty/lato-regular.woff") format("woff");
+    src: url("3rdparty/lato-regular.woff2") format("woff2");
 }
 
 @font-face {
     font-family: "Lato";
     font-weight: bold;
-    src: url("3rdparty/lato-bold.woff") format("woff");
+    src: url("3rdparty/lato-bold.woff2") format("woff2");
 }
 
 /*
