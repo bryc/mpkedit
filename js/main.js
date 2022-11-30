@@ -2,6 +2,16 @@ const MPKEdit = (function MPKEdit() {
     const MPKEdit = {};
 
     /* -----------------------------------------------
+    function: MPKEdit.SaveAs(data, fname)
+      Initiates a download of a given Blob.
+    */
+    MPKEdit.saveAs = function(data, fname) {
+        let a = document.createElement("a"), b = window.URL.createObjectURL(data);
+        a.download = fname, a.href = b, a.dispatchEvent(new MouseEvent("click"));
+        setTimeout(() => window.URL.revokeObjectURL(b), 1e1);
+    };
+
+    /* -----------------------------------------------
     function: MPKEdit.Uint8Concat(arrays)
       Concat Uint8Arrays
     */
