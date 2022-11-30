@@ -8,7 +8,7 @@ const MPKEdit = (function MPKEdit() {
     MPKEdit.saveAs = function(data, fname) {
         let a = document.createElement("a"), b = window.URL.createObjectURL(data);
         a.download = fname, a.href = b, a.dispatchEvent(new MouseEvent("click"));
-        setTimeout(() => window.URL.revokeObjectURL(b), 1e1);
+        setTimeout(() => window.URL.revokeObjectURL(b), 3e3);
     };
 
     /* -----------------------------------------------
