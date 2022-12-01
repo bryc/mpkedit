@@ -1,5 +1,5 @@
 {
-const State = MPKEdit.State, App = MPKEdit.App;
+const {State, App} = MPKEdit;
 // temporary variables
 let curfile = undefined, tmpComments = [], tmpStamp = [], isExtended, mupenNX = false;
 
@@ -86,14 +86,14 @@ const hash128 = function(key, seed = 0) {
         return h;
     }
     
-    var p1 = 597399067, p2 = 2869860233, p3 = 951274213, p4 = 2716044179;
+    let p1 = 597399067, p2 = 2869860233, p3 = 951274213, p4 = 2716044179;
 
-    var k1, h1 = seed ^ p1,
+    let k1, h1 = seed ^ p1,
         k2, h2 = seed ^ p2,
         k3, h3 = seed ^ p3,
         k4, h4 = seed ^ p4;
 
-    for(var i = 0, b = key.length & -16; i < b;) {
+    for(let i = 0, b = key.length & -16; i < b;) {
         k1 = key[i+3] << 24 | key[i+2] << 16 | key[i+1] << 8 | key[i];
         k1 = Math.imul(k1, p1); k1 = k1 << 15 | k1 >>> 17;
         h1 ^= Math.imul(k1, p2); h1 = h1 << 19 | h1 >>> 13; h1 += h2;

@@ -1,5 +1,5 @@
 {
-const State = MPKEdit.State, App = MPKEdit.App;
+const {State, App} = MPKEdit;
 /* -----------------------------------------------
 function: changeTheme(i)
   Change theme to specified theme
@@ -169,37 +169,37 @@ Note Reorder stuff
 // Necessary workaround for Firefox 88 text node issue
 if(!Text.prototype.closest) Text.prototype.closest = function(s){return this.parentNode.closest(s);}
 
-var ro_origin, ro_dest;
-var leave = function(event) {
-    var tabl = document.getElementsByTagName("table")[0];
+let ro_origin, ro_dest;
+let leave = function(event) {
+    let tabl = document.getElementsByTagName("table")[0];
     // Node.contains is TRUE even for itself, so another check is needed.
-    var withinTable = tabl.contains(event.relatedTarget) && tabl !== event.relatedTarget;
+    let withinTable = tabl.contains(event.relatedTarget) && tabl !== event.relatedTarget;
     // Cancel ro_dest if outside table with active drag
     if(ro_origin && ro_dest && !withinTable) {
         ro_dest.removeAttribute("style");
         ro_dest = undefined;
     }
 }
-var enter = function(event) {
+let enter = function(event) {
     if(!ro_origin) {return false;} // only proceed if ro_origin is active
     if(ro_dest) ro_dest.removeAttribute("style");
     ro_dest = event.target.closest("tr");
     ro_dest.style.outline = "2px solid #808080";
 }
-var start = function(event) {
+let start = function(event) {
     ro_origin = event.target.closest("tr");
 }
-var end = function() {
+let end = function() {
     if(!ro_origin || !ro_dest) {return false;}
-    var p0 = 0x300 + 32 * ro_dest.id;
-    var p1 = 0x300 + 32 * ro_origin.id;
+    let p0 = 0x300 + 32 * ro_dest.id;
+    let p1 = 0x300 + 32 * ro_origin.id;
 
     if(ro_dest.id !== ro_origin.id) {
 		// Swap NoteTable entries
-        var tmp = new Uint8Array(State.data);
-        for(var j = 0; j < 32; j++) [tmp[j+p0], tmp[j+p1]] = [tmp[j+p1], tmp[j+p0]]; 
+        let tmp = new Uint8Array(State.data);
+        for(let j = 0; j < 32; j++) [tmp[j+p0], tmp[j+p1]] = [tmp[j+p1], tmp[j+p0]]; 
 		// Swap comments
-		var a = State.NoteTable[ro_dest.id], b = State.NoteTable[ro_origin.id];
+		let a = State.NoteTable[ro_dest.id], b = State.NoteTable[ro_origin.id];
 		[a.comment, b.comment] = [b.comment, a.comment];
 		[a.timeStamp, b.timeStamp] = [b.timeStamp, a.timeStamp];
         MPKEdit.Parser(tmp);
@@ -399,7 +399,7 @@ const buildModal = function(e) {
                         return Object.keys(obj)[Object.values(obj).indexOf(value)];
                     }
                     if(event.keyCode === 13) {
-                         for(var i = 0; i < 16; i++)   {
+                         for(let i = 0; i < 16; i++)   {
                             console.log(State.data[i2+16+i], extractKeyValue(App.n64code, this.value[i] || 0))
                             State.data[i2+16+i] = extractKeyValue(App.n64code, this.value[i])
                             }
