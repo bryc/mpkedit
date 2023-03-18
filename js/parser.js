@@ -38,7 +38,7 @@ const arrstr = function(arr, start, end) {
 };
 
 /* -----------------------------------------------
-function: Uint8Concat(...arrays)
+function: Uint8Concat(...arrs)
   Concat Uint8Arrays
 */
 const Uint8Concat = function(...arrs) {
@@ -274,12 +274,12 @@ const isNote = function(data) {
 };
 
 /* -----------------------------------------------
-function: checkBlock(data, o, state)  TODO : rename checkIdBlock? yes, do that.
+function: checkIdBlock(data, o, state)
   check the header checksum in id area at specified
   offset. utility function for checkHeader()
   TODO: incorporate deviceid bit check, and '01' bank check.
 */
-const checkBlock = function(data, o, state) {
+const checkIdBlock = function(data, o, state) {
     let sumA = 0, sumB = 0xFFF2;
     for(let i = 0; i < 28; i += 2) {
         sumA += (data[o + i] << 8) + data[o + i + 1];
@@ -312,7 +312,7 @@ const checkHeader = function(data) {
     let firstValid = null;
     // Check all header blocks
     for(let i = 0, bl0x = []; i < 4; i++) {
-        checkBlock(data, loc[i], state);
+        checkIdBlock(data, loc[i], state);
         if(state[loc[i]].valid === true && firstValid === null) firstValid = i; // get only first valid
         if(state[loc[i]].dexdriveFix) console.log("Block "+(i+1), "\tDexDrive checksum repaired");
         bl0x.push(state[loc[i]].valid); if(i === 3) console.log("ID Blocks:", bl0x);
@@ -564,10 +564,10 @@ const parse = function(data) {
 };
 
 /* -----------------------------------------------
-function: State.save()
+function: saveMPK(evt)
   Save the full MPK output file (Standard RAW MPK file)
 */
-const saveMPK = function(event) {
+const saveMPK = function(evt) {
 
     // Initially we only want to output the MPK data.
     let outputMPK = State.data;
@@ -606,9 +606,9 @@ const saveMPK = function(event) {
     }
     if(mupenNX) outputMPK = Uint8Concat(new Uint8Array(2048),outputMPK); // Padding for mupenNX
 
-    if(event.type === "dragstart") { // Chrome drag-out save method
+    if(evt.type === "dragstart") { // Chrome drag-out save method
         const blobURL = URL.createObjectURL(new Blob([outputMPK]));
-        event.dataTransfer.setData("DownloadURL", "application/octet-stream:"+State.filename+":"+blobURL);
+        evt.dataTransfer.setData("DownloadURL", "application/octet-stream:"+State.filename+":"+blobURL);
     }
     else { // browser saveAs method
         let ext = State.filename.slice(-3).toUpperCase() !== "MPK",
@@ -619,10 +619,10 @@ const saveMPK = function(event) {
 };
 
 /* -----------------------------------------------
-function: State.saveNote(id, event)
+function: saveNote(evt, id)
   Save a note at index/id. Supports holding CTRL for raw save.
 */
-const saveNote = function(id, event) {
+const saveNote = function(evt, id) {
     let outputNote = [];
     const indexes = State.NoteTable[id].indexes,
           gameCode = State.NoteTable[id].serial;
@@ -642,7 +642,7 @@ const saveNote = function(id, event) {
     let filename = App.codeDB[gameCode] || gameCode;
     filename = filename + "_" + hash + ".note";
 
-    if (event && event.ctrlKey) { // Hold CTRL for raw save data (no NoteEntry header)
+    if (evt && evt.ctrlKey) { // Hold CTRL for raw save data (no NoteEntry header)
         filename = indexes[0].toString(16).padStart(2,"0");
         filename = `raw-${gameCode}_${filename}.rawnote`;
         outputNote = outputNote.slice(32); // slice off header.
@@ -663,15 +663,15 @@ const saveNote = function(id, event) {
     }
 
     outputNote = new Uint8Array(outputNote);
-    if(event && event.type === "dragstart") { // chrome drag-out save method
+    if(evt && evt.type === "dragstart") { // chrome drag-out save method
         const blobURL = URL.createObjectURL(new Blob([outputNote]));
-        event.dataTransfer.setData("DownloadURL", `application/octet-stream:${filename}:${blobURL}`);
+        evt.dataTransfer.setData("DownloadURL", `application/octet-stream:${filename}:${blobURL}`);
     }
     else saveAs(new Blob([outputNote]), filename); // browser saveAs method
 };
 
 /* -----------------------------------------------
-function: insertNote(data)
+function: insertNote(data, fileDate)
   insert note data into currently opened MPK file.
 */
 const insertNote = function(data, fileDate) {
@@ -751,7 +751,7 @@ const insertNote = function(data, fileDate) {
 };
 
 /* -----------------------------------------------
-function: parseCmts(result)
+function: parseMPKCmts(result)
   Parse MPKCmts block, inserting any associated data into the state.
 */
 const parseMPKCmts = function(result) {
@@ -759,7 +759,7 @@ const parseMPKCmts = function(result) {
           hasCmts = arrstr(MPKCmts, 0, 7) === "MPKMeta",
           cmtCount = MPKCmts[15]; // header: stored number of comments
     if(0 === cmtCount || false === hasCmts) {
-        console.warn("MPKMeta block not found. MPK file size is wrong or MPKMeta block is corrupt.");
+        console.error("MPKMeta block not found. MPK file size is wrong or MPKMeta block is corrupt.");
         return false;
     }
     // Checksum calculation
@@ -829,7 +829,7 @@ const Parser = function(data, filename, fileDate, origsize) {
         
         const result = parse(data); // attempt to parse data as MPK.
         if(!result) {
-            console.warn(`ERROR: Data in file provided is not valid: ${filename}`);
+            console.error(`ERROR: Data in file provided is not valid: ${filename}`);
             return false;
         }
         // parse and load any MPKCmts data

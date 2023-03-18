@@ -170,24 +170,24 @@ Note Reorder stuff
 if(!Text.prototype.closest) Text.prototype.closest = function(s){return this.parentNode.closest(s);}
 
 let ro_origin, ro_dest;
-let leave = function(event) {
+let leave = function(evt) {
     let tabl = document.getElementsByTagName("table")[0];
     // Node.contains is TRUE even for itself, so another check is needed.
-    let withinTable = tabl.contains(event.relatedTarget) && tabl !== event.relatedTarget;
+    let withinTable = tabl.contains(evt.relatedTarget) && tabl !== evt.relatedTarget;
     // Cancel ro_dest if outside table with active drag
     if(ro_origin && ro_dest && !withinTable) {
         ro_dest.removeAttribute("style");
         ro_dest = undefined;
     }
 }
-let enter = function(event) {
+let enter = function(evt) {
     if(!ro_origin) {return false;} // only proceed if ro_origin is active
     if(ro_dest) ro_dest.removeAttribute("style");
-    ro_dest = event.target.closest("tr");
+    ro_dest = evt.target.closest("tr");
     ro_dest.style.outline = "2px solid #808080";
 }
-let start = function(event) {
-    ro_origin = event.target.closest("tr");
+let start = function(evt) {
+    ro_origin = evt.target.closest("tr");
 }
 let end = function() {
     if(!ro_origin || !ro_dest) {return false;}
@@ -253,12 +253,12 @@ const buildRow = function(i) {
         elem(["td",{className:"divider"}],elem(["div"])),
         elem(["td",{className:"tool"}],
             elem(["span",{className:"fa fa-info-circle",onclick:buildModal}]),
-            elem(["span",{className:"fa fa-trash",onclick:App.eraseNote.bind(null,i)}]),
+            elem(["span",{className:"fa fa-trash",onclick:() => App.eraseNote(i)}]),
             elem(["span",{
                 className: "fa fa-download",
                 draggable: true,
-                ondragstart: App.saveNote.bind(null, i),
-                onclick: App.saveNote.bind(null, i)
+                ondragstart: e => App.saveNote(e, i),
+                onclick: e => App.saveNote(e, i)
             }])
         )
     );
@@ -394,11 +394,11 @@ const buildModal = function(e) {
                 ),
             elem(["div",{className:"modalFlex"}],
                 elem(["span",{innerHTML:"Note name",className:"label"}]),
-                elem(["input",{maxLength:16,onkeyup:function(event){
+                elem(["input",{maxLength:16,onkeyup:function(evt){
                     function extractKeyValue(obj, value) {
                         return Object.keys(obj)[Object.values(obj).indexOf(value)];
                     }
-                    if(event.keyCode === 13) {
+                    if(evt.keyCode === 13) {
                          for(let i = 0; i < 16; i++)   {
                             console.log(State.data[i2+16+i], extractKeyValue(App.n64code, this.value[i] || 0))
                             State.data[i2+16+i] = extractKeyValue(App.n64code, this.value[i])

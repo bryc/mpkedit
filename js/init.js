@@ -1,27 +1,33 @@
 {
 /* -----------------------------------------------
-function: readFiles(event)
-  read files from a drop event or a browse file input, and proceeds to
-  parse/check the file (only reads 36928 bytes).
+function: readFiles(evt, callee, types, maxlen, multi)
+  read file(s) from a drop event or a browse file input, and proceed to parse/check the data with a callback.
+ 
+  `types` should be a lowercase string of an allowed file extension, or an array of multiple strings.
+  if undefined, all extensions are allowed.
+  
+  `maxlen` defines the maximum allowed file size. if undefined, there is no limit.
 */
-const readFiles = function(event) {
-    /* To give [reader.onload] access to [i], we need to pull some strings.
-    // It can be done using an IIFE or modifying [reader] obj, but I've chosen to 
-    // use a named function, which is easier to read and arguably faster. */
-    const readFile = function(i) {
+// Relevant MPK sizes: RawMPK = 32768, DexDrive = 36928, MaxMPKCmt = 98144
+const readFiles = function(evt, callee = initParse, types, maxlen = 98144, multi = true) {
+	if(typeof callee == "undefined") throw new Error("No callee function assigned.");
+    const readFile = function(file) {
+		if(types?.length && !types.includes(file.name.split('.').pop().toLowerCase()))
+			return console.warn(`Skipped input file. File extension not allowed (${file.name})`);
+		if(file.size > maxlen)
+			return console.warn(`Skipped input file. Size (${file.size}) is too large (${file.name})`);
         const reader = new FileReader();
-        reader.onload = function(e) {
-            MPKEdit.Parser(new Uint8Array(e.target.result), files[i].name, files[i].lastModified, files[i].size);
-        };
-        // Read bytes from file with upper size limit
-        // RawMPK=32768, DexDrive=36928, MaxMPKCmt=98144
-        reader.readAsArrayBuffer(files[i].slice(0, 98144));
+		reader.onload = e => callee(e, file);
+        reader.readAsArrayBuffer(file.slice(0, maxlen)); // if maxlen is undefined, no size limit.
     };
-    // Support both <input type=file> AND drag and drop
-    const files = event.target.files || event.dataTransfer.files;
-    // Do the loop.
-    for(let i = 0; i < files.length; i++) readFile(i);
-    event.preventDefault();
+    const files = evt.target.files || evt.dataTransfer.files; // support <input type=file> and drag/drop.
+	if(!multi && files.length > 1) return console.warn(`Only one file allowed (${files.length} specified).`);
+    for(let i = 0; i < files.length; i++) readFile(files[i]);
+    evt.preventDefault();
+};
+
+const initParse = function(evt, file) {
+	MPKEdit.Parser(new Uint8Array(evt.target.result), file.name, file.lastModified, file.size);
 };
 
 window.addEventListener("load", function() {
@@ -43,8 +49,8 @@ window.addEventListener("load", function() {
       sets up events for the visual effect when dragging a file over.
     */
     const setDragEffects = function setDragEffects() {
-        function isFile(event) {
-            const dt = event.dataTransfer;
+        function isFile(evt) {
+            const dt = evt.dataTransfer;
             for (let i = 0; i < dt.types.length; i++) {
                 if (dt.types[i] === "Files") return true;
             }
@@ -52,21 +58,21 @@ window.addEventListener("load", function() {
         }
         let lastTarget = null;
         const dropzone = document.getElementById("dropzone");
-        window.addEventListener("dragenter", function (event) {
-            if (isFile(event)) {
-                lastTarget = event.target;
+        window.addEventListener("dragenter", function (evt) {
+            if (isFile(evt)) {
+                lastTarget = evt.target;
                 dropzone.style.opacity = 1, dropzone.style.visibility = "";
             }
         });
-        window.addEventListener("dragleave", function (event) {
-            if (event.target === lastTarget || event.target === document) {
+        window.addEventListener("dragleave", function (evt) {
+            if (evt.target === lastTarget || evt.target === document) {
                 dropzone.style.opacity = 0, dropzone.style.visibility = "hidden";
             }
-            event.preventDefault();
+            evt.preventDefault();
         });
-        window.addEventListener("drop", function(event) {
+        window.addEventListener("drop", function(evt) {
             dropzone.style.opacity = 0, dropzone.style.visibility = "hidden";
-            event.preventDefault();
+            evt.preventDefault();
         });
     };
 
@@ -75,10 +81,10 @@ window.addEventListener("load", function() {
         - setup events: file drag handlers, GUI and other events
         - initialize MPK state (empty file)
     */
-    function changeExportColor(event) {
+    function changeExportColor(evt) {
         const trg = document.querySelectorAll(".fa-download");
         for(let i = 0; i < trg.length; i++) {
-            trg[i].style.color = event.ctrlKey ? "#c00" : "";
+            trg[i].style.color = evt.ctrlKey ? "#c00" : "";
         }
     }
     function browse() {
