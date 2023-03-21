@@ -86,14 +86,14 @@ const hash128 = function(key, seed = 0) {
         return h;
     }
     
-    let p1 = 597399067, p2 = 2869860233, p3 = 951274213, p4 = 2716044179;
+    let p1 = 597399067, p2 = 2869860233, p3 = 951274213, p4 = 2716044179, i = 0;
 
     let k1, h1 = seed ^ p1,
         k2, h2 = seed ^ p2,
         k3, h3 = seed ^ p3,
         k4, h4 = seed ^ p4;
 
-    for(let i = 0, b = key.length & -16; i < b;) {
+    for(let b = key.length & -16; i < b;) {
         k1 = key[i+3] << 24 | key[i+2] << 16 | key[i+1] << 8 | key[i];
         k1 = Math.imul(k1, p1); k1 = k1 << 15 | k1 >>> 17;
         h1 ^= Math.imul(k1, p2); h1 = h1 << 19 | h1 >>> 13; h1 += h2;
@@ -219,13 +219,14 @@ const eraseNote = function(id) {
     if(!State.NoteTable[id]) return; // cancel if id doesn't exist in NoteTable
     const tmpData = new Uint8Array(State.data), // operate on tmp copy to run thru parser later
           indexes = State.NoteTable[id].indexes; // get note's indexes sequence to overwrite with 0x03
-    // Erase all indexes in IndexTable
+    // Erase all indexes in IndexTable for given note
     let offset;
     for(let i = 0; i < indexes.length; i++) {
         offset = 0x100 + (indexes[i] * 2) + 1;
         tmpData[offset] = 0x03;
     }
-    // Erase NoteEntry in NoteTable - TODO: Just erase gameCode/pubCode/startIndex? Probably.
+    // Erase full NoteEntry in NoteTable.
+	// TODO: should we do a minimal erase like libultra? is there value in keeping junk data? probably.
     for(let i = 0; i < 32; i++) {
         offset = 0x300 + (id * 32) + i;
         tmpData[offset] = 0x00;
@@ -577,7 +578,7 @@ const saveMPK = function(evt) {
     // initialized 16-byte header for MPKMeta
     const cmtHeader = [77,80,75,77,101,116,97,0,0,0,0,0,0,0,0,0],
           notes = Object.keys(State.NoteTable);
-    let MPKCmts = new Uint8Array(cmtHeader), numCmts = 0;
+    let MPKMeta = new Uint8Array(cmtHeader), numCmts = 0;
     for(let i = 0; i < notes.length; i++) {
         if(State.NoteTable[notes[i]].comment) { // if NoteTable[i] contains a comment.
             hasCmts = true;
@@ -590,19 +591,19 @@ const saveMPK = function(evt) {
                   hiSize = utfdata.length >> 8, loSize = utfdata.length & 0xFF,
                   id = idx^c0^c1^c2^0xA5,
                   output = [id, idx, c0, c1, c2, hiSize, loSize];
-            MPKCmts = Uint8Concat(MPKCmts, output, utfdata);
+            MPKMeta = Uint8Concat(MPKMeta, output, utfdata);
         }
     }
     // If comments found, update header and append MPKMeta block to data.
     if(hasCmts) {
 		
-        MPKCmts[15] = numCmts; // Store total number of comments
-        const totalHash = hash128(MPKCmts)[0];
-        MPKCmts[8]  = totalHash >>> 24 & 0xFF;
-        MPKCmts[9]  = totalHash >>> 16 & 0xFF;
-        MPKCmts[10] = totalHash >>> 8 & 0xFF;
-        MPKCmts[11] = totalHash & 0xFF;
-        outputMPK = Uint8Concat(outputMPK, MPKCmts);
+        MPKMeta[15] = numCmts; // Store total number of comments
+        const totalHash = hash128(MPKMeta)[0];
+        MPKMeta[8]  = totalHash >>> 24 & 0xFF;
+        MPKMeta[9]  = totalHash >>> 16 & 0xFF;
+        MPKMeta[10] = totalHash >>> 8 & 0xFF;
+        MPKMeta[11] = totalHash & 0xFF;
+        outputMPK = Uint8Concat(outputMPK, MPKMeta);
     }
     if(mupenNX) outputMPK = Uint8Concat(new Uint8Array(2048),outputMPK); // Padding for mupenNX
 
@@ -731,9 +732,9 @@ const insertNote = function(data, fileDate) {
 
         for(let i = 0; i < 16; i++) { // Write 32-byte NoteEntry to NoteTable.
             if(State.NoteTable[i] === undefined) {
-                // tmpComments must be used here because saving directly to State
+                // tmpComments/tmpStamp is used here because saving directly to State
                 // will cause comments to be lost when MPK data is re-parsed.
-                if(cmt) tmpComments[i] = cmt; // TODO: This is POSSIBLY not needed anymore, due to presence of MPKCmts block in State.data???
+                if(cmt) tmpComments[i] = cmt;
                 tmpStamp[i] = tS || Math.round(fileDate/1000);
                 const target = 0x300 + i * 32;
                 for(let j = 0; j < 32; j++) tmpdata[target + j] = noteData[j];
@@ -751,21 +752,21 @@ const insertNote = function(data, fileDate) {
 };
 
 /* -----------------------------------------------
-function: parseMPKCmts(result)
-  Parse MPKCmts block, inserting any associated data into the state.
+function: parseMPKMeta(result)
+  Parse MPKMeta block, inserting any associated data into the state.
 */
-const parseMPKCmts = function(result) {
-    const MPKCmts = result.data.subarray(32768),
-          hasCmts = arrstr(MPKCmts, 0, 7) === "MPKMeta",
-          cmtCount = MPKCmts[15]; // header: stored number of comments
+const parseMPKMeta = function(result) {
+    const MPKMeta = result.data.subarray(32768),
+          hasCmts = arrstr(MPKMeta, 0, 7) === "MPKMeta",
+          cmtCount = MPKMeta[15]; // header: stored number of comments
     if(0 === cmtCount || false === hasCmts) {
         console.error("MPKMeta block not found. MPK file size is wrong or MPKMeta block is corrupt.");
         return false;
     }
     // Checksum calculation
-    const chk1 = MPKCmts[8]<<24 | MPKCmts[9]<<16 | MPKCmts[10]<<8 | MPKCmts[11];
-    MPKCmts[8] = 0, MPKCmts[9] = 0, MPKCmts[10] = 0, MPKCmts[11] = 0;
-    const chk2 = hash128(MPKCmts)[0];
+    const chk1 = MPKMeta[8]<<24 | MPKMeta[9]<<16 | MPKMeta[10]<<8 | MPKMeta[11];
+    MPKMeta[8] = 0, MPKMeta[9] = 0, MPKMeta[10] = 0, MPKMeta[11] = 0;
+    const chk2 = hash128(MPKMeta)[0];
     if(chk2 !== chk1>>>0) {
         console.error("Hash check failed. MPKMeta block is invalid.");
         return false;
@@ -773,12 +774,12 @@ const parseMPKCmts = function(result) {
 
     console.log(`MPKMeta block found, attempting to parse ${cmtCount} comment(s)...`);
     for(let i = 0, foundCount = 0, ptr = 16; i < cmtCount; i++) {
-        const magic = MPKCmts[ptr+0]^0xA5, magic2 = MPKCmts[ptr+1]^MPKCmts[ptr+2]^MPKCmts[ptr+3]^MPKCmts[ptr+4];
+        const magic = MPKMeta[ptr+0]^0xA5, magic2 = MPKMeta[ptr+1]^MPKMeta[ptr+2]^MPKMeta[ptr+3]^MPKMeta[ptr+4];
         if(magic !== magic2) {
             console.error(`MPKMeta Error: Can't find expected magic (${magic} !== ${magic2}). Aborting load.`);
             break;
         }
-        const cmtLen = (MPKCmts[ptr+5]<<8) + MPKCmts[ptr+6];
+        const cmtLen = (MPKMeta[ptr+5]<<8) + MPKMeta[ptr+6];
         if(0 === cmtLen || cmtLen > 4080) {
             console.error(`MPKMeta Error: Invalid comment length (${cmtLen}). Aborting load.`);
             break;
@@ -788,10 +789,10 @@ const parseMPKCmts = function(result) {
         let noteOfs = false;
         for(let j = 0; j < 16; j++) {
             const a = 0x300 + j*32,
-                  chkIdx = MPKCmts[ptr+1] === result.data[a+7], 
-                  chkCo0 = MPKCmts[ptr+2] === result.data[a+1],
-                  chkCo1 = MPKCmts[ptr+3] === result.data[a+2],
-                  chkCo2 = MPKCmts[ptr+4] === result.data[a+3];
+                  chkIdx = MPKMeta[ptr+1] === result.data[a+7], 
+                  chkCo0 = MPKMeta[ptr+2] === result.data[a+1],
+                  chkCo1 = MPKMeta[ptr+3] === result.data[a+2],
+                  chkCo2 = MPKMeta[ptr+4] === result.data[a+3];
             if(chkIdx && chkCo0 && chkCo1 && chkCo2) {
                 noteOfs = j; // Index & gameCode found
                 break;
@@ -804,7 +805,7 @@ const parseMPKCmts = function(result) {
 
         console.log(`Comment ${i} points to save note ${noteOfs}`);
         // Insert comment data into NoteTable
-        const cmtStr = new TextDecoder("utf-8").decode(MPKCmts.subarray(ptr+7, ptr+7 + cmtLen));
+        const cmtStr = new TextDecoder("utf-8").decode(MPKMeta.subarray(ptr+7, ptr+7 + cmtLen));
         result.NoteTable[noteOfs].comment = cmtStr;
         foundCount++;
         ptr += 7 + cmtLen;
@@ -832,10 +833,10 @@ const Parser = function(data, filename, fileDate, origsize) {
             console.error(`ERROR: Data in file provided is not valid: ${filename}`);
             return false;
         }
-        // parse and load any MPKCmts data
-        if(result.data.length > 32784) parseMPKCmts(result); // gimme those comments 
+        // parse and load any MPKMeta data
+        if(result.data.length > 32784) parseMPKMeta(result); // gimme those comments 
 
-        // If result.data is NOT 32KB, resize it to 32KB. Could this interfere with the MPKCmts block?
+        // If result.data is NOT 32KB, resize it to 32KB. Could this interfere with the MPKMeta block?
         State.data = result.data !== 32768 ? resize(result.data) : result.data;
         State.NoteTable = result.NoteTable;
         State.usedNotes = result.usedNotes;

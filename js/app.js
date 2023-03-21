@@ -198,10 +198,9 @@ let end = function() {
 		// Swap NoteTable entries
         let tmp = new Uint8Array(State.data);
         for(let j = 0; j < 32; j++) [tmp[j+p0], tmp[j+p1]] = [tmp[j+p1], tmp[j+p0]]; 
-		// Swap comments
-		let a = State.NoteTable[ro_dest.id], b = State.NoteTable[ro_origin.id];
-		[a.comment, b.comment] = [b.comment, a.comment];
-		[a.timeStamp, b.timeStamp] = [b.timeStamp, a.timeStamp];
+		// Swap Note metadata
+		let nTabl = State.NoteTable, o = ro_origin.id, d = ro_dest.id;
+		[ nTabl[o], nTabl[d] ] = [ nTabl[d], nTabl[o] ];
         MPKEdit.Parser(tmp);
     }
     ro_origin.removeAttribute("style");
