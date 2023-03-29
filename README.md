@@ -21,6 +21,12 @@ You can also add text comments to any of the 16 save slots, accessible by clicki
 
 ![image](https://user-images.githubusercontent.com/1408749/44122120-7ba24680-9ff0-11e8-8997-b84e3a5378a8.png)
 
+## Basic Mupen64Plus-Next Save Support
+
+The main N64 emulator in RetroArch is Mupen64Plus-Next, and it bundles all possible save data into one large 290 KB .SRM file per game. MPKEdit has basic support for loading and saving these files, but there are a few limitations. Only the data of Port 1's Controller Pak is loaded. If a game uses EEPROM/SRAM as well, those will not be kept when saving. Controller ports 2, 3 and 4 are ignored. Believe it or not, some games (BattleTanx) let you save to any port, even if you're using port 1, so try not to do that. But for the most part, most games don't use both Controller Pak _and_ internal saves, so it should be fine. This might be improved in the future, but likely would require significant code changes, which aren't worth it just for this.
+
+## Advanced
+
 For advanced users, holding the Control key while saving a note activates **raw note saving** (when activated, save icons turn **red**). This saves _only_ the raw save data itself without any headers. This is intended for situations where the header can be ignored. It is possible to reimport the modified .rawnote file by loading it back into the original .MPK file that it came from. You can also add description text to the **end** of the filename, Just don't change the initial "raw-XXX_XX" part at the beginning of the filename, as that is how it knows where to put it back. The modified .rawnote data **MUST be the same size as the original**, as you cannot alter the size of the note data this way.
 
 Mempaks are sometimes used with utilities like GameShark to back up cartridge saves (.EEP files), so the .rawnote files will work in emulators once renamed properly. Currently, GameShark features are **not officially supported**, it's just a handy tip. BOBdotEXE made a nice tutorial covering more advanced GameShark usage here, but a hex editor will be required: https://www.youtube.com/watch?v=PpolokImIeU.
