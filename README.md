@@ -7,7 +7,7 @@ Makes managing N64 Controller Pak files (.MPK) easy, whether from an emulator or
 #### Features
 
 * Open .MPK and .note files by **dragging and dropping** them, or **browsing** for files
-* **Save**, **load**, **delete**, and **re-order** notes
+* **Save**, **load**, **delete**, and **re-order** individual save files (aka "notes")
 * Add comments to your save files
 * DexDrive (.n64) import support
 * **Game code database** - automatically identifies game name and publisher
