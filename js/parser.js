@@ -426,6 +426,22 @@ const readNotes = function(data, NoteKeys) {
 };
 
 /* -----------------------------------------------
+function: checkIndexesFast(data)
+  quickly check indexes in both primary and backup.
+*/
+const checkIndexesFast = function(data) {
+    for(let i = 0x10A, a, b, D = {}; i < 0x200; i += 2) {
+        a = data[i], b = data[i + 1];
+		if(a !== data[0x100 + i] || b !== data[0x101 + i]) return false;
+        if(0 === a && (5 <= b && 127 >= b || 1 === b)) {
+            if(b !== 1 && D[b]) return false;
+			D[b] = 1;
+        } else if(a !== 0 || b !== 3) return false;
+    }
+	return true;
+}
+
+/* -----------------------------------------------
 function: checkIndexes(data, o, NoteKeys)
   parse and validate the indexTable. compares with NoteKeys array constructed from noteTable.
   argument o (offset) is used to specify backup data offset location in single recursive call.
@@ -523,9 +539,10 @@ const parse = function(data) {
         data = data.subarray(0x1040);
     }
     if(!data || checkHeader(data) === false) {
-        // cancel if data doesn't exist or header is invalid.
-        // in the future perhaps we can ignore header and check for any valid data anyway.
-        return false;
+        // If ID checksums fully fail, check if we can repair.
+		if(checkIndexesFast(data)) {
+			console.error(`Invalid header, but IndexTable may be OK, attempting repair...`);
+		} else return false;
     }
     const NoteKeys = [], // shared NoteKeys array. Produced by readNotes, used in checkIndexes.
           NoteTable = readNotes(data, NoteKeys);
