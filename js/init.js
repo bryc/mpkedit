@@ -8,8 +8,8 @@ function: readFiles(evt, callee, types, maxlen, multi)
   
   `maxlen` defines the maximum allowed file size. if undefined, there is no limit.
 */
-// Relevant MPK sizes: RawMPK = 32768, DexDrive = 36928, MaxMPKCmt = 98144
-const readFiles = function(evt, callee = initParse, types, maxlen = 98144, multi = true) {
+// Relevant MPK sizes: RawMPK = 32768, DexDrive = 36928, MaxMPKCmt = 98144, M64PNX = 296960
+const readFiles = function(evt, callee = initParse, types, maxlen = 296960, multi = true) {
 	if(typeof callee == "undefined") throw new Error("No callee function assigned.");
     const readFile = function(file) {
 		if(types?.length && !types.includes(file.name.split('.').pop().toLowerCase()))

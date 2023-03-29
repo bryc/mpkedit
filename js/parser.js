@@ -261,7 +261,7 @@ const isNote = function(data) {
                 for(let i = 0; i < nTbl[foundKey].indexes.length; i++) {
                     for(let j = 0; j < 0x100; j++) State.data[0x100 * nTbl[foundKey].indexes[i] + j] = data[0x100 * i + j];
                 }
-                console.warn("Existing data was overwritten. Say your prayers. Ignore other console warnings.");
+                console.warn("Existing data was overwritten. Say your prayers.");
                 Parser(State.data);
                 document.querySelectorAll("tr")[foundKey].querySelector("td.name").innerHTML += "<b style='cursor:pointer;color:crimson' onclick='this.parentNode.removeChild(this)'>Notice: The data for this note has been overwritten.<br>Click to dismiss.</div>";
             }
@@ -315,7 +315,7 @@ const checkHeader = function(data) {
     for(let i = 0, bl0x = []; i < 4; i++) {
         checkIdBlock(data, loc[i], state);
         if(state[loc[i]].valid === true && firstValid === null) firstValid = i; // get only first valid
-        if(state[loc[i]].dexdriveFix) console.log("Block "+(i+1), "\tDexDrive checksum repaired");
+        if(state[loc[i]].dexdriveFix) console.log(`Header ID ${(i+1)}: DexDrive checksum repaired`);
         bl0x.push(state[loc[i]].valid); if(i === 3) console.log("ID Blocks:", bl0x);
     }
     // Check if FIRST id block is valid
@@ -758,34 +758,28 @@ function: parseMPKMeta(result)
 const parseMPKMeta = function(result) {
     const MPKMeta = result.data.subarray(32768),
           hasCmts = arrstr(MPKMeta, 0, 7) === "MPKMeta",
-          cmtCount = MPKMeta[15]; // header: stored number of comments
-    if(0 === cmtCount || false === hasCmts) {
-        console.error("MPKMeta block not found. MPK file size is wrong or MPKMeta block is corrupt.");
-        return false;
-    }
-    // Checksum calculation
-    const chk1 = MPKMeta[8]<<24 | MPKMeta[9]<<16 | MPKMeta[10]<<8 | MPKMeta[11];
-    MPKMeta[8] = 0, MPKMeta[9] = 0, MPKMeta[10] = 0, MPKMeta[11] = 0;
-    const chk2 = hash128(MPKMeta)[0];
-    if(chk2 !== chk1>>>0) {
-        console.error("Hash check failed. MPKMeta block is invalid.");
+          cmtCount = MPKMeta[15]; // header: stored number of entries
+    if(hasCmts === false || cmtCount > 16 || cmtCount === 0) {
+        console.error("MPKMeta block not found. Either a bug in the code, or a corrupt MPKMeta block.");
         return false;
     }
 
-    console.log(`MPKMeta block found, attempting to parse ${cmtCount} comment(s)...`);
-    for(let i = 0, foundCount = 0, ptr = 16; i < cmtCount; i++) {
+	// Parse entries
+    console.log(`MPKMeta block found, attempting to parse ${cmtCount} entrie(s)...`);
+	var results = {}, ptr = 16;
+    for(let i = 0; i < cmtCount; i++) {
         const magic = MPKMeta[ptr+0]^0xA5, magic2 = MPKMeta[ptr+1]^MPKMeta[ptr+2]^MPKMeta[ptr+3]^MPKMeta[ptr+4];
         if(magic !== magic2) {
             console.error(`MPKMeta Error: Can't find expected magic (${magic} !== ${magic2}). Aborting load.`);
             break;
         }
         const cmtLen = (MPKMeta[ptr+5]<<8) + MPKMeta[ptr+6];
-        if(0 === cmtLen || cmtLen > 4080) {
+        if(cmtLen > 4080 || cmtLen === 0) {
             console.error(`MPKMeta Error: Invalid comment length (${cmtLen}). Aborting load.`);
             break;
         }
 
-        // Check if comment's specified startIndex/entryPoint exists, and if the CRC-8 is valid.
+        // Check if entry's specified index and gameCode exists.
         let noteOfs = false;
         for(let j = 0; j < 16; j++) {
             const a = 0x300 + j*32,
@@ -803,13 +797,28 @@ const parseMPKMeta = function(result) {
             break;
         }
 
-        console.log(`Comment ${i} points to save note ${noteOfs}`);
         // Insert comment data into NoteTable
         const cmtStr = new TextDecoder("utf-8").decode(MPKMeta.subarray(ptr+7, ptr+7 + cmtLen));
-        result.NoteTable[noteOfs].comment = cmtStr;
-        foundCount++;
+        //result.NoteTable[noteOfs].comment = cmtStr;
+		console.log(`MPKMeta: Comment ${i} points to save note ${noteOfs}`);
+		results[noteOfs] = {comment: cmtStr};
         ptr += 7 + cmtLen;
     }
+	
+    // Checksum calculation - also verifies length
+    const chk1 = MPKMeta[8]<<24 | MPKMeta[9]<<16 | MPKMeta[10]<<8 | MPKMeta[11];
+    MPKMeta[8] = 0, MPKMeta[9] = 0, MPKMeta[10] = 0, MPKMeta[11] = 0;
+    const chk2 = hash128(MPKMeta.slice(0,ptr))[0];
+    if(chk2 !== chk1>>>0) {
+        console.error("Hash check failed. MPKMeta block may be invalid. Investigate.");
+        return false;
+    }
+	
+	console.log(`MPKMeta: All checks passed, inserting data into state.`)
+	// All checks passed, ready to insert data
+	for(let noteOfs in results) {
+		result.NoteTable[noteOfs].comment = results[noteOfs].comment;
+	}
 };
 
 /* -----------------------------------------------
@@ -824,9 +833,12 @@ const Parser = function(data, filename, fileDate, origsize) {
     if(State.data && isNote(data)) { // check if data opened is a note file to be imported
         insertNote(data, fileDate);
     } else {
-		// Detect MupenNX .SRM file. 34816 is for MPKEdit output, 2048+32768
-		if(fileDate && origsize) mupenNX = false; // quick hack to bypass reparsing
-		if(origsize == 296960 || origsize == 34816) data = data.slice(2048), mupenNX = true;
+		// If .rawnote, skip
+		if(filename&&filename.split('.').pop().toLowerCase()==="rawnote")
+			return false;
+		// Detect MupenNX .SRM file.
+		if(filename&&filename.split('.').pop().toLowerCase()==="srm")
+			data = data.slice(2048), mupenNX = true;
         
         const result = parse(data); // attempt to parse data as MPK.
         if(!result) {
@@ -834,7 +846,8 @@ const Parser = function(data, filename, fileDate, origsize) {
             return false;
         }
         // parse and load any MPKMeta data
-        if(result.data.length > 32784) parseMPKMeta(result); // gimme those comments 
+        if(result.data.length > 32784 && arrstr(result.data, 32768, 32775) === "MPKMeta")
+			parseMPKMeta(result); // gimme those comments 
 
         // If result.data is NOT 32KB, resize it to 32KB. Could this interfere with the MPKMeta block?
         State.data = result.data !== 32768 ? resize(result.data) : result.data;
