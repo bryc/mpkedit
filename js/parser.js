@@ -298,6 +298,10 @@ const checkIdBlock = function(data, o, state) {
        data[o + 31] ^= 0xC;
        state[o].dexdriveFix = true;
     }
+	state[o].repaired = data[o]+data[o+1]+data[o+2]+data[o+3] == 1020;
+	state[o].device = data[o+24]<<8 | data[o+25];
+	state[o].banks = data[o+26];
+	state[o].ver = data[o+27];
 
     state[o].valid = (sumX === sumA && sumY === sumB);
     return (sumX === sumA && sumY === sumB); // this return statement is not used.
@@ -306,6 +310,7 @@ const checkIdBlock = function(data, o, state) {
 /* -----------------------------------------------
 function: checkHeader(data)
   checks all four checksum sections in header.
+  if this fails, perform a sanity check on the filesystem.
   TODO: As a final step, gently repair any corrupt backups individually.
 */
 const checkHeader = function(data) {
@@ -326,8 +331,38 @@ const checkHeader = function(data) {
         for(let i = 0; i < 0x20; i++)
             data[loc[0] + i] = data[loc[firstValid] + i];
         return true;
-    }
-    return false;
+    } else { // All checksums failed. Verify IndexTable integrity
+		// Check for common values of the 8 'reserved' bytes.
+	    let u1 = (data[0x102]<<24 | data[0x103]<<16 | data[0x104]<<8 | data[0x105]) >>> 0,
+		    u2 = (data[0x106]<<24 | data[0x107]<<16 | data[0x108]<<8 | data[0x109]) >>> 0;
+		if ( (0x00000000 !== u1 || 0x00000000 !== u2) &&
+		     (0x0013803F !== u1 || 0x75400000 !== u2) &&
+			 (0x00030003 !== u1 || 0x00030003 !== u2) ) {
+			console.error(`Filesystem marker not found.`);
+			return false;
+		}
+		
+		console.error(`No valid ID block found. Checking filesystem...`);
+		let sum = 0, x;
+		for(let i = 0x10A, a, b, D = {}; i < 0x200; i += 2, sum += a+b) {
+			a = data[i], b = data[i + 1];
+			if(a !== data[0x100 + i] || b !== data[0x101 + i]) return false;
+			if(0 === a && (5 <= b && 127 >= b || 1 === b)) {
+				if(b !== 1 && D[b]) return false;
+				D[b] = 1;
+			} else if(a !== 0 || b !== 3) return false;
+		}
+
+		sum &= 0xFF;
+		if(data[0x101] !== sum) { // enforce checksum
+			console.error(`Primary IndexTable checksum invalid. Checking backup...`);
+			x = data[0x101] ^ sum;
+		    // Ensures at least 7 bits are correct, or if backup is valid.
+			if(!!(x&x-1) && data[0x201] !== sum) return false;
+		} 
+		console.warn(`Filesystem is valid. Proceeding.`);
+		return true;
+	}
 };
 
 /* -----------------------------------------------
@@ -424,22 +459,6 @@ const readNotes = function(data, NoteKeys) {
     tmpComments = [], tmpStamp = []; // We must clear, otherwise garbage data will persist.
     return NoteTable;
 };
-
-/* -----------------------------------------------
-function: checkIndexesFast(data)
-  quickly check indexes in both primary and backup.
-*/
-const checkIndexesFast = function(data) {
-    for(let i = 0x10A, a, b, D = {}; i < 0x200; i += 2) {
-        a = data[i], b = data[i + 1];
-		if(a !== data[0x100 + i] || b !== data[0x101 + i]) return false;
-        if(0 === a && (5 <= b && 127 >= b || 1 === b)) {
-            if(b !== 1 && D[b]) return false;
-			D[b] = 1;
-        } else if(a !== 0 || b !== 3) return false;
-    }
-	return true;
-}
 
 /* -----------------------------------------------
 function: checkIndexes(data, o, NoteKeys)
@@ -539,10 +558,8 @@ const parse = function(data) {
         data = data.subarray(0x1040);
     }
     if(!data || checkHeader(data) === false) {
-        // If ID checksums fully fail, check if we can repair.
-		if(checkIndexesFast(data)) {
-			console.error(`Invalid header, but IndexTable may be OK, attempting repair...`);
-		} else return false;
+        // Stop here if no data or header/sanity check fails
+        return false;
     }
     const NoteKeys = [], // shared NoteKeys array. Produced by readNotes, used in checkIndexes.
           NoteTable = readNotes(data, NoteKeys);
