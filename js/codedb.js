@@ -64,6 +64,8 @@ S = Spain (Spanish only)
 U = Australia (English-only PAL games)
 X = Europe (Alt. Languages 1)
 Y = Europe (Alt. Languages 2)
+G = Lodgenet/Gateway 64 (NTSC, mentioned in N64 SDKs)
+L = Lodgenet/Gateway 64 (PAL, mentioned in N64 SDKs)
 
 Verified GC/Wii codes are:
 K = South Korea (GC/Wii only, Comboy 64 uses E or J codes)
@@ -78,8 +80,6 @@ L = Wii VC Import (JAP>PAL)
 Z = Europe (Alt. 3)
 
 Unverified codes:
-G = Lodgenet/Gateway 64 (NTSC, mentioned in N64 SDKs)
-L = Lodgenet/Gateway 64 (PAL, mentioned in N64 SDKs)
 C = China (No reliable source, not even used officially in Wii or iQue)
 W = Scandinavia (No reliable source, probably wrong)
 N = Canada (No reliable source, probably wrong)
@@ -92,10 +92,12 @@ MPKEdit.App.region = {
     "D" : "Germany",
     "E" : "North America",
     "F" : "France",
+    "G" : "Gateway 64 (NTSC)",
     "H" : "Netherlands", // Unused. GC/Wii only.
     "I" : "Italy",
     "J" : "Japan",
     "K" : "South Korea", // Unused. GC/Wii only.
+    "L" : "Gateway 64 (PAL)",
     "P" : "Europe",
     "R" : "Russia", // Unused. Wii only.
     "S" : "Spain",
