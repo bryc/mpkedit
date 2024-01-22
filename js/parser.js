@@ -366,15 +366,13 @@ const checkHeader = function(data) {
 };
 
 /* -----------------------------------------------
-function: readNotes(data, NoteKeys)
+function: readNotes(data, o, NoteKeys, NoteTable)
   Parses the Note Table.
 */
-const readNotes = function(data, NoteKeys) {
-    const NoteTable = {};
-
+const readNotes = function(data, o, NoteKeys, NoteTable) {
     for(let i = 0x300; i < 0x500; i += 32) { // iterate over NoteTable
         const p = data[i + 7],
-              p2 = data[0x100 + p*2+1],
+              p2 = data[o + p*2+1],
               // First check if firstIndex range is valid.
               validIndex = data[i + 6] === 0 && p >= 5 && p <= 127,
               // For stricter parsing, these conditions can be used as well.
@@ -461,11 +459,11 @@ const readNotes = function(data, NoteKeys) {
 };
 
 /* -----------------------------------------------
-function: checkIndexes(data, o, NoteKeys)
+function: checkIndexes(data, o, NoteKeys, NoteTable)
   parse and validate the indexTable. compares with NoteKeys array constructed from noteTable.
   argument o (offset) is used to specify backup data offset location in single recursive call.
 */
-const checkIndexes = function(data, o, NoteKeys) {
+const checkIndexes = function(data, o, NoteKeys, NoteTable) {
     try {
         let p, p2, indexEnds = 0;
         const found = {parsed: [], keys: [], values: [], dupes: {}};
@@ -495,7 +493,7 @@ const checkIndexes = function(data, o, NoteKeys) {
             throw `Key index totals do not match (${nKeysN}, ${nKeysP}, ${indexEnds})`;
         }
         // Check that keyIndexes and NoteKeys report the same values
-        for (let i = 0; i < nKeysN; i++) {
+        for (let i = 0; i < nKeysP; i++) {
             if (NoteKeys.indexOf(keyIndexes[i]) === -1) {
                 throw `A key index doesn't exist in the note table (${keyIndexes[i]})`;
             }
@@ -539,8 +537,8 @@ const checkIndexes = function(data, o, NoteKeys) {
     catch(error) { // If main IndexTable is invalid, check backup:
         console.error(error, curfile);
         if(o !== 0x200) { // allows a single recursive call to checkIndexes to check mirror backup.
-            console.log("WOOPS... checking INODE backup:", curfile);
-            return checkIndexes(data, 0x200, NoteKeys);
+            console.warn(`Error in Primary IndexTable. Now checking backup... \nFile: ${curfile}`);
+            return checkIndexes(data, 0x200, NoteKeys, NoteTable);
         }
     }
 };
@@ -562,9 +560,10 @@ const parse = function(data) {
         return false;
     }
     const NoteKeys = [], // shared NoteKeys array. Produced by readNotes, used in checkIndexes.
-          NoteTable = readNotes(data, NoteKeys);
+          NoteTable = {};
 
-    const output = checkIndexes(data, 0x100, NoteKeys);
+    readNotes(data, 0x100, NoteKeys, NoteTable);
+	const output = checkIndexes(data, 0x100, NoteKeys, NoteTable);
     if(output) {
         let usedPages = 0, usedNotes = 0;
         for(let i = 0; i < Object.keys(NoteTable).length; i++) { // iterate over notes in NoteTable.
