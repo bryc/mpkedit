@@ -464,7 +464,7 @@ function: checkIndexes(data, o, NoteKeys, NoteTable)
 */
 const checkIndexes = function(data, o, NoteKeys, NoteTable) {
     try {
-        let p, p2, indexEnds = 0;
+        let p, p2, indexEnds = 0, repairAttempt = false;
         const found = {parsed: [], keys: [], values: [], dupes: {}};
 
         // Iterate over the IndexTable, checking each index.
@@ -485,17 +485,13 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
             }
         }
         // filter out the key indexes (start indexes) which should match the NoteTable.
-        const keyIndexes = found.keys.filter(x => !found.values.includes(x));
-        // Count note indexes: Check that NoteKeys/indexEnds/keyIndexes counts are the same.
-        const nKeysN = NoteKeys.length, nKeysP = keyIndexes.length;
-        if (nKeysN !== nKeysP || nKeysN !== indexEnds) {
-            throw `Key index totals do not match (${nKeysN}, ${nKeysP}, ${indexEnds})`;
-        }
+        const keyIndexes = found.keys.filter(x => !found.values.includes(x)),
+              nKeysN = NoteKeys.length, nKeysP = keyIndexes.length,
+              invalidKeys = [], validKeys = [];
         // Check that keyIndexes and NoteKeys report the same values
-        let invalidKeys = [], validKeys = [], repairAttempt = false;
         for (let i = 0; i < nKeysP; i++) {
             if (NoteKeys.indexOf(keyIndexes[i]) === -1) {
-                throw `A key index doesn't exist in the note table (${keyIndexes[i]})`;
+                console.error(`Found a key index that isn't in NoteTable (${keyIndexes[i]}).`);
                 invalidKeys.push(keyIndexes[i]);
             } else {
                 validKeys.push(keyIndexes[i]);
@@ -516,6 +512,45 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
                 indexes.push(p);
                 p = data[p*2 + o + 1];
             }
+            // When checking backup; free any orphaned indexes.
+            if(o === 0x200 && invalidKeys.indexOf(keyIndexes[i]) !== -1) {
+                for(let i = 0; i < indexes.length; i++) {
+                    console.warn(`Value ${data[o + indexes[i]*2+1]} at index ${indexes[i]} is being erased in IndexTable backup.`);
+                    data[o + indexes[i] * 2 + 1] = 0x03;
+                }
+                repairAttempt = true;
+            }
+            // When checking backup; erase a note which has no end marker.
+            if(o === 0x200 && !foundEnd) {
+                for(let j = 0x300; j < 0x500; j += 32) { // iterate NoteTable
+                    if(data[j + 7] === keyIndexes[i]) {
+                        console.warn(`Note Key ${data[j + 7]} is being erased in NoteTable.`);
+                        data[j + 0] = 0x00; // gameCode
+                        data[j + 1] = 0x00;
+                        data[j + 2] = 0x00;
+                        data[j + 3] = 0x00;
+                        data[j + 4] = 0x00; // pubCode
+                        data[j + 5] = 0x00;
+                        data[j + 6] = 0x00; // startIndex
+                        data[j + 7] = 0x00;
+                    }
+                }
+                for(let i = 0; i < indexes.length; i++) {
+                    console.warn(`Value ${data[o + indexes[i]*2+1]} at index ${indexes[i]} is being erased in IndexTable backup.`);
+                    data[o + indexes[i] * 2 + 1] = 0x03;
+                }
+                repairAttempt = true;
+            }
+        }
+        if(repairAttempt) {
+            NoteKeys.length = 0; // clear NoteKeys
+            Object.keys(NoteTable).forEach(key => {delete NoteTable[key];});
+            readNotes(data, o, NoteKeys, NoteTable); // must rebuild NoteTable
+            return checkIndexes(data, o, NoteKeys, NoteTable); // rerun checkIndexes
+        }
+        // Count note indexes: Check that NoteKeys/indexEnds/keyIndexes counts are the same.
+        if (nKeysN !== nKeysP || nKeysN !== indexEnds) {
+            throw `Key index totals do not match (${nKeysN}, ${nKeysP}, ${indexEnds})`;
         }
         // Check that parsed indexes and found keys counts are the same.
         // This is to ensure every key found is used in a sequence.
