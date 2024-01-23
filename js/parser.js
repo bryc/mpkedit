@@ -493,18 +493,23 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
             throw `Key index totals do not match (${nKeysN}, ${nKeysP}, ${indexEnds})`;
         }
         // Check that keyIndexes and NoteKeys report the same values
+		let invalidKeys = [], validKeys = [], repairAttempt = false;
         for (let i = 0; i < nKeysP; i++) {
             if (NoteKeys.indexOf(keyIndexes[i]) === -1) {
                 throw `A key index doesn't exist in the note table (${keyIndexes[i]})`;
-            }
+				invalidKeys.push(keyIndexes[i]);
+            } else {
+				validKeys.push(keyIndexes[i]);
+			}
         }
         // Parse the Key Indexes to derive index sequence.
         const noteIndexes = {};
-        for(let i = 0; i < nKeysP; i++) {
+        for(let i = 0, foundEnd; i < nKeysP; i++) {
             const indexes = [];
-            p = keyIndexes[i];
+            p = keyIndexes[i], foundEnd = false;
             while(p === 1 || p >= 5 && p <= 127) {
                 if(p === 1) {
+					foundEnd = true;
                     noteIndexes[keyIndexes[i]] = indexes;
                     found.parsed.push(...indexes); // push entire array to found.parsed
                     break;
