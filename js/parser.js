@@ -226,7 +226,7 @@ const eraseNote = function(id) {
         tmpData[offset] = 0x03;
     }
     // Erase full NoteEntry in NoteTable.
-	// TODO: should we do a minimal erase like libultra? is there value in keeping junk data? probably.
+    // TODO: should we do a minimal erase like libultra? is there value in keeping junk data? probably.
     for(let i = 0; i < 32; i++) {
         offset = 0x300 + (id * 32) + i;
         tmpData[offset] = 0x00;
@@ -298,11 +298,10 @@ const checkIdBlock = function(data, o, state) {
        data[o + 31] ^= 0xC;
        state[o].dexdriveFix = true;
     }
-	state[o].repaired = data[o]+data[o+1]+data[o+2]+data[o+3] == 1020;
-	state[o].device = data[o+24]<<8 | data[o+25];
-	state[o].banks = data[o+26];
-	state[o].ver = data[o+27];
-
+    state[o].repaired = data[o]+data[o+1]+data[o+2]+data[o+3] == 1020;
+    state[o].device = data[o+24]<<8 | data[o+25];
+    state[o].banks = data[o+26];
+    state[o].ver = data[o+27];
     state[o].valid = (sumX === sumA && sumY === sumB);
     return (sumX === sumA && sumY === sumB); // this return statement is not used.
 };
@@ -332,37 +331,37 @@ const checkHeader = function(data) {
             data[loc[0] + i] = data[loc[firstValid] + i];
         return true;
     } else { // All checksums failed. Verify IndexTable integrity
-		// Check for common values of the 8 'reserved' bytes.
-	    let u1 = (data[0x102]<<24 | data[0x103]<<16 | data[0x104]<<8 | data[0x105]) >>> 0,
-		    u2 = (data[0x106]<<24 | data[0x107]<<16 | data[0x108]<<8 | data[0x109]) >>> 0;
-		if ( (0x00000000 !== u1 || 0x00000000 !== u2) &&
-		     (0x0013803F !== u1 || 0x75400000 !== u2) &&
-			 (0x00030003 !== u1 || 0x00030003 !== u2) ) {
-			console.error(`Filesystem marker not found.`);
-			return false;
-		}
-		
-		console.error(`No valid ID block found. Checking filesystem...`);
-		let sum = 0, x;
-		for(let i = 0x10A, a, b, D = {}; i < 0x200; i += 2, sum += a+b) {
-			a = data[i], b = data[i + 1];
-			if(a !== data[0x100 + i] || b !== data[0x101 + i]) return false;
-			if(0 === a && (5 <= b && 127 >= b || 1 === b)) {
-				if(b !== 1 && D[b]) return false;
-				D[b] = 1;
-			} else if(a !== 0 || b !== 3) return false;
-		}
+        // Check for common values of the 8 'reserved' bytes.
+        let u1 = (data[0x102]<<24 | data[0x103]<<16 | data[0x104]<<8 | data[0x105]) >>> 0,
+            u2 = (data[0x106]<<24 | data[0x107]<<16 | data[0x108]<<8 | data[0x109]) >>> 0;
+        if ( (0x00000000 !== u1 || 0x00000000 !== u2) &&
+             (0x0013803F !== u1 || 0x75400000 !== u2) &&
+             (0x00030003 !== u1 || 0x00030003 !== u2) ) {
+            console.error(`Filesystem marker not found.`);
+            return false;
+        }
+        
+        console.error(`No valid ID block found. Checking filesystem...`);
+        let sum = 0, x;
+        for(let i = 0x10A, a, b, D = {}; i < 0x200; i += 2, sum += a+b) {
+            a = data[i], b = data[i + 1];
+            if(a !== data[0x100 + i] || b !== data[0x101 + i]) return false;
+            if(0 === a && (5 <= b && 127 >= b || 1 === b)) {
+                if(b !== 1 && D[b]) return false;
+                D[b] = 1;
+            } else if(a !== 0 || b !== 3) return false;
+        }
 
-		sum &= 0xFF;
-		if(data[0x101] !== sum) { // enforce checksum
-			console.error(`Primary IndexTable checksum invalid. Checking backup...`);
-			x = data[0x101] ^ sum;
-		    // Ensures at least 7 bits are correct, or if backup is valid.
-			if(!!(x&x-1) && data[0x201] !== sum) return false;
-		} 
-		console.warn(`Filesystem is valid. Proceeding.`);
-		return true;
-	}
+        sum &= 0xFF;
+        if(data[0x101] !== sum) { // enforce checksum
+            console.error(`Primary IndexTable checksum invalid. Checking backup...`);
+            x = data[0x101] ^ sum;
+            // Ensures at least 7 bits are correct, or if backup is valid.
+            if(!!(x&x-1) && data[0x201] !== sum) return false;
+        } 
+        console.warn(`Filesystem is valid. Proceeding.`);
+        return true;
+    }
 };
 
 /* -----------------------------------------------
@@ -493,14 +492,14 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
             throw `Key index totals do not match (${nKeysN}, ${nKeysP}, ${indexEnds})`;
         }
         // Check that keyIndexes and NoteKeys report the same values
-		let invalidKeys = [], validKeys = [], repairAttempt = false;
+        let invalidKeys = [], validKeys = [], repairAttempt = false;
         for (let i = 0; i < nKeysP; i++) {
             if (NoteKeys.indexOf(keyIndexes[i]) === -1) {
                 throw `A key index doesn't exist in the note table (${keyIndexes[i]})`;
-				invalidKeys.push(keyIndexes[i]);
+                invalidKeys.push(keyIndexes[i]);
             } else {
-				validKeys.push(keyIndexes[i]);
-			}
+                validKeys.push(keyIndexes[i]);
+            }
         }
         // Parse the Key Indexes to derive index sequence.
         const noteIndexes = {};
@@ -509,7 +508,7 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
             p = keyIndexes[i], foundEnd = false;
             while(p === 1 || p >= 5 && p <= 127) {
                 if(p === 1) {
-					foundEnd = true;
+                    foundEnd = true;
                     noteIndexes[keyIndexes[i]] = indexes;
                     found.parsed.push(...indexes); // push entire array to found.parsed
                     break;
@@ -568,7 +567,7 @@ const parse = function(data) {
           NoteTable = {};
 
     readNotes(data, 0x100, NoteKeys, NoteTable);
-	const output = checkIndexes(data, 0x100, NoteKeys, NoteTable);
+    const output = checkIndexes(data, 0x100, NoteKeys, NoteTable);
     if(output) {
         let usedPages = 0, usedNotes = 0;
         for(let i = 0; i < Object.keys(NoteTable).length; i++) { // iterate over notes in NoteTable.
@@ -634,7 +633,7 @@ const saveMPK = function(evt) {
     }
     // If comments found, update header and append MPKMeta block to data.
     if(hasCmts) {
-		
+        
         MPKMeta[15] = numCmts; // Store total number of comments
         const totalHash = hash128(MPKMeta)[0];
         MPKMeta[8]  = totalHash >>> 24 & 0xFF;
@@ -802,9 +801,9 @@ const parseMPKMeta = function(result) {
         return false;
     }
 
-	// Parse entries
+    // Parse entries
     console.log(`MPKMeta block found, attempting to parse ${cmtCount} entrie(s)...`);
-	var results = {}, ptr = 16;
+    var results = {}, ptr = 16;
     for(let i = 0; i < cmtCount; i++) {
         const magic = MPKMeta[ptr+0]^0xA5, magic2 = MPKMeta[ptr+1]^MPKMeta[ptr+2]^MPKMeta[ptr+3]^MPKMeta[ptr+4];
         if(magic !== magic2) {
@@ -838,11 +837,11 @@ const parseMPKMeta = function(result) {
         // Insert comment data into NoteTable
         const cmtStr = new TextDecoder("utf-8").decode(MPKMeta.subarray(ptr+7, ptr+7 + cmtLen));
         //result.NoteTable[noteOfs].comment = cmtStr;
-		console.log(`MPKMeta: Comment ${i} points to save note ${noteOfs}`);
-		results[noteOfs] = {comment: cmtStr};
+        console.log(`MPKMeta: Comment ${i} points to save note ${noteOfs}`);
+        results[noteOfs] = {comment: cmtStr};
         ptr += 7 + cmtLen;
     }
-	
+    
     // Checksum calculation - also verifies length
     const chk1 = MPKMeta[8]<<24 | MPKMeta[9]<<16 | MPKMeta[10]<<8 | MPKMeta[11];
     MPKMeta[8] = 0, MPKMeta[9] = 0, MPKMeta[10] = 0, MPKMeta[11] = 0;
@@ -851,12 +850,12 @@ const parseMPKMeta = function(result) {
         console.error("Hash check failed. MPKMeta block may be invalid. Investigate.");
         return false;
     }
-	
-	console.log(`MPKMeta: All checks passed, inserting data into state.`)
-	// All checks passed, ready to insert data
-	for(let noteOfs in results) {
-		result.NoteTable[noteOfs].comment = results[noteOfs].comment;
-	}
+    
+    console.log(`MPKMeta: All checks passed, inserting data into state.`)
+    // All checks passed, ready to insert data
+    for(let noteOfs in results) {
+        result.NoteTable[noteOfs].comment = results[noteOfs].comment;
+    }
 };
 
 /* -----------------------------------------------
@@ -871,12 +870,12 @@ const Parser = function(data, filename, fileDate, origsize) {
     if(State.data && isNote(data)) { // check if data opened is a note file to be imported
         insertNote(data, fileDate);
     } else {
-		// If .rawnote, skip
-		if(filename&&filename.split('.').pop().toLowerCase()==="rawnote")
-			return false;
-		// Detect MupenNX .SRM file.
-		if(filename&&filename.split('.').pop().toLowerCase()==="srm")
-			data = data.slice(2048), mupenNX = true;
+        // If .rawnote, skip
+        if(filename&&filename.split('.').pop().toLowerCase()==="rawnote")
+            return false;
+        // Detect MupenNX .SRM file.
+        if(filename&&filename.split('.').pop().toLowerCase()==="srm")
+            data = data.slice(2048), mupenNX = true;
         
         const result = parse(data); // attempt to parse data as MPK.
         if(!result) {
@@ -885,7 +884,7 @@ const Parser = function(data, filename, fileDate, origsize) {
         }
         // parse and load any MPKMeta data
         if(result.data.length > 32784 && arrstr(result.data, 32768, 32775) === "MPKMeta")
-			parseMPKMeta(result); // gimme those comments 
+            parseMPKMeta(result); // gimme those comments 
 
         // If result.data is NOT 32KB, resize it to 32KB. Could this interfere with the MPKMeta block?
         State.data = result.data !== 32768 ? resize(result.data) : result.data;
@@ -894,7 +893,7 @@ const Parser = function(data, filename, fileDate, origsize) {
         State.usedPages = result.usedPages;
         State.filename = filename || State.filename;
         State.fileDate = fileDate || State.fileDate;
-		
+        
         App.updateUI();
     }
 };
