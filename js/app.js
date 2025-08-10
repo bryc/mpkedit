@@ -56,7 +56,7 @@ const pixicon = function(t, r) {
             for(let i = 0; i < arr.length; i++)
                 arr2[i] = arr[i-2*(i%w)+w-1];
         }
-        if(mode === 2 || mode === 4) { // rotate 90° CW
+        if(mode === 2 || mode === 4) { // rotate 90Â° CW
             for(let i = 0; i < arr.length; i++)
                 arr2[i] = arr[0|(h-1)*w-((i%h)*w)+i/h];
         }
@@ -191,16 +191,17 @@ let start = function(evt) {
 }
 let end = function() {
     if(!ro_origin || !ro_dest) {return false;}
-    let p0 = 0x300 + 32 * ro_dest.id;
-    let p1 = 0x300 + 32 * ro_origin.id;
+    let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
+    let p0 = (0x300 + nAD) + 32 * ro_dest.id;
+    let p1 = (0x300 + nAD) + 32 * ro_origin.id;
 
     if(ro_dest.id !== ro_origin.id) {
-		// Swap NoteTable entries
+        // Swap NoteTable entries
         let tmp = new Uint8Array(State.data);
         for(let j = 0; j < 32; j++) [tmp[j+p0], tmp[j+p1]] = [tmp[j+p1], tmp[j+p0]]; 
-		// Swap Note metadata
-		let nTabl = State.NoteTable, o = ro_origin.id, d = ro_dest.id;
-		[ nTabl[o], nTabl[d] ] = [ nTabl[d], nTabl[o] ];
+        // Swap Note metadata
+        let nTabl = State.NoteTable, o = ro_origin.id, d = ro_dest.id;
+        [ nTabl[o], nTabl[d] ] = [ nTabl[d], nTabl[o] ];
         MPKEdit.Parser(tmp);
     }
     ro_origin.removeAttribute("style");
@@ -353,8 +354,8 @@ const buildModal = function(e) {
                 y = State.NoteTable[i].indexes;
                 for(let j = 0; j < y.length; j++) {
                     page = y[j];
-                    x2[page].style.borderColor = col[i];
-                    x2[page].style.background = col[i] + "C0";
+                    if(x2[page]) x2[page].style.borderColor = col[i];
+                    if(x2[page]) x2[page].style.background = col[i] + "C0";
                 }
             }
         }
@@ -368,8 +369,9 @@ const buildModal = function(e) {
     // ################ Modal: Note Info ################
     if(e.target.className === "fa fa-info-circle") {
         // Get ID of the selected Note and its memory address.
+        let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
         const i = e.target.parentElement.parentElement.id,
-              i2 = 0x300 + (32*i);
+              i2 = (0x300 + nAD) + (32*i);
 
         // Print raw bytes of NoteEntry
         let noteData = "<code>";
@@ -484,11 +486,12 @@ function: App.updateUI()
 const updateUI = function() {
     document.getElementById("filename").innerHTML = State.filename;
     // Stats bar dynamic CSS
-    let w1 = 100 * (State.usedPages / 123), w2 = 100 * (State.usedNotes / 16);
+    let freePages = State.banks * 125 - 2;
+    let w1 = 100 * (State.usedPages / freePages), w2 = 100 * (State.usedNotes / 16);
     w1 = `width:${w1}%;${w1===100?"background:#547F96;":""}${w1>0&&w1<100?"border-right:1px solid rgba(0,0,0,0.15)":""}`;
     w2 = `width:${w2}%;${w2===100?"background:#547F96;":""}${w2>0&&w2<100?"border-right:1px solid rgba(0,0,0,0.15)":""}`;
     const status =
-    `<span class=statBox>${123-State.usedPages}/123 pages free<div class=outerBar><div style='${w1}' class=innerBar></div></div></span>` +
+    `<span class=statBox>${freePages-State.usedPages}/${freePages} pages free<div class=outerBar><div style='${w1}' class=innerBar></div></div></span>` +
     `<span class=statBox>${16 -State.usedNotes}/16  notes free<div class=outerBar><div style='${w2}' class=innerBar></div></div></span>`;
     document.getElementById("stats").innerHTML = status;
 
