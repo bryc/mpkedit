@@ -8,26 +8,26 @@ function: readFiles(evt, callee, types, maxlen, multi)
   
   `maxlen` defines the maximum allowed file size. if undefined, there is no limit.
 */
-// Relevant MPK sizes: RawMPK = 32768, DexDrive = 36928, MaxMPKCmt = 98144, M64PNX = 296960
-const readFiles = function(evt, callee = initParse, types, maxlen = 296960, multi = true) {
-	if(typeof callee == "undefined") throw new Error("No callee function assigned.");
+// Relevant MPK sizes: RawMPK = 32768, DexDrive = 36928, MaxMPKCmt = 98144, M64PNX = 296960, MultiMax = 2097152
+const readFiles = function(evt, callee = initParse, types, maxlen = 2097152, multi = true) {
+    if(typeof callee == "undefined") throw new Error("No callee function assigned.");
     const readFile = function(file) {
-		if(types?.length && !types.includes(file.name.split('.').pop().toLowerCase()))
-			return console.warn(`Skipped input file. File extension not allowed (${file.name})`);
-		if(file.size > maxlen)
-			return console.warn(`Skipped input file. Size (${file.size}) is too large (${file.name})`);
+        if(types?.length && !types.includes(file.name.split('.').pop().toLowerCase()))
+            return console.warn(`Skipped input file. File extension not allowed (${file.name})`);
+        if(file.size > maxlen)
+            return console.warn(`Skipped input file. Size (${file.size}) is too large (${file.name})`);
         const reader = new FileReader();
-		reader.onload = e => callee(e, file);
+        reader.onload = e => callee(e, file);
         reader.readAsArrayBuffer(file.slice(0, maxlen)); // if maxlen is undefined, no size limit.
     };
     const files = evt.target.files || evt.dataTransfer.files; // support <input type=file> and drag/drop.
-	if(!multi && files.length > 1) return console.warn(`Only one file allowed (${files.length} specified).`);
+    if(!multi && files.length > 1) return console.warn(`Only one file allowed (${files.length} specified).`);
     for(let i = 0; i < files.length; i++) readFile(files[i]);
     evt.preventDefault();
 };
 
 const initParse = function(evt, file) {
-	MPKEdit.Parser(new Uint8Array(evt.target.result), file.name, file.lastModified, file.size);
+    MPKEdit.Parser(new Uint8Array(evt.target.result), file.name, file.lastModified, file.size);
 };
 
 window.addEventListener("load", function() {
@@ -43,7 +43,7 @@ window.addEventListener("load", function() {
     // Load config from storage
     if(localStorage.MPKEdit) MPKEdit.App.cfg = JSON.parse(localStorage.MPKEdit);
     if(MPKEdit.App.cfg["theme"]) MPKEdit.App.changeTheme(MPKEdit.App.cfg["theme"]);
-	
+    
     /* -----------------------------------------------
     function: setDragEffects()
       sets up events for the visual effect when dragging a file over.
@@ -109,7 +109,7 @@ window.addEventListener("load", function() {
     window.addEventListener("blur",    changeExportColor);
     // Modal
     document.getElementById("menu").onclick = MPKEdit.App.buildModal;
-	// Hide modal when clicking off.
+    // Hide modal when clicking off.
     document.getElementById("modal").onclick = function(e) {
         if(e.target.id === "modal") modal.style.opacity = 0, modal.style.visibility = "hidden";
     };
