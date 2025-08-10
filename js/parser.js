@@ -163,10 +163,10 @@ const hash128 = function(key, seed = 0) {
 function: initMPK()
   generate empty MPK data then immediately load it.
 */
-const initMPK = function() {
+const initMPK = function(banks = 1) {
     function writeAt(ofs) {for(let i = 0; i < 32; i++) data[ofs + i] = block[i];}
 
-    const data = new Uint8Array(32768), block = new Uint8Array(32);
+    const data = new Uint8Array(banks * 32768), block = new Uint8Array(32);
     
     // generate id block
     block[1]  = 0 | Math.random() * 256 & 0x3F;
@@ -178,7 +178,7 @@ const initMPK = function() {
     block[10] = 0 | Math.random() * 256;
     block[11] = 0 | Math.random() * 256;
     block[25] = 0x01; // device bit
-    block[26] = 0x01; // bank size int (must be exactly '01')
+    block[26] = banks; // bank size int
 
     // calculate pakId checksum
     let sumA = 0, sumB = 0xFFF2;
@@ -222,8 +222,9 @@ const eraseNote = function(id) {
     // Erase all indexes in IndexTable for given note
     let offset;
     for(let i = 0; i < indexes.length; i++) {
-        offset = 0x100 + (indexes[i] * 2) + 1;
-        tmpData[offset] = 0x03;
+        offset = 0x100 + (indexes[i] & 0xFF00) + (indexes[i] & 0xFF)*2;
+        tmpData[offset  ] = 0x00;
+        tmpData[offset+1] = 0x03;
     }
     // Erase full NoteEntry in NoteTable.
     // TODO: should we do a minimal erase like libultra? is there value in keeping junk data? probably.
@@ -323,7 +324,10 @@ const checkHeader = function(data) {
         bl0x.push(state[loc[i]].valid); if(i === 3) console.log("ID Blocks:", bl0x);
     }
     // Check if FIRST id block is valid
-    if(state[0x20].valid === true) return true;
+    if(state[0x20].valid === true) {
+        MPKEdit.State.banks = state[0x20].banks;
+        return true;
+    }
     // Check if a valid backup was found as firstValid, copy to Main
     else if(firstValid !== null) {
         console.info(`Using Backup ${firstValid}`);
@@ -779,7 +783,7 @@ const insertNote = function(data, fileDate) {
           pageCount = pageData.length / 256,
           newPages = State.usedPages + pageCount; // Pre-calc used page count before import (to make sure it fits)
 
-    if(newPages <= 123 && State.usedNotes < 16) { // if there's enough space..
+    if(newPages <= (State.banks * 125 - 2) && State.usedNotes < 16) { // if there's enough space..
         const freeIndexes = [];
         for(let i = 0xA; i < 0x100; i += 2) {
             if(freeIndexes.length === pageCount) break;
@@ -818,7 +822,7 @@ const insertNote = function(data, fileDate) {
     } else {
         if(State.usedNotes >= 16)
             console.warn("No note slots available to insert note.");
-        if(newPages > 123)
+        if(newPages > (State.banks * 125 - 2))
             console.warn("Not enough pages left to insert note.");
     }
 };
@@ -922,7 +926,7 @@ const Parser = function(data, filename, fileDate, origsize) {
             parseMPKMeta(result); // gimme those comments 
 
         // If result.data is NOT 32KB, resize it to 32KB. Could this interfere with the MPKMeta block?
-        State.data = result.data !== 32768 ? resize(result.data) : result.data;
+        State.data = result.data < 32768 ? resize(result.data) : result.data;
         State.NoteTable = result.NoteTable;
         State.usedNotes = result.usedNotes;
         State.usedPages = result.usedPages;
