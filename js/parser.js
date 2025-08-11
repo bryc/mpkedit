@@ -5,10 +5,10 @@ let curfile = undefined, tmpComments = [], tmpStamp = [], isExtended, mupenNX = 
 
 /* -----------------------------------------------
 function: resize(data)
-  resize input mpk data to 32768 bytes, mostly for truncated inputs.
+  resize input mpk data to expected size, mostly for truncated inputs (also for MPKMeta).
 */
 const resize = function(data) {
-    const newdata = new Uint8Array(32768);
+    const newdata = new Uint8Array(MPKEdit.State.banks * 32768);
     for(let i = 0; i < data.length; i++) newdata[i] = data[i];
     return newdata;
 };
@@ -964,8 +964,8 @@ const Parser = function(data, filename, fileDate, origsize) {
         if(result.data.length > 32784 && arrstr(result.data, MPKEdit.State.banks * 32768, MPKEdit.State.banks * 32768 + 7) === "MPKMeta")
             parseMPKMeta(result); // gimme those comments 
 
-        // If result.data is NOT 32KB, resize it to 32KB. Could this interfere with the MPKMeta block?
-        State.data = result.data < 32768 ? resize(result.data) : result.data;
+        // If result.data size is unexpected, resize it
+        State.data = result.data !== (MPKEdit.State.banks * 32768) ? resize(result.data) : result.data;
         State.NoteTable = result.NoteTable;
         State.usedNotes = result.usedNotes;
         State.usedPages = result.usedPages;
