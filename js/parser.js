@@ -165,6 +165,13 @@ function: initMPK()
 */
 const initMPK = function(banks = 1) {
     function writeAt(ofs) {for(let i = 0; i < 32; i++) data[ofs + i] = block[i];}
+    // calculate IndexTable checksum at specific offset
+    function iTableSum(ofs) {
+        let sum = 0, start = ofs + 2;
+        if(ofs == 0x100) start = ofs + ((banks * 2) + 3) * 2;
+        for(let i = start; i < ofs+0x100; i++, sum &= 0xFF) sum += data[i];
+        return sum;
+    }
 
     const data = new Uint8Array(banks * 32768), block = new Uint8Array(32);
     
@@ -198,12 +205,19 @@ const initMPK = function(banks = 1) {
     writeAt(192);
 
     // init IndexTable and backup (plus checksums)
-    for(let i = 5; i < 128; i++) {
+    for(let i = 3 + (banks * 2); i < (banks * 128); i++) {
         data[256 + (i * 2) + 1] = 3;
-        data[512 + (i * 2) + 1] = 3;
+        data[256 + (banks * 256) + (i * 2) + 1] = 3;
     }
-    data[257] = 0x71;
-    data[513] = 0x71;
+    // calculate checksums of the IndexTable
+    for(let i = 1; i <= banks; i++) {
+        // Primary
+        data[(i * 256)    ] = i - 1;
+        data[(i * 256) + 1] = iTableSum( i * 256 );
+        // Backup
+        data[(i * 256) + (banks * 256)    ] = i - 1;
+        data[(i * 256) + (banks * 256) + 1] = iTableSum( (i * 256) + (banks * 256) );
+    }
 
     //for(let i = 0; i < 32; i++) data[i] = i; // write label - needs to be verified
     //data[0] = 0x81; // libultra's 81 mark
@@ -216,6 +230,7 @@ function: eraseNote(id)
   Erase a note at index/id. Note: This does not erase actual save data, just the pointer.
 */
 const eraseNote = function(id) {
+    let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
     if(!State.NoteTable[id]) return; // cancel if id doesn't exist in NoteTable
     const tmpData = new Uint8Array(State.data), // operate on tmp copy to run thru parser later
           indexes = State.NoteTable[id].indexes; // get note's indexes sequence to overwrite with 0x03
@@ -229,7 +244,7 @@ const eraseNote = function(id) {
     // Erase full NoteEntry in NoteTable.
     // TODO: should we do a minimal erase like libultra? is there value in keeping junk data? probably.
     for(let i = 0; i < 32; i++) {
-        offset = 0x300 + (id * 32) + i;
+        offset = (0x300 + nAD) + (id * 32) + i;
         tmpData[offset] = 0x00;
     }
     Parser(tmpData);
@@ -345,9 +360,10 @@ const checkHeader = function(data) {
             return false;
         }
         
+        // TODO: Fix Multi-bank support for this "quick n dirty" FS checker.
         console.error(`No valid ID block found. Checking filesystem...`);
         let sum = 0, x;
-        for(let i = 0x10A, a, b, D = {}; i < 0x200; i += 2, sum += a+b) {
+        for(let i = 0x10A, a, b, D = {}; i < (0x100 + MPKEdit.State.banks * 0x100); i += 2, sum += a+b) {
             a = data[i], b = data[i + 1];
             if(a !== data[0x100 + i] || b !== data[0x101 + i]) return false;
             if(0 === a && (5 <= b && 127 >= b || 1 === b)) {
@@ -373,15 +389,16 @@ function: readNotes(data, o, NoteKeys, NoteTable)
   Parses the Note Table.
 */
 const readNotes = function(data, o, NoteKeys, NoteTable) {
-    for(let i = 0x300; i < 0x500; i += 32) { // iterate over NoteTable
-        const p = data[i + 7],
-              p2 = data[o + p*2+1],
+    let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
+    for(let i = (0x300 + nAD); i < (0x500 + nAD); i += 32) { // iterate over NoteTable
+        const p = data[i + 7], b = data[i + 6],
+              p2 = data[((b + 1) * o) + p*2 + 1],
               // First check if firstIndex range is valid.
-              validIndex = data[i + 6] === 0 && p >= 5 && p <= 127,
+              validIndex = p >= 1 && p <= 127,
               // For stricter parsing, these conditions can be used as well.
-              validSum   = data[i + 10] === 0 && data[i + 11] === 0,
+              validSum   = data[i + 10] === 0 || data[i + 11] === 0,
               // Check if the actual index exists.
-              entryCheck = p2 === 1 || p2 >= 5 && p2 <= 127;
+              entryCheck = p2 >= 1 && p2 <= 127;
 
         // Check game/pub code and perform a fix if needed.
         let gSum = data[i] + data[i + 1] + data[i + 2] + data[i + 3],
@@ -403,8 +420,8 @@ const readNotes = function(data, o, NoteKeys, NoteTable) {
             //console.log(arrhex(data.subarray(0, 0+32)) + `: ${curfile}\n`)
             // DEBUG
 
-            const id = (i - 0x300) / 32;
-            NoteKeys.push(p);
+            const id = (i - (0x300 + nAD)) / 32;
+            NoteKeys.push(p | (b << 8));
             
             let noteName = "", n64code = App.n64code;
             for(let j = 0; j < 16; j++)
@@ -446,7 +463,7 @@ const readNotes = function(data, o, NoteKeys, NoteTable) {
                 timeStamp = (State.NoteTable[id]||{}).timeStamp || undefined;
             }
             NoteTable[id] = {
-                indexes: p,
+                indexes: p | (b << 8),
                 serial: gameCode,
                 publisher: arrstr(data, i+4, i+6).replace(/\0/g,"-"),
                 noteName: noteName,
@@ -467,24 +484,28 @@ function: checkIndexes(data, o, NoteKeys, NoteTable)
   argument o (offset) is used to specify backup data offset location in single recursive call.
 */
 const checkIndexes = function(data, o, NoteKeys, NoteTable) {
+    let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
+    let firstIdx = ((MPKEdit.State.banks * 2) + 3) * 2;
+    let finalIdx = MPKEdit.State.banks * 0x100;
     try {
         let p, p2, indexEnds = 0, repairAttempt = false;
         const found = {parsed: [], keys: [], values: [], dupes: {}};
 
         // Iterate over the IndexTable, checking each index.
-        for(let i = o + 0xA; i < o + 0x100; i += 2) {
+        for(let i = o + firstIdx; i < o + finalIdx; i += 2) {
             p = data[i + 1], p2 = data[i];
+            if((i & 0xFF) === 0) continue; // skip itbl checksum
 
-            if (p2 === 0 && (p !== 3 && p === 1 || p >= 5 && p <= 127)) {
-                if(p === 1) indexEnds++; // count the number of seq ending markers (0x01).
-                if(p !== 1 && found.dupes[p]) { // There shouldn't be any duplicate indexes.
+            if (!(p === 3 && p2 === 0) && (p >= 1 && p <= 127)) {
+                if(p === 1 && p2 === 0) indexEnds++; // count the number of seq ending markers (0x01).
+                if(p !== 1 && found.dupes[ p + (p2 << 8) ]) { // There shouldn't be any duplicate indexes.
                     throw `IndexTable contains duplicate index (i=${i}, p=${p}).`;
                 }
-                found.values.push(p);         // Think values. List of all valid index sequence values
-                found.keys.push((i - o) / 2); // Think memory addresses. The key/offset location/destination for each value
-                found.dupes[p] = 1;
+                found.values.push(p | (p2 << 8));         // Think values. List of all valid index sequence values
+                found.keys.push(((i & 0xFF) >> 1) + (i - o & 0xFF00)); // Think memory addresses. The key/offset location/destination for each value
+                found.dupes[p | (p2 << 8)] = 1;
             }
-            else if (p !== 3 || p2 !== 0) { // Only allow p=3 or p2=0
+            else if (!(p === 3 && p2 === 0)) { // Only allow p=3 or p2=0
                 throw `IndexTable contains illegal value (i=${i}, p=${p}, p2=${p2}).`;
             }
         }
@@ -503,21 +524,23 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
         }
         // Parse the Key Indexes to derive index sequence.
         const noteIndexes = {};
-        for(let i = 0, foundEnd; i < nKeysP; i++) {
+        for(let i = 0, foundEnd, tmp; i < nKeysP; i++) {
             const indexes = [];
-            p = keyIndexes[i], foundEnd = false;
-            while(p === 1 || p >= 5 && p <= 127) {
-                if(p === 1) {
+            p = keyIndexes[i] & 0xFF, p2 = keyIndexes[i] >> 8, foundEnd = false;
+            while(p >= 1 && p <= 127) {
+                if(p2 === 0 && p === 1) {
                     foundEnd = true;
                     noteIndexes[keyIndexes[i]] = indexes;
                     found.parsed.push(...indexes); // push entire array to found.parsed
                     break;
                 }
-                indexes.push(p);
-                p = data[p*2 + o + 1];
+                indexes.push(p | (p2 << 8));
+                tmp = p;
+                p  = data[o + (p2 << 8) + (tmp * 2) + 1];
+                p2 = data[o + (p2 << 8) + (tmp * 2)    ];
             }
             // When checking backup; free any orphaned indexes.
-            if(o === 0x200 && invalidKeys.indexOf(keyIndexes[i]) !== -1) {
+            if(o === (0x100 + MPKEdit.State.banks * 0x100) && invalidKeys.indexOf(keyIndexes[i]) !== -1) {
                 for(let i = 0; i < indexes.length; i++) {
                     console.warn(`Value ${data[o + indexes[i]*2+1]} at index ${indexes[i]} is being erased in IndexTable backup.`);
                     data[o + indexes[i] * 2 + 1] = 0x03;
@@ -525,8 +548,8 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
                 repairAttempt = true;
             }
             // When checking backup; erase a note which has no end marker.
-            if(o === 0x200 && !foundEnd) {
-                for(let j = 0x300; j < 0x500; j += 32) { // iterate NoteTable
+            if(o === (0x100 + MPKEdit.State.banks * 0x100) && !foundEnd) {
+                for(let j = 0x300 + nAD; j < 0x500 + nAD; j += 32) { // iterate NoteTable
                     if(data[j + 7] === keyIndexes[i]) {
                         console.warn(`Note Key ${data[j + 7]} is being erased in NoteTable.`);
                         data[j + 0] = 0x00; // gameCode
@@ -563,25 +586,31 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
         }
         // IndexTable checksum calculate + update.
         // Checksum should NOT be relied on for validation. Valid files may have invalid sums, so validate in other ways.
-        let sum = 0;
-        for(let i = o+0xA; i < o+0x100; i++, sum &= 0xFF) sum += data[i];
-        if (data[o+1] !== sum) {
-            console.info(o, "Fixing INODE checksum.", curfile);
-            data[o+1] = sum;
+        for(let i = 0; i < MPKEdit.State.banks; i++) {
+            let sum = 0;
+            let addrS = (i === 0) ? o + ((5 + ((MPKEdit.State.banks - 1) * 2)) * 2) : o + (1 * 2);
+            let addrB = i * 0x100;
+
+            for(let j = addrS + addrB; j < o + addrB + 0x100; j++, sum &= 0xFF) sum += data[j];
+
+            if (data[(o + addrB) + 1] !== sum) {
+                console.info(o, `Fixing Bank ${i+1} IndexTable checksum.`, curfile);
+                data[(o + addrB) + 1] = sum;
+            }
         }
 
         // copy IndexTable to the backup slot (OR copy backup to main, depending on `o`)
-        p = (o === 0x100) ? 0x200 : 0x100;
-        for(let i = 0; i < 0x100; i++) {
+        p = (o === 0x100) ? (0x100 + MPKEdit.State.banks * 0x100) : 0x100;
+        for(let i = 0; i < MPKEdit.State.banks * 0x100; i++) {
             data[p + i] = data[o + i];
         }
         return noteIndexes;
     }
     catch(error) { // If main IndexTable is invalid, check backup:
         console.error(error, curfile);
-        if(o !== 0x200) { // allows a single recursive call to checkIndexes to check mirror backup.
+        if(o !== (0x100 + MPKEdit.State.banks * 0x100)) { // allows a single recursive call to checkIndexes to check mirror backup.
             console.warn(`Error in Primary IndexTable. Now checking backup... \nFile: ${curfile}`);
-            return checkIndexes(data, 0x200, NoteKeys, NoteTable);
+            return checkIndexes(data, (0x100 + MPKEdit.State.banks * 0x100), NoteKeys, NoteTable);
         }
     }
 };
@@ -617,7 +646,7 @@ const parse = function(data) {
             // Calculate hash of raw data. Gather all page data into array (fileOut).
             const fileOut = [];
             for(let w = 0; w < _note.indexes.length; w++) {
-                const pageAddress = _note.indexes[w] * 0x100;
+                const pageAddress = (_note.indexes[w] & 0xFF) * 0x100 + (_note.indexes[w] >> 8) * 0x8000;
                 for(let j = 0; j < 0x100; j++) {
                     fileOut.push(data[pageAddress + j]);
                 }
@@ -645,7 +674,7 @@ function: saveMPK(evt)
   Save the full MPK output file (Standard RAW MPK file)
 */
 const saveMPK = function(evt) {
-
+    let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
     // Initially we only want to output the MPK data.
     let outputMPK = State.data;
 
@@ -660,7 +689,7 @@ const saveMPK = function(evt) {
             hasCmts = true;
             numCmts++;
             // Gather required info
-            const a = 0x300 + (notes[i] * 32), // NoteEntry addr
+            const a = (0x300 + nAD) + (notes[i] * 32), // NoteEntry addr
                   idx = outputMPK[a+7],
                   c0 = outputMPK[a+1], c1 = outputMPK[a+2], c2 = outputMPK[a+3],
                   utfdata = new TextEncoder("utf-8").encode(State.NoteTable[notes[i]].comment),
@@ -700,17 +729,18 @@ function: saveNote(evt, id)
   Save a note at index/id. Supports holding CTRL for raw save.
 */
 const saveNote = function(evt, id) {
+    let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
     let outputNote = [];
     const indexes = State.NoteTable[id].indexes,
           gameCode = State.NoteTable[id].serial;
 
     // Write NoteEntry as header for RAW format.
-    for(let i = 0; i < 32; i++) outputNote.push(State.data[0x300 + (id * 32) + i]);
+    for(let i = 0; i < 32; i++) outputNote.push(State.data[(0x300 + nAD) + (id * 32) + i]);
     outputNote[6] = 0xCA, outputNote[7] = 0xFE;
 
     // Write associated save data.
     for(let i = 0; i < indexes.length; i++) {
-        const pageAddress = indexes[i] * 0x100;
+        const pageAddress = (indexes[i] & 0xFF) * 0x100 + (indexes[i] >> 8) * 0x8000;
         for(let j = 0; j < 0x100; j++)
             outputNote.push(State.data[pageAddress + j]);
     }
@@ -752,6 +782,7 @@ function: insertNote(data, fileDate)
   insert note data into currently opened MPK file.
 */
 const insertNote = function(data, fileDate) {
+    let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
     let cmt = "", tS;
     // Check if note to insert is an extended note file (has comments).
     if(isExtended) {
@@ -785,23 +816,30 @@ const insertNote = function(data, fileDate) {
 
     if(newPages <= (State.banks * 125 - 2) && State.usedNotes < 16) { // if there's enough space..
         const freeIndexes = [];
-        for(let i = 0xA; i < 0x100; i += 2) {
+        let firstIdx = ((MPKEdit.State.banks * 2) + 3) * 2;
+        let finalIdx = MPKEdit.State.banks * 0x100;
+        for(let i = firstIdx; i < finalIdx; i += 2) {
             if(freeIndexes.length === pageCount) break;
+            if((i & 0xFF) === 0) continue; // skip itbl checksum
             // allocate list of free indexes for import destination.
-            if(tmpdata[0x100 + i + 1] === 3) freeIndexes.push(i / 2);
+            if(tmpdata[0x100 + i] === 0 && tmpdata[0x100 + i + 1] === 3) {
+                freeIndexes.push(((i & 0xFF) >> 1) + (i & 0xFF00));
+            }
         }
 
-        noteData[0x06] = 0; // replace 0xCAFE with first free index.
-        noteData[0x07] = freeIndexes[0];
+        noteData[0x06] = freeIndexes[0] >> 8; // replace 0xCAFE with first free index.
+        noteData[0x07] = freeIndexes[0] & 0xFF;
 
         for(let i = 0; i < freeIndexes.length; i++) {
-            const target1 = 0x100 + (2 * freeIndexes[i] + 1),
-                  target2 = 0x100 * freeIndexes[i];
+            const target1 = 0x100 + (freeIndexes[i] & 0xFF00) + (freeIndexes[i] & 0xFF) * 2,
+                  target2 = (freeIndexes[i] & 0xFF) * 0x100 + (freeIndexes[i] >> 8) * 0x8000;
             
             // write the index sequence in IndexTable. 0x01 for last index in sequence.
-            tmpdata[target1] = (i === freeIndexes.length-1) ? 0x01 : freeIndexes[i+1];
+            tmpdata[target1  ] = (i===freeIndexes.length-1) ? 0x00 : freeIndexes[i+1] >> 8;
+            tmpdata[target1+1] = (i===freeIndexes.length-1) ? 0x01 : freeIndexes[i+1] & 0xFF;
 
             // write the page data sequence.
+            const pageAddress = (freeIndexes[i] & 0xFF) * 0x100 + (freeIndexes[i] >> 8) * 0x8000;
             for(let j = 0; j < 0x100; j++)
                 tmpdata[target2 + j] = pageData[0x100 * i + j];
         }
@@ -812,7 +850,7 @@ const insertNote = function(data, fileDate) {
                 // will cause comments to be lost when MPK data is re-parsed.
                 if(cmt) tmpComments[i] = cmt;
                 tmpStamp[i] = tS || Math.round(fileDate/1000);
-                const target = 0x300 + i * 32;
+                const target = (0x300 + nAD) + i * 32;
                 for(let j = 0; j < 32; j++) tmpdata[target + j] = noteData[j];
                 break;
             }
@@ -832,7 +870,7 @@ function: parseMPKMeta(result)
   Parse MPKMeta block, inserting any associated data into the state.
 */
 const parseMPKMeta = function(result) {
-    const MPKMeta = result.data.subarray(32768),
+    const MPKMeta = result.data.subarray(MPKEdit.State.banks * 32768),
           hasCmts = arrstr(MPKMeta, 0, 7) === "MPKMeta",
           cmtCount = MPKMeta[15]; // header: stored number of entries
     if(hasCmts === false || cmtCount > 16 || cmtCount === 0) {
@@ -857,8 +895,9 @@ const parseMPKMeta = function(result) {
 
         // Check if entry's specified index and gameCode exists.
         let noteOfs = false;
+        let nAD = (MPKEdit.State.banks * 0x200) - 0x200;
         for(let j = 0; j < 16; j++) {
-            const a = 0x300 + j*32,
+            const a = (0x300 + nAD) + j*32,
                   chkIdx = MPKMeta[ptr+1] === result.data[a+7], 
                   chkCo0 = MPKMeta[ptr+2] === result.data[a+1],
                   chkCo1 = MPKMeta[ptr+3] === result.data[a+2],
@@ -922,7 +961,7 @@ const Parser = function(data, filename, fileDate, origsize) {
             return false;
         }
         // parse and load any MPKMeta data
-        if(result.data.length > 32784 && arrstr(result.data, 32768, 32775) === "MPKMeta")
+        if(result.data.length > 32784 && arrstr(result.data, MPKEdit.State.banks * 32768, MPKEdit.State.banks * 32768 + 7) === "MPKMeta")
             parseMPKMeta(result); // gimme those comments 
 
         // If result.data is NOT 32KB, resize it to 32KB. Could this interfere with the MPKMeta block?
