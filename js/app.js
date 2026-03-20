@@ -146,7 +146,7 @@ const pixicon = function(t, r) {
     }
     // Paint canvas.
     const o = t.width/n;
-    let Q = 0, y = 0, d;
+    let Q = 0, y = 0, d = 0;
     for(let i = 0; i < l; i++, d = i%(n/2)) {
         // Change color at halfway point. NOTE: |0 required for odd sizes.
         (i === (0|l/2)) && (c.fillStyle = color3, Q += q/2, y =- 1);
