@@ -534,6 +534,11 @@ const checkIndexes = function(data, o, NoteKeys, NoteTable) {
                     found.parsed.push(...indexes); // push entire array to found.parsed
                     break;
                 }
+                // There should be no duplicate indexes. This prevents infinite loops in corrupt data.
+                if(indexes.includes(p | (p2 << 8))) {
+                    console.error("Duplicate index encountered.");
+                    break;
+                }
                 indexes.push(p | (p2 << 8));
                 tmp = p;
                 p  = data[o + (p2 << 8) + (tmp * 2) + 1];
